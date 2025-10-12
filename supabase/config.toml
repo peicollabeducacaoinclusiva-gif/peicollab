@@ -1,0 +1,4 @@
+project_id = "oevwcgemxfoekoemcykx"
+
+[functions.validate-family-access]
+verify_jwt = false

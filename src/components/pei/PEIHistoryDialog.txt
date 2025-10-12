@@ -1,0 +1,203 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { History, User, Calendar, FileText } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { PEIVersionCompare } from "./PEIVersionCompare";
+
+interface PEIHistoryRecord {
+  id: string;
+  version_number: number;
+  changed_at: string;
+  change_type: string;
+  change_summary: string;
+  changed_by: string;
+  changed_by_name?: string;
+  diagnosis_data: any;
+  planning_data: any;
+  evaluation_data: any;
+  status: string;
+}
+
+interface PEIHistoryDialogProps {
+  peiId: string;
+}
+
+export function PEIHistoryDialog({ peiId }: PEIHistoryDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [history, setHistory] = useState<PEIHistoryRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedVersions, setSelectedVersions] = useState<[number | null, number | null]>([null, null]);
+  const { toast } = useToast();
+
+  const loadHistory = async () => {
+    setLoading(true);
+    try {
+      const { data: historyData, error: historyError } = await supabase
+        .from("pei_history")
+        .select("*")
+        .eq("pei_id", peiId)
+        .order("version_number", { ascending: false });
+
+      if (historyError) throw historyError;
+
+      // Buscar os nomes dos usuários separadamente
+      const userIds = [...new Set(historyData.map((record: any) => record.changed_by))];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+
+      const profilesMap = new Map(
+        profilesData?.map((profile: any) => [profile.id, profile.full_name]) || []
+      );
+
+      const formattedHistory = historyData.map((record: any) => ({
+        ...record,
+        changed_by_name: profilesMap.get(record.changed_by) || "Usuário desconhecido"
+      }));
+
+      setHistory(formattedHistory);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar histórico",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      loadHistory();
+    }
+  }, [open, peiId]);
+
+  const getChangeTypeBadge = (changeType: string) => {
+    const variants: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
+      created: { label: "Criado", variant: "default" },
+      updated: { label: "Atualizado", variant: "secondary" },
+      status_changed: { label: "Status Alterado", variant: "outline" },
+    };
+    
+    const config = variants[changeType] || { label: changeType, variant: "outline" };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const handleVersionSelect = (versionNumber: number) => {
+    if (selectedVersions[0] === null) {
+      setSelectedVersions([versionNumber, null]);
+    } else if (selectedVersions[1] === null && selectedVersions[0] !== versionNumber) {
+      setSelectedVersions([selectedVersions[0], versionNumber]);
+    } else {
+      setSelectedVersions([versionNumber, null]);
+    }
+  };
+
+  const getSelectedVersionData = () => {
+    if (selectedVersions[0] === null || selectedVersions[1] === null) return null;
+    
+    const version1 = history.find(h => h.version_number === selectedVersions[0]);
+    const version2 = history.find(h => h.version_number === selectedVersions[1]);
+    
+    if (!version1 || !version2) return null;
+    
+    return { version1, version2 };
+  };
+
+  const versionData = getSelectedVersionData();
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <History className="mr-2 h-4 w-4" />
+          Histórico de Alterações
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Histórico de Alterações do PEI</DialogTitle>
+        </DialogHeader>
+
+        {versionData ? (
+          <PEIVersionCompare
+            version1={versionData.version1}
+            version2={versionData.version2}
+            onBack={() => setSelectedVersions([null, null])}
+          />
+        ) : (
+          <ScrollArea className="h-[500px] pr-4">
+            {loading ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-muted-foreground">Carregando histórico...</div>
+              </div>
+            ) : history.length === 0 ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-muted-foreground">Nenhuma alteração registrada</div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground mb-4">
+                  {selectedVersions[0] !== null && selectedVersions[1] === null && (
+                    <div className="bg-muted p-3 rounded-md">
+                      Versão {selectedVersions[0]} selecionada. Selecione outra versão para comparar.
+                    </div>
+                  )}
+                </div>
+
+                {history.map((record, index) => (
+                  <div key={record.id}>
+                    <button
+                      onClick={() => handleVersionSelect(record.version_number)}
+                      className={`w-full text-left p-4 rounded-lg border transition-all hover:border-primary ${
+                        selectedVersions.includes(record.version_number)
+                          ? "border-primary bg-primary/5"
+                          : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-semibold">Versão {record.version_number}</span>
+                          {getChangeTypeBadge(record.change_type)}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(record.changed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <User className="h-3 w-3" />
+                        {record.changed_by_name}
+                      </div>
+
+                      <div className="text-sm">{record.change_summary}</div>
+
+                      {record.status && (
+                        <div className="mt-2">
+                          <Badge variant="outline">Status: {record.status}</Badge>
+                        </div>
+                      )}
+                    </button>
+
+                    {index < history.length - 1 && <Separator className="my-2" />}
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

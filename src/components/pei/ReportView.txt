@@ -1,0 +1,396 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FileText, Upload } from "lucide-react";
+import { useState } from "react";
+
+interface ReportViewProps {
+  studentData: any;
+  diagnosisData: any;
+  planningData: any;
+  referralsData: any;
+  userRole?: string | null;
+}
+
+interface ReportIdentification {
+  networkName: string;
+  schoolName: string;
+  logoUrl: string;
+}
+
+const ReportView = ({ studentData, diagnosisData, planningData, referralsData, userRole }: ReportViewProps) => {
+  const [identification, setIdentification] = useState<ReportIdentification>({
+    networkName: "",
+    schoolName: "",
+    logoUrl: ""
+  });
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setIdentification({ ...identification, logoUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const barrierCategoryLabels: Record<string, string> = {
+    arquitetonica: "🏛️ Arquitetônica",
+    atitudinal: "🤝 Atitudinal",
+    pedagogica: "📚 Pedagógica",
+    comunicacional: "💬 Comunicacional",
+    tecnologica: "💻 Tecnológica",
+    metodologica: "📋 Metodológica",
+  };
+
+  const barrierItemLabels: Record<string, Record<string, string>> = {
+    arquitetonica: {
+      falta_rampa: "Falta de rampas de acesso",
+      escadas: "Escadas sem corrimão adequado",
+      portas_estreitas: "Portas estreitas",
+      banheiro_inadequado: "Banheiro não adaptado",
+      mobiliario: "Mobiliário inadequado",
+    },
+    atitudinal: {
+      preconceito_colegas: "Preconceito dos colegas",
+      resistencia_professores: "Resistência de professores",
+      falta_sensibilizacao: "Falta de sensibilização da comunidade escolar",
+      baixas_expectativas: "Baixas expectativas em relação ao aluno",
+      isolamento_social: "Isolamento nas atividades sociais",
+    },
+    pedagogica: {
+      material_nao_adaptado: "Material didático não adaptado",
+      curriculo_rigido: "Currículo pouco flexível",
+      avaliacao_inadequada: "Métodos de avaliação inadequados",
+      falta_diferenciacao: "Falta de diferenciação pedagógica",
+      ritmo_ensino: "Ritmo de ensino incompatível",
+    },
+    comunicacional: {
+      falta_libras: "Falta de intérprete de Libras",
+      material_visual: "Ausência de materiais visuais",
+      linguagem_complexa: "Linguagem muito complexa",
+      falta_caa: "Falta de comunicação alternativa (CAA)",
+      sinalizacao: "Sinalização inadequada",
+    },
+    tecnologica: {
+      falta_tecnologia_assistiva: "Falta de tecnologia assistiva",
+      computadores_inadequados: "Computadores não adaptados",
+      software_inacessivel: "Software inacessível",
+      internet_limitada: "Acesso limitado à internet",
+      falta_treinamento: "Falta de treinamento em tecnologias",
+    },
+    metodologica: {
+      aulas_expositivas: "Excesso de aulas expositivas",
+      falta_pratica: "Falta de atividades práticas",
+      tempo_insuficiente: "Tempo insuficiente para atividades",
+      grupos_grandes: "Grupos muito grandes",
+      falta_individualizacao: "Falta de atendimento individualizado",
+    },
+  };
+
+  const referralLabels: Record<string, string> = {
+    psicologo: "👨‍⚕️ Psicólogo",
+    fonoaudiologo: "🗣️ Fonoaudiólogo",
+    terapeuta_ocupacional: "🤲 Terapeuta Ocupacional",
+    neurologista: "🧠 Neurologista",
+    psicopedagogo: "📚 Psicopedagogo",
+    fisioterapeuta: "🏃 Fisioterapeuta",
+    assistente_social: "🤝 Assistente Social",
+    nutricionista: "🥗 Nutricionista",
+  };
+
+  const shouldShowWatermark = userRole !== 'coordinator' && userRole !== 'superadmin';
+
+  return (
+    <div className="space-y-6 relative">
+      {/* Marca d'água RASCUNHO */}
+      {shouldShowWatermark && (
+        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50 print:block hidden md:block">
+          <div className="text-[200px] font-bold text-gray-300/20 rotate-[-45deg] select-none print:text-gray-400/30">
+            RASCUNHO
+          </div>
+        </div>
+      )}
+      
+      {/* Cabeçalho e botão - oculto na impressão */}
+      <div className="flex items-center justify-between print:hidden">
+        <div>
+          <h3 className="text-lg font-semibold">Relatório Completo do PEI</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Visualização consolidada de todas as seções
+          </p>
+        </div>
+        <Button onClick={handlePrint} variant="outline">
+          <FileText className="mr-2 h-4 w-4" />
+          Imprimir
+        </Button>
+      </div>
+
+      {/* Card de identificação institucional - oculto na impressão */}
+      <Card className="print:hidden">
+        <CardHeader className="print:pb-6">
+          <CardTitle>Identificação Institucional</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="networkName">Nome da Rede</Label>
+              <Input
+                id="networkName"
+                placeholder="Ex: Rede Municipal de Ensino"
+                value={identification.networkName}
+                onChange={(e) => setIdentification({ ...identification, networkName: e.target.value })}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="schoolName">Nome da Escola</Label>
+              <Input
+                id="schoolName"
+                placeholder="Ex: Escola Municipal Dom Pedro II"
+                value={identification.schoolName}
+                onChange={(e) => setIdentification({ ...identification, schoolName: e.target.value })}
+                className="mt-2"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="logo">Logo da Instituição</Label>
+            <div className="mt-2 flex items-center gap-4">
+              <Input
+                id="logo"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="flex-1"
+              />
+              {identification.logoUrl && (
+                <img src={identification.logoUrl} alt="Logo" className="h-16 w-16 object-contain border rounded" />
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="print:border-2 print:border-gray-800">
+        <CardHeader className="print:flex print:flex-row print:justify-between print:items-start">
+          {identification.logoUrl && (
+            <img src={identification.logoUrl} alt="Logo" className="hidden print:block h-20 w-20 object-contain" />
+          )}
+          <div className="print:flex-1">
+            {identification.networkName && (
+              <p className="text-sm font-semibold print:text-base">{identification.networkName}</p>
+            )}
+            {identification.schoolName && (
+              <p className="text-sm print:text-base">{identification.schoolName}</p>
+            )}
+          </div>
+          <CardTitle className="print:text-xl">Identificação do Aluno</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {studentData ? (
+            <>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Nome</p>
+                <p>{studentData.name}</p>
+              </div>
+              {studentData.date_of_birth && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Data de Nascimento</p>
+                  <p>{new Date(studentData.date_of_birth).toLocaleDateString('pt-BR')}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-muted-foreground">Nenhum aluno selecionado</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Diagnóstico</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {diagnosisData.history && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Histórico do Estudante</p>
+              <p className="whitespace-pre-wrap">{diagnosisData.history}</p>
+            </div>
+          )}
+          {diagnosisData.interests && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Interesses</p>
+              <p>{diagnosisData.interests}</p>
+            </div>
+          )}
+          {diagnosisData.specialNeeds && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Necessidades Educacionais Especiais</p>
+              <p className="whitespace-pre-wrap">{diagnosisData.specialNeeds}</p>
+            </div>
+          )}
+          {diagnosisData.barriers && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Barreiras Identificadas</p>
+              <div className="space-y-3">
+                {Object.entries(diagnosisData.barriers).map(([category, items]) => {
+                  if (!Array.isArray(items) || items.length === 0) return null;
+                  return (
+                    <div key={category} className="ml-2">
+                      <p className="font-medium text-sm">{barrierCategoryLabels[category]}</p>
+                      <ul className="list-disc list-inside ml-4 text-sm space-y-1">
+                        {items.map((item: string) => (
+                          <li key={item}>{barrierItemLabels[category]?.[item] || item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+                {diagnosisData.otherBarrier && (
+                  <div className="ml-2">
+                    <p className="font-medium text-sm">Outras:</p>
+                    <p className="ml-4 text-sm whitespace-pre-wrap">{diagnosisData.otherBarrier}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {!diagnosisData.history && !diagnosisData.interests && !diagnosisData.specialNeeds && !diagnosisData.barriers && (
+            <p className="text-muted-foreground">Nenhuma informação de diagnóstico registrada</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Planejamento de Acessibilidade</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {planningData.goals && planningData.goals.length > 0 ? (
+            <div className="space-y-6">
+              {planningData.goals.map((goal: any, index: number) => (
+                <div key={index} className="space-y-3">
+                  <h4 className="font-semibold">Meta {index + 1}</h4>
+                  {goal.description && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Descrição</p>
+                      <p className="whitespace-pre-wrap">{goal.description}</p>
+                    </div>
+                  )}
+                  {goal.strategies && goal.strategies.length > 0 && goal.strategies[0] && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Estratégias</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {goal.strategies.map((strategy: string, idx: number) => (
+                          strategy && <li key={idx}>{strategy}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {goal.evaluationCriteria && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Critérios de Avaliação</p>
+                      <p className="whitespace-pre-wrap">{goal.evaluationCriteria}</p>
+                    </div>
+                  )}
+                  {goal.resources && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Recursos</p>
+                      <p className="whitespace-pre-wrap">{goal.resources}</p>
+                    </div>
+                  )}
+                  {index < planningData.goals.length - 1 && <Separator className="my-4" />}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Nenhum planejamento registrado</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Encaminhamentos e Observações</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {referralsData.referrals && Array.isArray(referralsData.referrals) && referralsData.referrals.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Encaminhamentos Profissionais</p>
+              <ul className="list-disc list-inside ml-2 space-y-1">
+                {referralsData.referrals.map((referral: string) => (
+                  <li key={referral}>{referralLabels[referral] || referral}</li>
+                ))}
+              </ul>
+              {referralsData.otherReferral && (
+                <div className="mt-2 ml-2">
+                  <p className="text-sm font-medium">Outros:</p>
+                  <p className="text-sm whitespace-pre-wrap">{referralsData.otherReferral}</p>
+                </div>
+              )}
+            </div>
+          )}
+          {referralsData.observations && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Observações Gerais</p>
+              <p className="whitespace-pre-wrap">{referralsData.observations}</p>
+            </div>
+          )}
+          {(!referralsData.referrals || referralsData.referrals.length === 0) && !referralsData.observations && (
+            <p className="text-muted-foreground">Nenhum encaminhamento ou observação registrado</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="print:border-2 print:border-gray-800 print:page-break-before-always">
+        <CardHeader>
+          <CardTitle>Assinaturas</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 print:grid-cols-2">
+            <div className="space-y-2">
+              <div className="border-t-2 border-gray-400 pt-2">
+                <p className="text-center text-sm font-medium">Professor(a) Responsável</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="border-t-2 border-gray-400 pt-2">
+                <p className="text-center text-sm font-medium">Coordenador(a) Pedagógico(a)</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="border-t-2 border-gray-400 pt-2">
+                <p className="text-center text-sm font-medium">Diretor(a) Escolar</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="border-t-2 border-gray-400 pt-2">
+                <p className="text-center text-sm font-medium">Responsável Legal / Família</p>
+              </div>
+            </div>
+          </div>
+          <div className="text-center text-sm text-muted-foreground mt-6">
+            <p>Data: _____/_____/__________</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default ReportView;
