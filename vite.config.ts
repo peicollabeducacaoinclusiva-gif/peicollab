@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import { VitePWA } from 'vite-plugin-pwa'; // Adicione esta linha
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         start_url: '/',
         scope: '/',
+        orientation: 'portrait-primary',
+        categories: ['education', 'productivity'],
         icons: [
           {
             src: '/pwa-192x192.png',
@@ -43,9 +45,10 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
+              workbox: {
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+                maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+                runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -74,11 +77,25 @@ export default defineConfig(({ mode }) => ({
                 statuses: [0, 200]
               }
             }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 dias
+              }
+            }
           }
-        ]
+        ],
+        skipWaiting: true,
+        clientsClaim: true
       },
       devOptions: {
-        enabled: true // Habilita PWA em desenvolvimento para testes
+        enabled: true,
+        type: 'module'
       }
     })
   ].filter(Boolean),

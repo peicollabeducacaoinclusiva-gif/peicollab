@@ -2,12 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Users, FileText, CheckCircle, XCircle, Clock, Download, School,
-  TrendingUp, AlertTriangle, MessageSquare, Accessibility,
-  Calendar, Ambulance, BarChart3, AlertCircle,
-  BookOpen, UsersRound, BarChart, GraduationCap, ClipboardList, Handshake, Lightbulb, ShieldCheck, Settings, Bell
-} from "lucide-react";
+import { Users, CheckCircle, Clock, Download, School, TrendingUp, AlertCircle, Edit, Key, Eye, MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +18,12 @@ import { cn } from "@/lib/utils";
 import RequestPEIDialog from "@/components/coordinator/RequestPEIDialog";
 import PEIQueueTable from "@/components/coordinator/PEIQueueTable";
 import PEIDetailDialog from "@/components/coordinator/PEIDetailDialog";
+import GenerateFamilyTokenDialog from "@/components/coordinator/GenerateFamilyTokenDialog";
+import { FamilyTokenManager } from "@/components/coordinator/FamilyTokenManager";
 import InclusionQuote from "@/components/shared/InclusionQuote";
+import { useNavigate } from "react-router-dom";
+import { useTenant } from "@/hooks/useTenant";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Select,
   SelectContent,
@@ -38,6 +38,14 @@ import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type PEIStatus = "draft" | "pending_validation" | "returned" | "validated" | "pending_family" | "approved";
 
@@ -46,7 +54,8 @@ interface PEIData {
   student_id: string;
   student_name: string;
   teacher_name: string;
-  tenant_name: string;
+  school_name: string;
+  network_name: string;
   status: PEIStatus;
   created_at: string;
 }
@@ -55,14 +64,17 @@ interface CoordinatorDashboardProps {
   profile: {
     id: string;
     full_name: string;
-    role: string;
     tenant_id: string | null;
+    school_id: string | null;
+    user_roles?: Array<{ role: string }>;
+    network_name?: string;
+    school_name?: string;
   };
 }
 
 interface Tenant {
   id: string;
-  name: string;
+  network_name: string;
 }
 
 interface Stats {
@@ -179,7 +191,7 @@ interface PEIReferral {
 interface StudentData {
   id: string;
   name: string;
-  tenant_id: string;
+  school_id: string;
 }
 
 interface ProfileData {
@@ -212,16 +224,15 @@ interface PEIProgressData {
   count: number;
 }
 
-interface Notification {
-  id: string;
-  message: string;
-  created_at: string;
-  read: boolean;
-}
+// REMOVIDO: interface Notification - tabela não existe no schema
 
-const AlertCircleIcon = AlertCircle; // Renomear para evitar conflito com o componente AlertCircle
+const AlertCircleIcon = AlertCircle;
 
 const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
+  // Novos hooks para multi-tenant
+  const { tenantInfo, schoolInfo, getAccessibleSchools } = useTenant();
+  const { canManageNetwork, canManageSchool, primaryRole } = usePermissions();
+  
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>("");
   const [stats, setStats] = useState<Stats>({
@@ -239,6 +250,10 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   const [peis, setPeis] = useState<PEIData[]>([]);
   const [selectedPeiId, setSelectedPeiId] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [showTokenDialog, setShowTokenDialog] = useState(false);
+  const [showTokenManager, setShowTokenManager] = useState(false);
+  const [tokenDialogKey, setTokenDialogKey] = useState(0);
+  const [tokenManagerKey, setTokenManagerKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [teacherPerformance, setTeacherPerformance] = useState<TeacherPerformance[]>([]);
   const [peiStatusHistory, setPeiStatusHistory] = useState<PEIStatusHistory[]>([]);
@@ -247,12 +262,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   const [referralData, setReferralData] = useState<ReferralData[]>([]);
   const [goalProgressData, setGoalProgressData] = useState<GoalProgressData[]>([]);
   const [peiReviewData, setPeiReviewData] = useState<PEIReviewData[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  // REMOVIDO: const [notifications, setNotifications] = useState<Notification[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadCoordinatorTenants();
@@ -268,7 +284,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
       loadReferralData();
       loadGoalProgressData();
       loadPeiReviewData();
-      loadNotifications();
+      // REMOVIDO: loadNotifications();
     }
   }, [selectedTenantId, dateRange]);
 
@@ -276,22 +292,33 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       setLoading(true);
 
-      const { data: userTenants, error: userTenantsError } = await supabase
-        .from("user_tenants")
-        .select(`
-          tenant_id,
-          tenants!inner (
-            id,
-            name
-          )
-        `)
-        .eq("user_id", profile.id);
-
-      if (userTenantsError) throw userTenantsError;
-
-      const tenantsData = userTenants
-        ?.map((ut: any) => ut.tenants)
-        .filter((t: any): t is Tenant => t !== null && typeof t === 'object') || [];
+      // Nova estrutura multi-tenant: buscar tenants baseado no perfil do usuário
+      let tenantsData = [];
+      
+      if (profile.tenant_id) {
+        // Usuário tem tenant_id direto (education_secretary, superadmin)
+        const { data: tenant, error: tenantError } = await supabase
+          .from("tenants")
+          .select("id, network_name")
+          .eq("id", profile.tenant_id)
+          .single();
+        
+        if (tenantError) throw tenantError;
+        tenantsData = [tenant];
+      } else if (profile.school_id) {
+        // Usuário tem school_id, buscar tenant da escola
+        const { data: school, error: schoolError } = await supabase
+          .from("schools")
+          .select(`
+            tenant_id,
+            tenants(id, network_name)
+          `)
+          .eq("id", profile.school_id)
+          .single();
+        
+        if (schoolError) throw schoolError;
+        tenantsData = [school.tenants];
+      }
 
       setTenants(tenantsData);
 
@@ -321,11 +348,17 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       setLoading(true);
 
+      // Nova estrutura multi-tenant: buscar dados baseado no tenant selecionado
       const [studentsCount, peisData, commentsData] = await Promise.all([
+        // Buscar estudantes das escolas do tenant
         supabase
           .from("students")
-          .select("id", { count: "exact", head: true })
-          .eq("tenant_id", selectedTenantId),
+          .select(`
+            id,
+            school_id,
+            schools!inner(tenant_id)
+          `)
+          .eq("schools.tenant_id", selectedTenantId),
 
         supabase
           .from("peis")
@@ -337,13 +370,14 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
             assigned_teacher_id,
             students!inner (
               name,
-              tenant_id
+              school_id,
+              schools!inner(tenant_id)
             ),
-            profiles!assigned_teacher_id (
+            assigned_teacher:profiles!peis_assigned_teacher_id_fkey (
               full_name
             )
           `)
-          .eq("tenant_id", selectedTenantId)
+          .eq("students.schools.tenant_id", selectedTenantId)
           .order("created_at", { ascending: false }),
 
         supabase
@@ -403,7 +437,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
 
       const { data: tenantData } = await supabase
         .from("tenants")
-        .select("name")
+        .select("network_name")
         .eq("id", selectedTenantId)
         .single();
 
@@ -411,8 +445,8 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
         id: p.id,
         student_id: p.student_id,
         student_name: p.students?.name || "Aluno não identificado",
-        teacher_name: p.profiles?.full_name || "Não atribuído",
-        tenant_name: tenantData?.name || "Escola não identificada",
+        teacher_name: p.assigned_teacher?.full_name || "Não atribuído",
+        tenant_name: tenantData?.network_name || "Rede não identificada",
         status: p.status,
         created_at: p.created_at,
       })) || [];
@@ -501,7 +535,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
           status,
           profiles!assigned_teacher_id (full_name)
         `)
-        .eq("tenant_id", selectedTenantId);
+        .eq("school_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -541,7 +575,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
       const { data, error } = await supabase
         .from("peis")
         .select("created_at, status")
-        .eq("tenant_id", selectedTenantId)
+        .eq("school_id", selectedTenantId)
         .gte("created_at", format(dateRange.from, "yyyy-MM-dd"))
         .lte("created_at", format(dateRange.to, "yyyy-MM-dd"));
 
@@ -590,8 +624,8 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       const { data, error } = await supabase
         .from("pei_barriers")
-        .select("barrier_type, peis!inner(tenant_id)")
-        .eq("peis.tenant_id", selectedTenantId);
+        .select("barrier_type, peis!inner(school_id)")
+        .eq("peis.school_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -611,8 +645,8 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       const { data, error } = await supabase
         .from("pei_accessibility_resources")
-        .select("resource_type, peis!inner(tenant_id)")
-        .eq("peis.tenant_id", selectedTenantId);
+        .select("resource_type, peis!inner(school_id)")
+        .eq("peis.school_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -632,8 +666,8 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       const { data, error } = await supabase
         .from("pei_referrals")
-        .select("referred_to, peis!inner(tenant_id)")
-        .eq("peis.tenant_id", selectedTenantId);
+        .select("referred_to, peis!inner(school_id)")
+        .eq("peis.school_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -653,8 +687,8 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       const { data, error } = await supabase
         .from("pei_goals")
-        .select("progress_level, peis!inner(tenant_id)")
-        .eq("peis.tenant_id", selectedTenantId);
+        .select("progress_level, peis!inner(school_id)")
+        .eq("peis.school_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -674,8 +708,8 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       const { data, error } = await supabase
         .from("pei_reviews")
-        .select("review_date, peis!inner(tenant_id)")
-        .eq("peis.tenant_id", selectedTenantId);
+        .select("review_date, peis!inner(school_id)")
+        .eq("peis.school_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -691,30 +725,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     }
   };
 
-  const loadNotifications = async () => {
-    if (!profile.id) return;
-    try {
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", profile.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setNotifications(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar notificações:", error);
-    }
-  };
-
-  const handleMarkNotificationAsRead = async (id: string) => {
-    try {
-      await supabase.from("notifications").update({ read: true }).eq("id", id);
-      setNotifications((prev) => prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)));
-    } catch (error) {
-      console.error("Erro ao marcar notificação como lida:", error);
-    }
-  };
+  // REMOVIDO: loadNotifications e handleMarkNotificationAsRead
 
   const handleViewPEI = (peiId: string) => {
     setSelectedPeiId(peiId);
@@ -761,6 +772,28 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     }
   };
 
+  // Funções para gerenciar PEIs e tokens
+  const handleEditPEI = (peiId: string, studentId: string) => {
+    navigate(`/pei/edit?pei=${peiId}&student=${studentId}`);
+  };
+
+  const handleViewPEIDetails = (peiId: string) => {
+    setSelectedPeiId(peiId);
+    setDetailDialogOpen(true);
+  };
+
+  const handleGenerateToken = (peiId: string) => {
+    setSelectedPeiId(peiId);
+    setTokenDialogKey(prev => prev + 1);
+    setShowTokenDialog(true);
+  };
+
+  const handleManageTokens = (peiId: string) => {
+    setSelectedPeiId(peiId);
+    setTokenManagerKey(prev => prev + 1);
+    setShowTokenManager(true);
+  };
+
   const handleExportReport = async () => {
     try {
       const selectedTenant = tenants.find((t) => t.id === selectedTenantId);
@@ -784,7 +817,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
 
       doc.setFontSize(11);
       doc.text(`Coordenador(a): ${profile.full_name}`, 20, 55);
-      doc.text(`Escola: ${selectedTenant?.name || "N/A"}`, 20, 62);
+      doc.text(`Rede: ${selectedTenant?.network_name || "N/A"}`, 20, 62);
       doc.text(`Data de Emissão: ${new Date().toLocaleDateString("pt-BR")}`, 20, 69);
       doc.text(`Horário: ${new Date().toLocaleTimeString("pt-BR")}`, 20, 76);
 
@@ -896,7 +929,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
         );
       }
 
-      const fileName = `relatorio-peis-${selectedTenant?.name.replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
+      const fileName = `relatorio-peis-${selectedTenant?.network_name.replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
       doc.save(fileName);
 
       toast({
@@ -925,7 +958,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   };
 
   const selectedTenantName = useMemo(() => {
-    return tenants.find((t) => t.id === selectedTenantId)?.name || "";
+    return tenants.find((t) => t.id === selectedTenantId)?.network_name || "";
   }, [tenants, selectedTenantId]);
 
   const completionRate = stats.total > 0 ? Math.round((stats.peisApproved / stats.total) * 100) : 0;
@@ -990,7 +1023,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
               <SelectContent>
                 {tenants.map((tenant) => (
                   <SelectItem key={tenant.id} value={tenant.id}>
-                    {tenant.name}
+                    {tenant.network_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1065,22 +1098,22 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                     <span className="ml-2 text-sm font-medium">{stats.peisDraft}</span>
                   </div>
                   <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center" variant="yellow">Pendente</Badge>
+                    <Badge className="mr-2 w-28 justify-center bg-yellow-500/10 text-yellow-700 border-yellow-200" variant="secondary">Pendente</Badge>
                     <Progress value={(stats.peisPending / stats.total) * 100} />
                     <span className="ml-2 text-sm font-medium">{stats.peisPending}</span>
                   </div>
                   <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center" variant="blue">Validado</Badge>
+                    <Badge className="mr-2 w-28 justify-center bg-blue-500/10 text-blue-700 border-blue-200" variant="secondary">Validado</Badge>
                     <Progress value={(stats.peisValidated / stats.total) * 100} />
                     <span className="ml-2 text-sm font-medium">{stats.peisValidated}</span>
                   </div>
                   <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center" variant="orange">Aguard. Família</Badge>
+                    <Badge className="mr-2 w-28 justify-center bg-orange-500/10 text-orange-700 border-orange-200" variant="secondary">Aguard. Família</Badge>
                     <Progress value={(stats.peisPendingFamily / stats.total) * 100} />
                     <span className="ml-2 text-sm font-medium">{stats.peisPendingFamily}</span>
                   </div>
                   <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center" variant="green">Aprovado</Badge>
+                    <Badge className="mr-2 w-28 justify-center bg-green-500/10 text-green-700 border-green-200" variant="secondary">Aprovado</Badge>
                     <Progress value={(stats.peisApproved / stats.total) * 100} />
                     <span className="ml-2 text-sm font-medium">{stats.peisApproved}</span>
                   </div>
@@ -1116,7 +1149,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                     <p className="font-medium">PEIs com Novos Comentários</p>
                     <p className="text-sm text-muted-foreground">Interações para verificar</p>
                   </div>
-                  <Badge variant="yellow" className="text-lg">{stats.withComments}</Badge>
+                  <Badge variant="secondary" className="text-lg bg-yellow-500/10 text-yellow-700 border-yellow-200">{stats.withComments}</Badge>
                 </div>
                 {extendedStats && extendedStats.lateReviews > 0 && (
                   <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
@@ -1138,14 +1171,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
               <TabsList>
                 <TabsTrigger value="overview">Visão Geral</TabsTrigger>
                 <TabsTrigger value="analytics">Análises</TabsTrigger>
-                <TabsTrigger value="notifications">Notificações</TabsTrigger>
               </TabsList>
               <div className="flex items-center space-x-2">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       id="date"
-                      variant={"outline"}
+                      variant="outline"
                       className={cn(
                         "w-[240px] justify-start text-left font-normal",
                         !dateRange && "text-muted-foreground"
@@ -1154,7 +1186,9 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {dateRange?.from ? (
                         dateRange.to ? (
-                          <>{format(dateRange.from, "LLL dd, y", { locale: ptBR })} - {format(dateRange.to, "LLL dd, y", { locale: ptBR })}</>
+                          <>
+                            {format(dateRange.from, "LLL dd, y", { locale: ptBR })} - {format(dateRange.to, "LLL dd, y", { locale: ptBR })}
+                          </>
                         ) : (
                           format(dateRange.from, "LLL dd, y", { locale: ptBR })
                         )
@@ -1188,9 +1222,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                 <CardContent>
                   <PEIQueueTable 
                     peis={peis.filter(p => p.status === 'pending_validation')}
-                    onViewPEI={handleViewPEI}
+                    onViewPEI={handleViewPEIDetails}
                     onApprovePEI={handleApprovePEI}
                     onReturnPEI={handleReturnPEI}
+                    onPEIDeleted={loadTenantData}
+                    onEditPEI={handleEditPEI}
+                    onGenerateToken={handleGenerateToken}
+                    onManageTokens={handleManageTokens}
                   />
                 </CardContent>
               </Card>
@@ -1338,49 +1376,6 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                 </Card>
               </div>
             </TabsContent>
-            <TabsContent value="notifications" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Suas Notificações</CardTitle>
-                  <CardDescription>Mantenha-se atualizado com as últimas atividades.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-4">
-                      {notifications.length === 0 ? (
-                        <p className="text-muted-foreground">Nenhuma notificação.</p>
-                      ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={cn(
-                              "flex items-center justify-between p-3 rounded-lg",
-                              notification.read ? "bg-gray-100 text-gray-500" : "bg-blue-50 text-blue-800 font-medium"
-                            )}
-                          >
-                            <div>
-                              <p>{notification.message}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(notification.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                              </p>
-                            </div>
-                            {!notification.read && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleMarkNotificationAsRead(notification.id)}
-                              >
-                                Marcar como lida
-                              </Button>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </>
       )}
@@ -1392,6 +1387,21 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
           onClose={() => setDetailDialogOpen(false)}
           onStatusChange={loadTenantData}
           currentUserId={profile.id}
+        />
+      )}
+
+      {selectedPeiId && showTokenDialog && (
+        <GenerateFamilyTokenDialog
+          key={tokenDialogKey}
+          peiId={selectedPeiId}
+        />
+      )}
+
+      {selectedPeiId && showTokenManager && (
+        <FamilyTokenManager
+          key={tokenManagerKey}
+          peiId={selectedPeiId}
+          studentName={peis.find(p => p.id === selectedPeiId)?.student_name || ''}
         />
       )}
     </div>

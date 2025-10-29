@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
+import { PEITemplateSelector } from "@/components/pei/PEITemplateSelector";
 
 interface Student {
   id: string;
@@ -19,6 +20,7 @@ interface StudentIdentificationSectionProps {
   selectedStudentId: string;
   studentData: Student | null;
   onStudentChange: (studentId: string) => void;
+  onTemplateSelect?: (template: any) => void;
 }
 
 const StudentIdentificationSection = ({
@@ -26,6 +28,7 @@ const StudentIdentificationSection = ({
   selectedStudentId,
   studentData,
   onStudentChange,
+  onTemplateSelect,
 }: StudentIdentificationSectionProps) => {
   return (
     <div className="space-y-6">
@@ -40,6 +43,11 @@ const StudentIdentificationSection = ({
       <div>
         <h3 className="text-lg font-semibold mb-4">Identificação do Aluno</h3>
         <div className="space-y-4">
+          {onTemplateSelect && (
+            <div>
+              <PEITemplateSelector onTemplateSelect={onTemplateSelect} />
+            </div>
+          )}
           <div>
             <Label htmlFor="student">Selecione o Aluno *</Label>
             <Select value={selectedStudentId} onValueChange={onStudentChange}>

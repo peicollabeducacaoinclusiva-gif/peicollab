@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-type Role = 'coordinator' | 'teacher' | 'aee_teacher' | 'school_manager' | 'family'
+type Role = 'superadmin' | 'coordinator' | 'teacher' | 'aee_teacher' | 'school_manager' | 'specialist' | 'family'
 
 interface TestUser {
   email: string
@@ -60,21 +60,23 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Forbidden: Only superadmins can create/reset test users' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Pick first active tenant (optional)
-    const { data: tenant } = await supabase
-      .from('tenants')
+    // Pick first active school (optional)
+    const { data: school } = await supabase
+      .from('schools')
       .select('id')
       .eq('is_active', true)
       .limit(1)
       .maybeSingle()
 
-    const tenantId = tenant?.id ?? null
+    const schoolId = school?.id ?? null
 
     const testUsers: TestUser[] = [
+      { email: 'superadmin@teste.com', fullName: 'Admin Sistema', role: 'superadmin', password: 'Teste123' },
       { email: 'coordenador@teste.com', fullName: 'Maria Coordenadora', role: 'coordinator', password: 'Teste123' },
       { email: 'professor@teste.com', fullName: 'João Professor', role: 'teacher', password: 'Teste123' },
       { email: 'aee@teste.com', fullName: 'Ana Professora AEE', role: 'aee_teacher', password: 'Teste123' },
       { email: 'gestor@teste.com', fullName: 'Carlos Gestor Escolar', role: 'school_manager', password: 'Teste123' },
+      { email: 'especialista@teste.com', fullName: 'Dr. Pedro Especialista', role: 'specialist', password: 'Teste123' },
       { email: 'familia@teste.com', fullName: 'Pedro Família', role: 'family', password: 'Teste123' },
     ]
 
@@ -93,7 +95,7 @@ Deno.serve(async (req) => {
             user_metadata: {
               full_name: t.fullName,
               role: t.role,
-              tenant_id: tenantId,
+              school_id: schoolId,
             },
           })
           if (updErr) {
@@ -110,7 +112,7 @@ Deno.serve(async (req) => {
             user_metadata: {
               full_name: t.fullName,
               role: t.role,
-              tenant_id: tenantId,
+              school_id: schoolId,
             },
           })
           if (crtErr) {

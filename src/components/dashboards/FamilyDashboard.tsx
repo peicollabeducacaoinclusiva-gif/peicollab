@@ -8,7 +8,7 @@ interface FamilyDashboardProps {
     id: string;
     full_name: string;
     role: string;
-    tenant_id: string | null;
+    school_id: string | null;
   };
 }
 

@@ -17,6 +17,8 @@ import { useEffect, useState } from "react";
 import { format, differenceInDays, addDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { useTenant } from "@/hooks/useTenant";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -28,8 +30,11 @@ interface TeacherDashboardProps {
   profile: {
     id: string;
     full_name: string;
-    role: string;
     tenant_id: string | null;
+    school_id: string | null;
+    user_roles?: Array<{ role: string }>;
+    network_name?: string;
+    school_name?: string;
   };
 }
 
@@ -97,6 +102,10 @@ interface ExtendedStats {
 const TeacherDashboard = ({ profile }: TeacherDashboardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Novos hooks para multi-tenant
+  const { tenantInfo, schoolInfo } = useTenant();
+  const { canManageSchool, primaryRole } = usePermissions();
   const [peis, setPeis] = useState<PEIWithComments[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [studentNames, setStudentNames] = useState<Record<string, string>>({});
@@ -158,15 +167,29 @@ const TeacherDashboard = ({ profile }: TeacherDashboardProps) => {
         setStudentNames(map);
       }
 
-      // Load students with access
-      const { data: studentsAccessData } = await supabase
-        .from("student_access")
-        .select(`student_id, students (id, name, date_of_birth)`)
-        .eq("user_id", profile.id);
+      // Load students with access (nova estrutura multi-tenant)
+      let studentsList = [];
+      
+      if (profile.school_id) {
+        // Professor de escola específica - buscar estudantes da escola
+        const { data: studentsData } = await supabase
+          .from("students")
+          .select("id, name, date_of_birth")
+          .eq("school_id", profile.school_id);
+        
+        studentsList = studentsData || [];
+      } else {
+        // Professor com acesso via student_access
+        const { data: studentsAccessData } = await supabase
+          .from("student_access")
+          .select(`student_id, students (id, name, date_of_birth)`)
+          .eq("user_id", profile.id);
 
-      const studentsList = studentsAccessData
-        ?.map((item: any) => item.students)
-        .filter(Boolean) || [];
+        studentsList = studentsAccessData
+          ?.map((item: any) => item.students)
+          .filter(Boolean) || [];
+      }
+      
       setStudents(studentsList);
 
       // Load extended data
@@ -587,7 +610,13 @@ const TeacherDashboard = ({ profile }: TeacherDashboardProps) => {
           </Button>
 
           <Button
-            onClick={() => navigate("/peis")}
+            onClick={() => {
+              // Por enquanto, rolar para a seção de PEIs na mesma página
+              const peisSection = document.getElementById('peis-section');
+              if (peisSection) {
+                peisSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             className="h-auto py-4 justify-start gap-3"
             variant="outline"
           >
@@ -986,7 +1015,7 @@ const TeacherDashboard = ({ profile }: TeacherDashboardProps) => {
 
 
       {/* Recent PEIs */}
-      <Card>
+      <Card id="peis-section">
         <CardHeader>
           <div className="flex items-center justify-between flex-col md:flex-row gap-4">
             <div>

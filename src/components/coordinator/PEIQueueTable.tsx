@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Eye, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { MoreVertical, Eye, CheckCircle, XCircle, Trash2, Edit, Key, Users } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +55,9 @@ interface PEIQueueTableProps {
   onApprovePEI: (peiId: string) => void;
   onReturnPEI: (peiId: string) => void;
   onPEIDeleted: () => void;
+  onEditPEI?: (peiId: string, studentId: string) => void;
+  onGenerateToken?: (peiId: string) => void;
+  onManageTokens?: (peiId: string) => void;
 }
 
 const PEIQueueTable = ({
@@ -63,6 +66,9 @@ const PEIQueueTable = ({
   onApprovePEI,
   onReturnPEI,
   onPEIDeleted,
+  onEditPEI,
+  onGenerateToken,
+  onManageTokens,
 }: PEIQueueTableProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [peiToDelete, setPeiToDelete] = useState<PEI | null>(null);
@@ -197,6 +203,36 @@ const PEIQueueTable = ({
                         <Eye className="mr-2 h-4 w-4" />
                         Ver Detalhes
                       </DropdownMenuItem>
+
+                      {onEditPEI && (
+                        <DropdownMenuItem
+                          onClick={() => onEditPEI(pei.id, pei.student_id)}
+                          className="text-blue-600"
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Editar PEI
+                        </DropdownMenuItem>
+                      )}
+
+                      {onGenerateToken && (
+                        <DropdownMenuItem
+                          onClick={() => onGenerateToken(pei.id)}
+                          className="text-purple-600"
+                        >
+                          <Key className="mr-2 h-4 w-4" />
+                          Gerar Token
+                        </DropdownMenuItem>
+                      )}
+
+                      {onManageTokens && (
+                        <DropdownMenuItem
+                          onClick={() => onManageTokens(pei.id)}
+                          className="text-indigo-600"
+                        >
+                          <Users className="mr-2 h-4 w-4" />
+                          Gerenciar Tokens
+                        </DropdownMenuItem>
+                      )}
 
                       {canApprove(pei.status) && (
                         <DropdownMenuItem

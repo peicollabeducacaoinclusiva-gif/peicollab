@@ -24,12 +24,13 @@ const DebugUser = () => {
 
     if (!user) return;
 
-    // 2. Roles do usuário
-    const { data: rolesData } = await supabase
-      .from("user_roles")
-      .select("*")
-      .eq("user_id", user.id);
-    setRoles(rolesData || []);
+    // 2. Roles do usuário (da tabela profiles)
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    setRoles(profileData ? [{ role: profileData.role }] : []);
 
     // 3. Tenants associados
     const { data: tenantsData } = await supabase
@@ -42,12 +43,12 @@ const DebugUser = () => {
     setTenants(tenantsData || []);
 
     // 4. Profile
-    const { data: profileData } = await supabase
+    const { data: fullProfileData } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
-    setProfile(profileData);
+    setProfile(fullProfileData);
   };
 
   const copyToClipboard = (text: string) => {
@@ -154,7 +155,7 @@ const DebugUser = () => {
             ) : (
               <div className="mt-2 text-sm space-y-1">
                 <p>• Nome: {profile.full_name}</p>
-                <p>• Role (profiles): {profile.role}</p>
+                <p>• Role (user_roles): {profile.user_roles?.[0]?.role || 'Nenhum'}</p>
                 <p>• Tenant ID: {profile.tenant_id || "Nenhum"}</p>
                 <p>• Ativo: {profile.is_active ? "Sim" : "Não"}</p>
               </div>
@@ -172,16 +173,16 @@ const DebugUser = () => {
                       1. Adicionar Role de Coordenador:
                     </p>
                     <code className="text-xs block bg-gray-100 p-2 rounded overflow-x-auto">
-                      {`INSERT INTO user_roles (user_id, role)
-VALUES ('${userData.id}', 'coordinator'::app_role)
-ON CONFLICT (user_id, role) DO NOTHING;`}
+                      {`UPDATE profiles 
+SET role = 'coordinator' 
+WHERE id = '${userData.id}';`}
                     </code>
                     <Button
                       size="sm"
                       className="mt-2"
                       onClick={() =>
                         copyToClipboard(
-                          `INSERT INTO user_roles (user_id, role) VALUES ('${userData.id}', 'coordinator'::app_role) ON CONFLICT (user_id, role) DO NOTHING;`
+                          `INSERT INTO user_roles (user_id, role) VALUES ('${userData.id}', 'coordinator');`
                         )
                       }
                     >

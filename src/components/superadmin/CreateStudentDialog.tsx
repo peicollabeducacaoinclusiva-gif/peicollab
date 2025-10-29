@@ -25,9 +25,10 @@ import { UserPlus } from "lucide-react";
 interface CreateStudentDialogProps {
   tenants: any[];
   onStudentCreated: () => void;
+  schoolId?: string;
 }
 
-const CreateStudentDialog = ({ tenants, onStudentCreated }: CreateStudentDialogProps) => {
+const CreateStudentDialog = ({ tenants, onStudentCreated, schoolId }: CreateStudentDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -44,7 +45,7 @@ const CreateStudentDialog = ({ tenants, onStudentCreated }: CreateStudentDialogP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.tenantId) {
+    if (!schoolId && !formData.tenantId) {
       toast({
         title: "Erro",
         description: "Selecione uma escola para o aluno.",
@@ -56,17 +57,40 @@ const CreateStudentDialog = ({ tenants, onStudentCreated }: CreateStudentDialogP
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("students").insert({
+      const studentData: any = {
         name: formData.name,
         date_of_birth: formData.dateOfBirth || null,
         father_name: formData.fatherName || null,
         mother_name: formData.motherName || null,
         phone: formData.phone || null,
         email: formData.email || null,
-        tenant_id: formData.tenantId,
-      });
+      };
 
-      if (error) throw error;
+      // Se schoolId está disponível, buscar tenant_id da escola
+      if (schoolId) {
+        studentData.school_id = schoolId;
+        // Buscar tenant_id da escola
+        const { data: schoolData } = await supabase
+          .from('schools')
+          .select('tenant_id')
+          .eq('id', schoolId)
+          .single();
+        
+        if (schoolData?.tenant_id) {
+          studentData.tenant_id = schoolData.tenant_id;
+        } else {
+          throw new Error('Não foi possível determinar a rede da escola');
+        }
+      } else {
+        studentData.tenant_id = formData.tenantId;
+      }
+
+      const { error } = await supabase.from("students").insert(studentData);
+
+      if (error) {
+        console.error('❌ Erro ao inserir aluno:', error);
+        throw error;
+      }
 
       toast({
         title: "Aluno cadastrado!",
@@ -104,25 +128,27 @@ const CreateStudentDialog = ({ tenants, onStudentCreated }: CreateStudentDialogP
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="tenant">Escola *</Label>
-              <Select
-                value={formData.tenantId}
-                onValueChange={(value) => setFormData({ ...formData, tenantId: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a escola" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tenants.map((tenant) => (
-                    <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!schoolId && (
+              <div className="grid gap-2">
+                <Label htmlFor="tenant">Escola *</Label>
+                <Select
+                  value={formData.tenantId}
+                  onValueChange={(value) => setFormData({ ...formData, tenantId: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a escola" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tenants.map((tenant) => (
+                      <SelectItem key={tenant.id} value={tenant.id}>
+                        {tenant.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="name">Nome Completo *</Label>
               <Input

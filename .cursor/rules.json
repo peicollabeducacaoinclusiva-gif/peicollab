@@ -1,0 +1,73 @@
+{
+    "rules": [
+      {
+        "description": "Sempre responda em português claro e técnico.",
+        "appliesTo": ["*"]
+      },
+      {
+        "description": "Use sempre funções RPC para manipular dados sensíveis: user_can_access_pei, has_role, create_pei_version, validate_family_token, generate_secure_token, hash_token. Nunca execute SELECT direto sobre students ou peis sem validação RLS.",
+        "appliesTo": ["code/sql", "code/ts", "code/js"]
+      },
+      {
+        "description": "Respeite a máquina de estados do PEI: draft → pending → approved/returned. Não permita UPDATE em PEIs com status approved, exceto via trigger create_pei_version.",
+        "appliesTo": ["code/sql", "code/ts"]
+      },
+      {
+        "description": "Gere código em TypeScript + React (Vite). Utilize o Supabase Client (v2) para chamadas. Prefira sempre Tailwind CSS e componentes shadcn/ui.",
+        "appliesTo": ["code/ts", "code/js", "code/react"]
+      },
+      {
+        "description": "Siga a estrutura de pastas: src/components, src/pages, src/hooks, src/lib e supabase/functions. Crie novos componentes dentro do domínio correto (ex: coordinator/, pei/, shared/).",
+        "appliesTo": ["code/react"]
+      },
+      {
+        "description": "Nunca exponha tokens ou hashes em tela. Exiba apenas metadados (created_at, expires_at, access_count). Tokens devem ser mostrados uma única vez, conforme o componente FamilyTokenManager.",
+        "appliesTo": ["code/react", "code/ts"]
+      },
+      {
+        "description": "Para interações com famílias, use sempre RPC validate_family_token e respeite o campo expires_at (não aceite tokens expirados).",
+        "appliesTo": ["code/sql", "code/ts"]
+      },
+      {
+        "description": "Ao gerar novas features, mantenha o fluxo multi-tenant: todas queries devem filtrar por tenant_id obtido via get_user_tenant_safe(_user_id).",
+        "appliesTo": ["code/sql", "code/ts"]
+      },
+      {
+        "description": "Mantenha logs e histórico de alterações via trigger create_pei_version. Nunca atualize pei_history manualmente.",
+        "appliesTo": ["code/sql"]
+      },
+      {
+        "description": "Crie novas funções com segurança RLS. Verifique sempre user_can_access_pei antes de retornar qualquer dado de PEI ou estudante.",
+        "appliesTo": ["code/sql"]
+      },
+      {
+        "description": "Em interfaces com coordenadores, mostre opções de Aprovar e Devolver apenas se status === 'pending'.",
+        "appliesTo": ["code/react"]
+      },
+      {
+        "description": "Ao sugerir componentes de UI, utilize ícones do Lucide e mantenha semântica visual consistente (Cards, Tabs, Badges, Buttons, etc.).",
+        "appliesTo": ["code/react"]
+      },
+      {
+        "description": "Qualquer acesso a dados PII (nomes, contatos, histórico) deve ser encapsulado em hooks com verificação de RLS, ex: useSecureStudentData().",
+        "appliesTo": ["code/ts", "code/react"]
+      },
+      {
+        "description": "Evite criar funções de CRUD diretas; utilize RPCs ou triggers preexistentes (create_pei_version, notify_pei_update, update_student_access_on_pei).",
+        "appliesTo": ["code/sql", "code/ts"]
+      },
+      {
+        "description": "Prefira consultas otimizadas com .select(…) e filtros explícitos (.eq, .gte, .lte). Nunca use .select('*').",
+        "appliesTo": ["code/ts"]
+      },
+      {
+        "description": "Padronize datas no formato 'dd/MM/yyyy' e textos sempre localizados em português.",
+        "appliesTo": ["code/react"]
+      },
+      {
+        "description": "Qualquer modificação de UI que envolva estados (PEI, token, reunião, orientação) deve usar React Query para sincronização de cache e toasts para feedback.",
+        "appliesTo": ["code/react"]
+      }
+    ]
+  }
+  

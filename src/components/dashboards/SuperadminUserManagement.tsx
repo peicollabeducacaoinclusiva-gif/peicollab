@@ -22,10 +22,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Search, Edit, Trash2, Building2 } from "lucide-react";
+import { Users, Search, Edit, Trash2, Building2, UserPlus, CheckCircle, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-type UserRole = "superadmin" | "coordinator" | "teacher" | "family" | "school_manager" | "aee_teacher";
+type UserRole = "superadmin" | "coordinator" | "teacher" | "family" | "school_manager" | "aee_teacher" | "specialist";
 
 interface UserProfile {
   id: string;
@@ -42,7 +43,7 @@ interface UserWithDetails extends UserProfile {
 
 interface Tenant {
   id: string;
-  name: string;
+  network_name: string;
 }
 
 const SuperadminUserManagement = () => {
@@ -71,8 +72,8 @@ const SuperadminUserManagement = () => {
     try {
       const { data, error } = await supabase
         .from("tenants")
-        .select("id, name")
-        .order("name");
+        .select("id, network_name")
+        .order("network_name");
 
       if (error) throw error;
       setTenants(data || []);
@@ -88,60 +89,47 @@ const SuperadminUserManagement = () => {
       // Buscar profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, full_name, is_active")
+        .select(`
+          id, 
+          full_name, 
+          is_active,
+          user_roles(role)
+        `)
         .order("full_name");
 
-      if (profilesError) {
-        console.error("Erro ao carregar profiles:", profilesError);
-        throw profilesError;
-      }
+      if (profilesError) throw profilesError;
 
-      console.log("Profiles carregados:", profilesData?.length);
-
-      // Buscar roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-
-      if (rolesError) {
-        console.error("Erro ao carregar roles:", rolesError);
-        throw rolesError;
-      }
-
-      console.log("Roles carregados:", rolesData?.length);
+      // Mapear roles da nova estrutura
+      const rolesData = profilesData?.map(profile => ({
+        user_id: profile.id,
+        role: profile.user_roles?.[0]?.role || 'teacher'
+      })) || [];
 
       // Buscar tenants dos usuários
       const { data: userTenantsData, error: userTenantsError } = await supabase
         .from("user_tenants")
-        .select("user_id, tenant_id, tenants(name)");
+        .select("user_id, tenant_id, tenants(network_name)");
 
-      if (userTenantsError) {
-        console.error("Erro ao carregar user_tenants:", userTenantsError);
-        throw userTenantsError;
+      if (userTenantsError) throw userTenantsError;
+
+      // Buscar emails via RPC
+      let emailsData: any[] = [];
+      try {
+        const { data, error } = await (supabase.rpc as any)('get_users_with_emails');
+        if (!error && data) {
+          emailsData = data;
+        }
+      } catch (error) {
+        console.warn("Não foi possível carregar emails:", error);
       }
 
-      console.log("User tenants carregados:", userTenantsData?.length);
-
-      // Buscar emails via RPC (função segura no backend)
-      const { data: emailsData, error: emailsError } = await (supabase.rpc as any)('get_users_with_emails');
-
-
-      if (emailsError) {
-        console.warn("Aviso ao carregar emails:", emailsError);
-        console.log("Continuando sem emails...");
-      }
-
-      console.log("Emails carregados:", emailsData?.length || 0);
-
-      // Mapear dados com tipagem correta
+      // Criar mapas para facilitar o acesso aos dados
       const emailsMap = new Map<string, string>();
-      if (emailsData) {
-        emailsData.forEach((item: any) => {
-          if (item.user_id && item.email) {
-            emailsMap.set(item.user_id, item.email);
-          }
-        });
-      }
+      emailsData.forEach((item: any) => {
+        if (item.user_id && item.email) {
+          emailsMap.set(item.user_id, item.email);
+        }
+      });
 
       const rolesMap = new Map<string, UserRole>();
       if (rolesData) {
@@ -164,7 +152,7 @@ const SuperadminUserManagement = () => {
             if (tenants && ut.tenant_id) {
               tenants.push({
                 id: ut.tenant_id,
-                name: ut.tenants?.name || "Nome não encontrado"
+                name: ut.tenants?.network_name || "Nome não encontrado"
               });
             }
           }
@@ -176,6 +164,8 @@ const SuperadminUserManagement = () => {
         const userTenants = userTenantsMap.get(profile.id) || [];
         const email = emailsMap.get(profile.id);
         
+        // Tenant_id não existe na tabela profiles, usar apenas user_tenants
+        
         return {
           ...profile,
           email: email || undefined,
@@ -185,7 +175,6 @@ const SuperadminUserManagement = () => {
         };
       });
 
-      console.log("Usuários enriquecidos:", enrichedUsers.length);
       setUsers(enrichedUsers);
     } catch (error: any) {
       console.error("Erro ao carregar usuários:", error);
@@ -213,7 +202,7 @@ const SuperadminUserManagement = () => {
     if (!selectedUser) return;
 
     try {
-      // Atualizar profile
+      // Atualizar profile (is_active)
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -223,28 +212,21 @@ const SuperadminUserManagement = () => {
 
       if (profileError) throw profileError;
 
-      // Atualizar ou inserir role
+      // Atualizar role na tabela user_roles
       const { error: roleError } = await supabase
         .from("user_roles")
-        .upsert(
-          {
-            user_id: selectedUser.id,
-            role: editFormData.role,
-          },
-          {
-            onConflict: "user_id,role",
-          }
-        );
+        .upsert({
+          user_id: selectedUser.id,
+          role: editFormData.role,
+        }, { onConflict: 'user_id' });
 
       if (roleError) throw roleError;
 
       // Remover associações antigas de tenants
-      const { error: deleteError } = await supabase
+      await supabase
         .from("user_tenants")
         .delete()
         .eq("user_id", selectedUser.id);
-
-      if (deleteError) throw deleteError;
 
       // Adicionar novas associações de tenants
       if (editFormData.tenant_ids.length > 0) {
@@ -255,14 +237,14 @@ const SuperadminUserManagement = () => {
 
         const { error: insertError } = await supabase
           .from("user_tenants")
-          .insert(tenantAssociations);
+          .insert(tenantAssociations as any);
 
         if (insertError) throw insertError;
       }
 
       toast({
-        title: "Usuário atualizado",
-        description: "As alterações foram salvas com sucesso.",
+        title: "Usuário atualizado com sucesso!",
+        description: `${selectedUser.full_name} foi atualizado.`,
       });
 
       setIsEditDialogOpen(false);
@@ -277,19 +259,23 @@ const SuperadminUserManagement = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.")) {
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir ${userName}? Esta ação não pode ser desfeita.`)) {
       return;
     }
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      // Primeiro deletar de profiles (CASCADE vai deletar o resto)
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
 
       if (error) throw error;
 
       toast({
         title: "Usuário excluído",
-        description: "O usuário foi removido com sucesso.",
+        description: `${userName} foi removido com sucesso.`,
       });
 
       loadUsers();
@@ -316,12 +302,13 @@ const SuperadminUserManagement = () => {
 
   const getRoleBadgeColor = (role: UserRole) => {
     const colors: Record<UserRole, string> = {
-      superadmin: "bg-purple-500 text-white",
-      coordinator: "bg-blue-500 text-white",
-      school_manager: "bg-indigo-500 text-white",
-      aee_teacher: "bg-green-500 text-white",
-      teacher: "bg-yellow-500 text-white",
-      family: "bg-pink-500 text-white",
+      superadmin: "bg-purple-500 text-white hover:bg-purple-600",
+      coordinator: "bg-blue-500 text-white hover:bg-blue-600",
+      school_manager: "bg-indigo-500 text-white hover:bg-indigo-600",
+      aee_teacher: "bg-green-500 text-white hover:bg-green-600",
+      teacher: "bg-yellow-500 text-white hover:bg-yellow-600",
+      family: "bg-pink-500 text-white hover:bg-pink-600",
+      specialist: "bg-teal-500 text-white hover:bg-teal-600",
     };
     return colors[role] || "bg-gray-500";
   };
@@ -334,6 +321,7 @@ const SuperadminUserManagement = () => {
       aee_teacher: "Professor AEE",
       teacher: "Professor",
       family: "Família",
+      specialist: "Especialista",
     };
     return labels[role] || role;
   };
@@ -345,6 +333,10 @@ const SuperadminUserManagement = () => {
       user.tenant_names.some(name => name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Separar usuários ativos e inativos
+  const activeUsers = filteredUsers.filter(u => u.is_active);
+  const inactiveUsers = filteredUsers.filter(u => !u.is_active);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -353,35 +345,6 @@ const SuperadminUserManagement = () => {
           <p className="text-muted-foreground">Carregando usuários...</p>
         </div>
       </div>
-    );
-  }
-
-  if (users.length === 0 && !loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-6 w-6" />
-            Gerenciamento de Usuários
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-2">Nenhum usuário encontrado</p>
-            <p className="text-sm text-muted-foreground">
-              Os usuários aparecerão aqui após o primeiro login
-            </p>
-            <Button 
-              onClick={loadUsers} 
-              variant="outline" 
-              className="mt-4"
-            >
-              Recarregar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     );
   }
 
@@ -396,7 +359,7 @@ const SuperadminUserManagement = () => {
                 Gerenciamento de Usuários
               </CardTitle>
               <CardDescription>
-                Gerencie usuários, roles e associe-os a múltiplas instituições
+                Gerencie usuários, ative contas e associe a instituições
               </CardDescription>
             </div>
             <Button 
@@ -408,7 +371,34 @@ const SuperadminUserManagement = () => {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Estatísticas rápidas */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg border bg-card">
+              <div className="text-2xl font-bold text-primary">{users.length}</div>
+              <p className="text-sm text-muted-foreground">Total de usuários</p>
+            </div>
+            <div className="p-4 rounded-lg border bg-green-50 dark:bg-green-950">
+              <div className="text-2xl font-bold text-green-600">{activeUsers.length}</div>
+              <p className="text-sm text-muted-foreground">Usuários ativos</p>
+            </div>
+            <div className="p-4 rounded-lg border bg-orange-50 dark:bg-orange-950">
+              <div className="text-2xl font-bold text-orange-600">{inactiveUsers.length}</div>
+              <p className="text-sm text-muted-foreground">Aguardando ativação</p>
+            </div>
+          </div>
+
+          {/* Alerta para usuários inativos */}
+          {inactiveUsers.length > 0 && (
+            <Alert>
+              <UserPlus className="h-4 w-4" />
+              <AlertDescription>
+                Você tem <strong>{inactiveUsers.length}</strong> usuário(s) aguardando ativação. 
+                Clique no botão de editar para ativar e associar a uma instituição.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -421,103 +411,193 @@ const SuperadminUserManagement = () => {
             </div>
           </div>
 
-          <div className="rounded-lg border bg-card">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="border-b bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Nome</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Email</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Role</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Instituições</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                        Nenhum usuário encontrado
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-muted/50">
-                        <td className="px-4 py-3 font-medium">{user.full_name}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-sm">
-                          {user.email || "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge className={getRoleBadgeColor(user.role)}>
-                            {getRoleLabel(user.role)}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          {user.tenant_names.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {user.tenant_names.slice(0, 2).map((name, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs">
-                                  {name}
-                                </Badge>
-                              ))}
-                              {user.tenant_names.length > 2 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{user.tenant_names.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">
-                              Sem instituição
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant={user.is_active ? "default" : "secondary"}>
-                            {user.is_active ? "Ativo" : "Inativo"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditUser(user)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteUser(user.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </td>
+          {/* Usuários Inativos (Prioridade) */}
+          {inactiveUsers.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-orange-500" />
+                Aguardando Ativação ({inactiveUsers.length})
+              </h3>
+              <div className="rounded-lg border bg-orange-50 dark:bg-orange-950/20">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b bg-orange-100 dark:bg-orange-900/30">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Nome</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Email</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Role</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Instituições</th>
+                        <th className="px-4 py-3 text-right text-sm font-medium">Ações</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y">
+                      {inactiveUsers.map((user) => (
+                        <tr key={user.id} className="hover:bg-orange-100/50 dark:hover:bg-orange-900/20">
+                          <td className="px-4 py-3 font-medium">{user.full_name}</td>
+                          <td className="px-4 py-3 text-muted-foreground text-sm">
+                            {user.email || "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge className={getRoleBadgeColor(user.role)}>
+                              {getRoleLabel(user.role)}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            {user.tenant_names.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {user.tenant_names.slice(0, 2).map((name, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {name}
+                                  </Badge>
+                                ))}
+                                {user.tenant_names.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{user.tenant_names.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-orange-600 text-sm font-medium">
+                                ⚠️ Sem instituição
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleEditUser(user)}
+                              >
+                                <UserPlus className="h-4 w-4 mr-1" />
+                                Ativar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteUser(user.id, user.full_name)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Usuários Ativos */}
+          {activeUsers.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                Usuários Ativos ({activeUsers.length})
+              </h3>
+              <div className="rounded-lg border bg-card">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b bg-muted/50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Nome</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Email</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Role</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Instituições</th>
+                        <th className="px-4 py-3 text-right text-sm font-medium">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {activeUsers.map((user) => (
+                        <tr key={user.id} className="hover:bg-muted/50">
+                          <td className="px-4 py-3 font-medium">{user.full_name}</td>
+                          <td className="px-4 py-3 text-muted-foreground text-sm">
+                            {user.email || "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge className={getRoleBadgeColor(user.role)}>
+                              {getRoleLabel(user.role)}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            {user.tenant_names.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {user.tenant_names.slice(0, 2).map((name, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {name}
+                                  </Badge>
+                                ))}
+                                {user.tenant_names.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{user.tenant_names.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                Sem instituição
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditUser(user)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteUser(user.id, user.full_name)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-2">Nenhum usuário encontrado</p>
+              <p className="text-sm text-muted-foreground">
+                {searchTerm ? "Tente uma busca diferente" : "Os usuários aparecerão aqui após o cadastro"}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Dialog de Edição */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogTitle>
+              {selectedUser?.is_active ? "Editar Usuário" : "Ativar Usuário"}
+            </DialogTitle>
             <DialogDescription>
-              Altere o role, instituições e status de {selectedUser?.full_name}
+              {selectedUser?.is_active 
+                ? `Altere as configurações de ${selectedUser?.full_name}`
+                : `Configure e ative a conta de ${selectedUser?.full_name}`
+              }
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">Função (Role)</Label>
               <Select
                 value={editFormData.role}
                 onValueChange={(value: UserRole) =>
@@ -525,7 +605,7 @@ const SuperadminUserManagement = () => {
                 }
               >
                 <SelectTrigger id="role">
-                  <SelectValue placeholder="Selecione o role" />
+                  <SelectValue placeholder="Selecione a função" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="superadmin">Superadmin</SelectItem>
@@ -533,6 +613,7 @@ const SuperadminUserManagement = () => {
                   <SelectItem value="school_manager">Gestor Escolar</SelectItem>
                   <SelectItem value="aee_teacher">Professor AEE</SelectItem>
                   <SelectItem value="teacher">Professor</SelectItem>
+                  <SelectItem value="specialist">Especialista</SelectItem>
                   <SelectItem value="family">Família</SelectItem>
                 </SelectContent>
               </Select>
@@ -543,12 +624,19 @@ const SuperadminUserManagement = () => {
                 <Building2 className="h-4 w-4 text-muted-foreground" />
                 <Label>Instituições (selecione uma ou mais)</Label>
               </div>
+              {!selectedUser?.is_active && editFormData.tenant_ids.length === 0 && (
+                <Alert>
+                  <AlertDescription className="text-sm">
+                    ⚠️ É necessário selecionar pelo menos uma instituição para ativar o usuário.
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="border rounded-lg p-4 space-y-2 max-h-64 overflow-y-auto">
                 {tenants.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma instituição cadastrada</p>
                 ) : (
                   tenants.map((tenant) => (
-                    <div key={tenant.id} className="flex items-center space-x-2">
+                    <div key={tenant.id} className="flex items-center space-x-2 p-2 hover:bg-accent rounded">
                       <Checkbox
                         id={tenant.id}
                         checked={editFormData.tenant_ids.includes(tenant.id)}
@@ -556,9 +644,9 @@ const SuperadminUserManagement = () => {
                       />
                       <label
                         htmlFor={tenant.id}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                       >
-                        {tenant.name}
+                        {tenant.network_name}
                       </label>
                     </div>
                   ))
@@ -569,7 +657,7 @@ const SuperadminUserManagement = () => {
               </p>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/50">
               <Checkbox
                 id="is_active"
                 checked={editFormData.is_active}
@@ -577,8 +665,11 @@ const SuperadminUserManagement = () => {
                   setEditFormData({ ...editFormData, is_active: checked as boolean })
                 }
               />
-              <Label htmlFor="is_active" className="cursor-pointer">
-                Usuário ativo
+              <Label htmlFor="is_active" className="cursor-pointer flex-1">
+                <div className="font-semibold">Usuário ativo</div>
+                <div className="text-xs text-muted-foreground">
+                  Usuários ativos podem fazer login no sistema
+                </div>
               </Label>
             </div>
           </div>
@@ -587,7 +678,12 @@ const SuperadminUserManagement = () => {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveUser}>Salvar Alterações</Button>
+            <Button 
+              onClick={handleSaveUser}
+              disabled={!editFormData.is_active && editFormData.tenant_ids.length === 0}
+            >
+              {selectedUser?.is_active ? "Salvar Alterações" : "Ativar Usuário"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

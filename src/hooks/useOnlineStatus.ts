@@ -1,33 +1,81 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
-/**
- * Hook que monitora o status de conexão com a internet
- * @returns {boolean} true se online, false se offline
- */
+interface OnlineStatus {
+  isOnline: boolean;
+  isReconnecting: boolean;
+  lastOnlineTime: number;
+  connectionType?: string;
+}
+
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [status, setStatus] = useState<OnlineStatus>({
+    isOnline: navigator.onLine,
+    isReconnecting: false,
+    lastOnlineTime: Date.now()
+  });
 
   useEffect(() => {
-    function handleOnline() {
-      setIsOnline(true);
-      console.log('✅ Conexão restabelecida');
-    }
+    const handleOnline = () => {
+      setStatus(prev => ({
+        ...prev,
+        isOnline: true,
+        isReconnecting: false,
+        lastOnlineTime: Date.now()
+      }));
+    };
 
-    function handleOffline() {
-      setIsOnline(false);
-      console.log('❌ Conexão perdida');
-    }
+    const handleOffline = () => {
+      setStatus(prev => ({
+        ...prev,
+        isOnline: false,
+        isReconnecting: true
+      }));
+    };
 
-    // Adiciona listeners para eventos de online/offline
+    // Detectar mudanças na conexão
+    const handleConnectionChange = () => {
+      if (navigator.onLine) {
+        handleOnline();
+      } else {
+        handleOffline();
+      }
+    };
+
+    // Detectar tipo de conexão (se disponível)
+    const updateConnectionType = () => {
+      if ('connection' in navigator) {
+        const connection = (navigator as any).connection;
+        setStatus(prev => ({
+          ...prev,
+          connectionType: connection?.effectiveType || 'unknown'
+        }));
+      }
+    };
+
+    // Event listeners
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    window.addEventListener('visibilitychange', handleConnectionChange);
 
-    // Cleanup: remove listeners quando o componente desmontar
+    // Detectar mudanças na conexão
+    if ('connection' in navigator) {
+      const connection = (navigator as any).connection;
+      connection?.addEventListener('change', updateConnectionType);
+      updateConnectionType();
+    }
+
+    // Cleanup
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('visibilitychange', handleConnectionChange);
+      
+      if ('connection' in navigator) {
+        const connection = (navigator as any).connection;
+        connection?.removeEventListener('change', updateConnectionType);
+      }
     };
   }, []);
 
-  return isOnline;
+  return status;
 }

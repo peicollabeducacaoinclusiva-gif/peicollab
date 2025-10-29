@@ -62,10 +62,24 @@ const EditUserDialog = ({ user, tenants, open, onClose, onUserUpdated }: EditUse
         .from("profiles")
         .update({
           full_name: formData.fullName,
-          role: formData.role,
           tenant_id: formData.tenantId || null,
         })
         .eq("id", user.id);
+
+      // Atualizar role na tabela user_roles
+      if (!error) {
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .upsert({
+            user_id: user.id,
+            role: formData.role,
+          }, { onConflict: 'user_id' });
+
+        if (roleError) {
+          console.error("Erro ao atualizar role:", roleError);
+          throw roleError;
+        }
+      }
 
       if (error) throw error;
 

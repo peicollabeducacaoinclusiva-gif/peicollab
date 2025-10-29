@@ -1,0 +1,16 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:8081/dashboard",
+  "executionArgs": {
+    "projectName": "pei-collab",
+    "projectPath": "C:\\workspace\\Nexus\\pei-collab",
+    "testIds": [],
+    "additionalInstruction": "Teste todas as funcionalidades principais do PEI Collab, incluindo autenticação, dashboards por role, criação de PEIs, gestão de alunos, funcionalidades offline e PWA. Foque especialmente na experiência mobile-first e na funcionalidade offline.",
+    "envs": {
+      "API_KEY": "sk-user-rd10QciPNk8KAXCI--eIQb51S3DgQhZ0Zht-4vmZusSIvpopo4NazUR57JbFThDuhnMUrB1jT2MvwCDyEl10XlAgmrwzMqWDML4XLasWLjUSNuSUinerWXVj04fm8LZoN1s"
+    }
+  },
+  "proxy": "http://df3c738f-3ea7-4eab-b555-fc617edd4266:QuFBsUjvvdisPV1lyScBZxb7fyX8p2Bo@tun.testsprite.com:8080"
+}

@@ -4,7 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye, Trash2, Search, Filter } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +41,10 @@ const PEIsTable = ({ peis, onPEIDeleted }: PEIsTableProps) => {
   const [peiToDelete, setPeiToDelete] = useState<any | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const itemsPerPage = 10;
+
 
   const handleDeleteClick = (pei: any) => {
     setPeiToDelete(pei);
@@ -77,23 +82,51 @@ const PEIsTable = ({ peis, onPEIDeleted }: PEIsTableProps) => {
     }
   };
 
-  if (peis.length === 0) {
+  // Filtrar PEIs
+  const filteredPEIs = (peis || []).filter(pei => {
+    if (!pei) return false;
+    
+    const studentName = pei.students?.name || '';
+    const teacherName = pei.assigned_teacher?.full_name || '';
+    
+    const matchesSearch = !searchTerm || 
+      studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacherName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || pei.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  if (!peis || peis.length === 0) {
     return (
-      <p className="text-center text-muted-foreground py-8">
-        Nenhum PEI cadastrado
-      </p>
+      <div className="text-center py-8 text-muted-foreground">
+        <p>Nenhum PEI cadastrado</p>
+        <p className="text-sm mt-2">Os PEIs aparecerão aqui quando forem criados</p>
+      </div>
     );
   }
 
-  const totalPages = Math.ceil(peis.length / itemsPerPage);
+  if (filteredPEIs.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>Nenhum PEI encontrado com os filtros aplicados</p>
+        <p className="text-sm mt-2">Tente ajustar os filtros de busca</p>
+      </div>
+    );
+  }
+
+  const totalPages = Math.ceil(filteredPEIs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentPEIs = peis.slice(startIndex, endIndex);
+  const currentPEIs = filteredPEIs.slice(startIndex, endIndex);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "outline" | "destructive", label: string }> = {
       draft: { variant: "secondary", label: "Rascunho" },
-      pending: { variant: "default", label: "Pendente" },
+      pending_validation: { variant: "default", label: "Pendente Validação" },
+      validated: { variant: "outline", label: "Validado" },
+      pending_family: { variant: "outline", label: "Aguardando Família" },
       approved: { variant: "outline", label: "Aprovado" },
       returned: { variant: "destructive", label: "Devolvido" },
     };
@@ -105,33 +138,144 @@ const PEIsTable = ({ peis, onPEIDeleted }: PEIsTableProps) => {
   return (
     <>
     <div className="space-y-4">
+      {/* Filtros */}
+      <div className="flex gap-2 mb-4">
+        <div className="flex-1">
+          <Input
+            placeholder="Buscar por aluno ou professor..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filtrar por status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="draft">Rascunho</SelectItem>
+            <SelectItem value="pending_validation">Pendente Validação</SelectItem>
+            <SelectItem value="validated">Validado</SelectItem>
+            <SelectItem value="pending_family">Aguardando Família</SelectItem>
+            <SelectItem value="approved">Aprovado</SelectItem>
+            <SelectItem value="returned">Devolvido</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Aluno</TableHead>
-            <TableHead>Escola</TableHead>
-            <TableHead>Professor</TableHead>
+            <TableHead>Professor Responsável</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Criado em</TableHead>
+            <TableHead>Última Atualização</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {currentPEIs.map((pei) => (
-          <TableRow key={pei.id}>
-            <TableCell className="font-medium">{pei.student_name}</TableCell>
-            <TableCell>{pei.tenant_name}</TableCell>
-            <TableCell>{pei.teacher_name}</TableCell>
+          {currentPEIs.map((pei) => {
+            if (!pei || !pei.id) return null;
+            
+            return (
+            <TableRow key={pei.id}>
+            <TableCell className="font-medium">
+              <div>
+                <div className="font-semibold">
+                  {pei.students?.name || 'Nome não disponível'}
+                </div>
+                {pei.students?.date_of_birth && (
+                  <div className="text-sm text-muted-foreground">
+                    Nascido em: {(() => {
+                      try {
+                        return format(new Date(pei.students.date_of_birth), "dd/MM/yyyy");
+                      } catch {
+                        return 'Data inválida';
+                      }
+                    })()}
+                  </div>
+                )}
+                {!pei.students && (
+                  <div className="text-sm text-red-500">
+                    Dados do aluno não encontrados
+                  </div>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div>
+                <div className="font-medium">
+                  {pei.assigned_teacher?.full_name || 'Não atribuído'}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {pei.created_by !== pei.assigned_teacher_id ? 
+                    `Criado por: ${pei.created_by_profile?.full_name || 'Sistema'}` : 
+                    'Responsável'
+                  }
+                </div>
+                {!pei.assigned_teacher && (
+                  <div className="text-sm text-red-500">
+                    Dados do professor não encontrados
+                  </div>
+                )}
+              </div>
+            </TableCell>
             <TableCell>{getStatusBadge(pei.status)}</TableCell>
             <TableCell>
-              {format(new Date(pei.created_at), "dd/MM/yyyy")}
+              <div className="text-sm">
+                {pei.created_at ? (() => {
+                  try {
+                    return format(new Date(pei.created_at), "dd/MM/yyyy");
+                  } catch {
+                    return 'Data inválida';
+                  }
+                })() : 'N/A'}
+                <div className="text-muted-foreground">
+                  {pei.created_at ? (() => {
+                    try {
+                      return format(new Date(pei.created_at), "HH:mm");
+                    } catch {
+                      return '';
+                    }
+                  })() : ''}
+                </div>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                {pei.updated_at ? (() => {
+                  try {
+                    return format(new Date(pei.updated_at), "dd/MM/yyyy");
+                  } catch {
+                    return 'Data inválida';
+                  }
+                })() : 'N/A'}
+                <div className="text-muted-foreground">
+                  {pei.updated_at ? (() => {
+                    try {
+                      return format(new Date(pei.updated_at), "HH:mm");
+                    } catch {
+                      return '';
+                    }
+                  })() : ''}
+                </div>
+              </div>
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate(`/create-pei?id=${pei.id}`)}
+                  onClick={() => {
+                    try {
+                      navigate(`/pei/edit?pei=${pei.id}&student=${pei.student_id}`);
+                    } catch (error) {
+                      console.error('Erro na navegação:', error);
+                    }
+                  }}
+                  title="Visualizar PEI"
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
@@ -140,13 +284,15 @@ const PEIsTable = ({ peis, onPEIDeleted }: PEIsTableProps) => {
                   size="sm"
                   onClick={() => handleDeleteClick(pei)}
                   disabled={loadingId === pei.id}
+                  title="Excluir PEI"
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
             </TableCell>
           </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
 

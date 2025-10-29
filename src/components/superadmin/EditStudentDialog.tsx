@@ -1,7 +1,11 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { supabase } from "@/integrations/supabase/client"
+import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -9,33 +13,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface EditStudentDialogProps {
-  student: any;
-  tenants: any[];
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onStudentUpdated: () => void;
+  student: any
+  tenants: any[]
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onStudentUpdated: () => void
 }
 
-const EditStudentDialog = ({ 
-  student, 
-  tenants, 
-  open, 
-  onOpenChange,
-  onStudentUpdated 
-}: EditStudentDialogProps) => {
-  const [loading, setLoading] = useState(false);
+const EditStudentDialog = ({ student, tenants, open, onOpenChange, onStudentUpdated }: EditStudentDialogProps) => {
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     dateOfBirth: "",
@@ -44,8 +37,9 @@ const EditStudentDialog = ({
     phone: "",
     email: "",
     tenantId: "",
-  });
-  const { toast } = useToast();
+    familyGuidanceNotes: "",
+  })
+  const { toast } = useToast()
 
   useEffect(() => {
     if (student && open) {
@@ -57,23 +51,24 @@ const EditStudentDialog = ({
         phone: student.phone || "",
         email: student.email || "",
         tenantId: student.tenant_id || "",
-      });
+        familyGuidanceNotes: student.family_guidance_notes || "",
+      })
     }
-  }, [student, open]);
+  }, [student, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (!formData.tenantId) {
       toast({
         title: "Erro",
         description: "Selecione uma escola para o aluno.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
     try {
       const { error } = await supabase
@@ -86,38 +81,37 @@ const EditStudentDialog = ({
           phone: formData.phone || null,
           email: formData.email || null,
           tenant_id: formData.tenantId,
+          family_guidance_notes: formData.familyGuidanceNotes || null,
         })
-        .eq("id", student.id);
+        .eq("id", student.id)
 
-      if (error) throw error;
+      if (error) throw error
 
       toast({
         title: "Aluno atualizado!",
         description: `${formData.name} foi atualizado com sucesso.`,
-      });
+      })
 
-      onOpenChange(false);
-      onStudentUpdated();
+      onOpenChange(false)
+      onStudentUpdated()
     } catch (error: any) {
       toast({
         title: "Erro ao atualizar aluno",
         description: error.message,
         variant: "destructive",
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Editar Aluno</DialogTitle>
-            <DialogDescription>
-              Atualize os dados do aluno.
-            </DialogDescription>
+            <DialogDescription>Atualize os dados do aluno.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -193,6 +187,19 @@ const EditStudentDialog = ({
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="familyGuidanceNotes">Orientações para a Família</Label>
+              <Textarea
+                id="familyGuidanceNotes"
+                placeholder="Adicione orientações, recomendações e informações importantes para a família do aluno..."
+                value={formData.familyGuidanceNotes}
+                onChange={(e) => setFormData({ ...formData, familyGuidanceNotes: e.target.value })}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                Este campo é visível para coordenadores, gestores e professores responsáveis.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -205,7 +212,7 @@ const EditStudentDialog = ({
         </form>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}
 
-export default EditStudentDialog;
+export default EditStudentDialog

@@ -22,6 +22,61 @@ import ReportView from "@/components/pei/ReportView";
 import { PEIHistoryDialog } from "@/components/pei/PEIHistoryDialog";
 import ProgressIndicator from "@/components/pei/ProgressIndicator";
 
+// Tipos locais alinhados aos componentes
+// DiagnosisSection
+ type Barrier = {
+  id?: string;
+  barrier_type: string;
+  description: string;
+  severity?: 'leve' | 'moderada' | 'severa';
+};
+
+ type DiagnosisData = {
+  interests: string;
+  specialNeeds: string;
+  barriers: Barrier[];
+  history: string;
+  cid10?: string;
+  description?: string;
+};
+
+// PlanningSection
+ type Goal = {
+  id?: string;
+  barrier_id?: string;
+  category?: 'academic' | 'functional';
+  description: string;
+  target_date?: string;
+  progress_level?: 'não iniciada' | 'em andamento' | 'parcialmente alcançada' | 'alcançada';
+  progress_score?: number;
+  notes?: string;
+};
+
+ type AccessibilityResource = {
+  id?: string;
+  resource_type: 'Libras' | 'Braille' | 'Tecnologia assistiva' | 'Material adaptado' | 'Apoio visual' | 'Tutor' | 'Outro';
+  description: string;
+  usage_frequency?: 'Diário' | 'Semanal' | 'Sob demanda' | 'Outro';
+};
+
+ type PlanningData = {
+  goals: Goal[];
+  accessibilityResources: AccessibilityResource[];
+};
+
+// ReferralsSection
+ type PEIReferral = {
+  id?: string;
+  referred_to: string;
+  reason?: string;
+  date?: string;
+  follow_up?: string;
+};
+
+ type ReferralsData = {
+  referrals: PEIReferral[];
+  observations: string;
+};
 const CreatePEI = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -35,25 +90,16 @@ const CreatePEI = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [tenantName, setTenantName] = useState<string | null>(null);
 
-  const [diagnosisData, setDiagnosisData] = useState({
+  const [diagnosisData, setDiagnosisData] = useState<DiagnosisData>({
     interests: "",
     specialNeeds: "",
-    barriers: {
-      arquitetonica: [] as string[],
-      atitudinal: [] as string[],
-      pedagogica: [] as string[],
-      comunicacional: [] as string[],
-      tecnologica: [] as string[],
-      metodologica: [] as string[],
-    },
-    otherBarrier: "",
+    barriers: [],
     history: "",
   });
 
-  const [planningData, setPlanningData] = useState({ goals: [] });
-  const [referralsData, setReferralsData] = useState({
-    referrals: [] as string[],
-    otherReferral: "",
+  const [planningData, setPlanningData] = useState<PlanningData>({ goals: [], accessibilityResources: [] });
+  const [referralsData, setReferralsData] = useState<ReferralsData>({
+    referrals: [],
     observations: "",
   });
 
@@ -94,14 +140,20 @@ const CreatePEI = () => {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, role, tenant_id")
+        .select(`
+          id, 
+          tenant_id,
+          user_roles(role)
+        `)
         .eq("id", user.id)
-        .single<{ id: string; role: string; tenant_id: string }>();
+        .single<{ id: string; tenant_id: string; user_roles: Array<{ role: string }> }>();
 
       if (!profile) throw new Error("Perfil não encontrado");
-      setUserRole(profile.role);
+      
+      const primaryRole = profile.user_roles?.[0]?.role || 'teacher';
+      setUserRole(primaryRole);
 
-      if (profile.role === "teacher") {
+      if (primaryRole === "teacher") {
         const { data, error } = await supabase
           .from("student_access")
           .select("student_id, students(name, id, date_of_birth)")
@@ -143,26 +195,17 @@ const CreatePEI = () => {
       setSelectedStudentId(data.student_id);
       setStudentData(data.students);
       setDiagnosisData(
-        (data.diagnosis_data as any) || {
+        (data.diagnosis_data as DiagnosisData) || {
           interests: "",
           specialNeeds: "",
-          barriers: {
-            arquitetonica: [],
-            atitudinal: [],
-            pedagogica: [],
-            comunicacional: [],
-            tecnologica: [],
-            metodologica: [],
-          },
-          otherBarrier: "",
+          barriers: [],
           history: "",
         }
       );
-      setPlanningData((data.planning_data as any) || { goals: [] });
+      setPlanningData((data.planning_data as PlanningData) || { goals: [], accessibilityResources: [] });
       setReferralsData(
-        (data.evaluation_data as any) || {
+        (data.evaluation_data as ReferralsData) || {
           referrals: [],
-          otherReferral: "",
           observations: "",
         }
       );
@@ -360,9 +403,9 @@ const CreatePEI = () => {
                 selectedStudentId={selectedStudentId}
                 studentData={studentData}
                 onStudentChange={handleStudentChange}
-                onTemplateSelect={(template) => {
+                onTemplateSelect={(template: { diagnosisData: DiagnosisData; planningData: { goals: Goal[] }; referralsData: ReferralsData }) => {
                   setDiagnosisData(template.diagnosisData);
-                  setPlanningData(template.planningData);
+                  setPlanningData({ goals: template.planningData?.goals || [], accessibilityResources: [] });
                   setReferralsData(template.referralsData);
                 }}
               />
@@ -379,6 +422,7 @@ const CreatePEI = () => {
               <PlanningSection
                 planningData={planningData}
                 diagnosisData={diagnosisData}
+                barriers={diagnosisData.barriers}
                 onPlanningChange={setPlanningData}
               />
             </TabsContent>

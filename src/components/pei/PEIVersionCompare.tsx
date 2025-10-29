@@ -1,396 +1,305 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle,
+  FileText,
+  User,
+  Calendar,
+  Diff
+} from 'lucide-react';
+import { ResponsiveLayout, ResponsiveCard } from '@/components/shared/ResponsiveLayout';
 
-// Tipos baseados no schema do banco de dados e em CreatePEI.tsx
-interface Barrier {
-  id?: string;
-  barrier_type: string;
-  description: string;
-  severity?: 'leve' | 'moderada' | 'severa';
-}
-
-interface PEIGoal {
-  id?: string;
-  description: string;
-  target_date?: string;
-  progress_level?: 'não iniciada' | 'em andamento' | 'parcialmente alcançada' | 'alcançada';
-  progress_score?: number;
-  notes?: string;
-  strategies?: string[];
-  evaluationCriteria?: string;
-  resources?: string;
-}
-
-interface PEIReferral {
-  id?: string;
-  referred_to: string;
-  reason?: string;
-  date?: string;
-  follow_up?: string;
-}
-
-interface DiagnosisData {
-  interests: string;
-  specialNeeds: string;
-  barriers: Barrier[];
-  history: string;
-  cid10?: string;
-  description?: string;
-}
-
-interface PlanningData {
-  goals: PEIGoal[];
-}
-
-interface ReferralsData {
-  referrals: PEIReferral[];
-  observations: string;
-}
-
-interface VersionData {
+interface PEIVersion {
+  id: string;
   version_number: number;
-  changed_at: string;
-  changed_by_name?: string;
-  diagnosis_data: DiagnosisData;
-  planning_data: PlanningData;
-  evaluation_data: ReferralsData;
   status: string;
+  changed_by: string;
+  changed_at: string;
   change_summary: string;
+  diagnosis_data?: any;
+  planning_data?: any;
+  evaluation_data?: any;
 }
 
 interface PEIVersionCompareProps {
-  version1: VersionData;
-  version2: VersionData;
-  onBack: () => void;
+  version1: PEIVersion;
+  version2: PEIVersion;
+  onClose?: () => void;
 }
 
-export function PEIVersionCompare({ version1, version2, onBack }: PEIVersionCompareProps) {
-  const renderDiagnosisComparison = () => {
-    const diag1 = version1.diagnosis_data || { interests: "", specialNeeds: "", barriers: [], history: "", cid10: "", description: "" };
-    const diag2 = version2.diagnosis_data || { interests: "", specialNeeds: "", barriers: [], history: "", cid10: "", description: "" };
+interface DiffItem {
+  field: string;
+  label: string;
+  oldValue: any;
+  newValue: any;
+  hasChanged: boolean;
+}
 
-    const getBarrierDescription = (barrier: Barrier) => `${barrier.barrier_type}: ${barrier.description}`;
+export function PEIVersionCompare({ version1, version2, onClose }: PEIVersionCompareProps) {
+  const [differences, setDifferences] = useState<DiffItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    const getDiffClass = (val1: any, val2: any) => (val1 !== val2 ? "bg-yellow-50 p-2 rounded" : "p-2");
+  const compareVersions = () => {
+    const diffs: DiffItem[] = [];
 
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h4 className="font-semibold mb-2">Interesses</h4>
-          <div className={getDiffClass(diag1.interests, diag2.interests)}>
-            {diag1.interests || "Não informado"}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">Interesses</h4>
-          <div className={getDiffClass(diag1.interests, diag2.interests)}>
-            {diag2.interests || "Não informado"}
-          </div>
-        </div>
+    // Comparar dados de diagnóstico
+    if (version1.diagnosis_data || version2.diagnosis_data) {
+      const diagnosis1 = version1.diagnosis_data || {};
+      const diagnosis2 = version2.diagnosis_data || {};
 
-        <div>
-          <h4 className="font-semibold mb-2">Necessidades Educacionais Especiais</h4>
-          <div className={getDiffClass(diag1.specialNeeds, diag2.specialNeeds)}>
-            {diag1.specialNeeds || "Não informado"}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">Necessidades Educacionais Especiais</h4>
-          <div className={getDiffClass(diag1.specialNeeds, diag2.specialNeeds)}>
-            {diag2.specialNeeds || "Não informado"}
-          </div>
-        </div>
+      Object.keys({ ...diagnosis1, ...diagnosis2 }).forEach(key => {
+        const oldValue = diagnosis1[key];
+        const newValue = diagnosis2[key];
+        const hasChanged = JSON.stringify(oldValue) !== JSON.stringify(newValue);
 
-        <div>
-          <h4 className="font-semibold mb-2">Histórico</h4>
-          <div className={getDiffClass(diag1.history, diag2.history)}>
-            {diag1.history || "Não informado"}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">Histórico</h4>
-          <div className={getDiffClass(diag1.history, diag2.history)}>
-            {diag2.history || "Não informado"}
-          </div>
-        </div>
+        if (hasChanged || oldValue !== undefined || newValue !== undefined) {
+          diffs.push({
+            field: `diagnosis.${key}`,
+            label: `Diagnóstico - ${key}`,
+            oldValue,
+            newValue,
+            hasChanged
+          });
+        }
+      });
+    }
 
-        <div>
-          <h4 className="font-semibold mb-2">CID-10</h4>
-          <div className={getDiffClass(diag1.cid10, diag2.cid10)}>
-            {diag1.cid10 || "Não informado"}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">CID-10</h4>
-          <div className={getDiffClass(diag1.cid10, diag2.cid10)}>
-            {diag2.cid10 || "Não informado"}
-          </div>
-        </div>
+    // Comparar dados de planejamento
+    if (version1.planning_data || version2.planning_data) {
+      const planning1 = version1.planning_data || {};
+      const planning2 = version2.planning_data || {};
 
-        <div>
-          <h4 className="font-semibold mb-2">Descrição do Diagnóstico</h4>
-          <div className={getDiffClass(diag1.description, diag2.description)}>
-            {diag1.description || "Não informado"}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">Descrição do Diagnóstico</h4>
-          <div className={getDiffClass(diag1.description, diag2.description)}>
-            {diag2.description || "Não informado"}
-          </div>
-        </div>
+      Object.keys({ ...planning1, ...planning2 }).forEach(key => {
+        const oldValue = planning1[key];
+        const newValue = planning2[key];
+        const hasChanged = JSON.stringify(oldValue) !== JSON.stringify(newValue);
 
-        <div>
-          <h4 className="font-semibold mb-2">Barreiras ({diag1.barriers?.length || 0})</h4>
-          <div className="space-y-1">
-            {diag1.barriers?.map((barrier, idx) => (
-              <div key={idx} className={getDiffClass(getBarrierDescription(barrier), getBarrierDescription(diag2.barriers[idx]))}>
-                {getBarrierDescription(barrier)}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">Barreiras ({diag2.barriers?.length || 0})</h4>
-          <div className="space-y-1">
-            {diag2.barriers?.map((barrier, idx) => (
-              <div key={idx} className={getDiffClass(getBarrierDescription(diag1.barriers[idx]), getBarrierDescription(barrier))}>
-                {getBarrierDescription(barrier)}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+        if (hasChanged || oldValue !== undefined || newValue !== undefined) {
+          diffs.push({
+            field: `planning.${key}`,
+            label: `Planejamento - ${key}`,
+            oldValue,
+            newValue,
+            hasChanged
+          });
+        }
+      });
+    }
+
+    // Comparar dados de avaliação
+    if (version1.evaluation_data || version2.evaluation_data) {
+      const evaluation1 = version1.evaluation_data || {};
+      const evaluation2 = version2.evaluation_data || {};
+
+      Object.keys({ ...evaluation1, ...evaluation2 }).forEach(key => {
+        const oldValue = evaluation1[key];
+        const newValue = evaluation2[key];
+        const hasChanged = JSON.stringify(oldValue) !== JSON.stringify(newValue);
+
+        if (hasChanged || oldValue !== undefined || newValue !== undefined) {
+          diffs.push({
+            field: `evaluation.${key}`,
+            label: `Avaliação - ${key}`,
+            oldValue,
+            newValue,
+            hasChanged
+          });
+        }
+      });
+    }
+
+    setDifferences(diffs);
+    setLoading(false);
   };
 
-  const renderPlanningComparison = () => {
-    const plan1 = version1.planning_data || { goals: [] };
-    const plan2 = version2.planning_data || { goals: [] };
+  useEffect(() => {
+    compareVersions();
+  }, [version1, version2]);
 
-    const getGoalDescription = (goal: PEIGoal) => `${goal.description} (${goal.progress_level || 'não iniciado'})`;
-
-    const getDiffClass = (val1: any, val2: any) => (val1 !== val2 ? "bg-yellow-50 p-2 rounded" : "p-2");
-
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h4 className="font-semibold mb-2">Metas ({plan1.goals?.length || 0})</h4>
-          <div className="space-y-2">
-            {plan1.goals?.map((goal: PEIGoal, idx: number) => (
-              <div key={idx} className={getDiffClass(getGoalDescription(goal), getGoalDescription(plan2.goals[idx]))}>
-                <div className="font-medium">{goal.description || "Meta sem descrição"}</div>
-                {goal.strategies && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Estratégias: {goal.strategies.join(", ")}
-                  </div>
-                )}
-                {goal.evaluationCriteria && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Critérios de Avaliação: {goal.evaluationCriteria}
-                  </div>
-                )}
-                {goal.resources && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Recursos: {goal.resources}
-                  </div>
-                )}
-                {goal.progress_level && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Progresso: {goal.progress_level} ({goal.progress_score}%)
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">Metas ({plan2.goals?.length || 0})</h4>
-          <div className="space-y-2">
-            {plan2.goals?.map((goal: PEIGoal, idx: number) => (
-              <div key={idx} className={getDiffClass(getGoalDescription(plan1.goals[idx]), getGoalDescription(goal))}>
-                <div className="font-medium">{goal.description || "Meta sem descrição"}</div>
-                {goal.strategies && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Estratégias: {goal.strategies.join(", ")}
-                  </div>
-                )}
-                {goal.evaluationCriteria && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Critérios de Avaliação: {goal.evaluationCriteria}
-                  </div>
-                )}
-                {goal.resources && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Recursos: {goal.resources}
-                  </div>
-                )}
-                {goal.progress_level && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Progresso: {goal.progress_level} ({goal.progress_score}%)
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+  const renderValue = (value: any) => {
+    if (value === null || value === undefined) {
+      return <span className="text-muted-foreground italic">Não definido</span>;
+    }
+    
+    if (typeof value === 'object') {
+      return <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">{JSON.stringify(value, null, 2)}</pre>;
+    }
+    
+    return <span>{String(value)}</span>;
   };
 
-  const renderReferralsComparison = () => {
-    const ref1 = version1.evaluation_data || { referrals: [], observations: "" };
-    const ref2 = version2.evaluation_data || { referrals: [], observations: "" };
-
-    const getReferralDescription = (referral: PEIReferral) => `${referral.referred_to} (${referral.reason || 'sem razão'})`;
-
-    const getDiffClass = (val1: any, val2: any) => (val1 !== val2 ? "bg-yellow-50 p-2 rounded" : "p-2");
-
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h4 className="font-semibold mb-2">Encaminhamentos ({ref1.referrals?.length || 0})</h4>
-          <div className="space-y-1">
-            {ref1.referrals?.map((referral, idx) => (
-              <div key={idx} className={getDiffClass(getReferralDescription(referral), getReferralDescription(ref2.referrals[idx]))}>
-                {getReferralDescription(referral)}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">Encaminhamentos ({ref2.referrals?.length || 0})</h4>
-          <div className="space-y-1">
-            {ref2.referrals?.map((referral, idx) => (
-              <div key={idx} className={getDiffClass(getReferralDescription(ref1.referrals[idx]), getReferralDescription(referral))}>
-                {getReferralDescription(referral)}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h4 className="font-semibold mb-2">Observações</h4>
-          <div className={getDiffClass(ref1.observations, ref2.observations)}>
-            {ref1.observations || "Não informado"}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">Observações</h4>
-          <div className={getDiffClass(ref1.observations, ref2.observations)}>
-            {ref2.observations || "Não informado"}
-          </div>
-        </div>
-      </div>
-    );
+  const getChangeIcon = (hasChanged: boolean) => {
+    if (hasChanged) {
+      return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+    }
+    return <CheckCircle className="h-4 w-4 text-green-500" />;
   };
 
-  const olderVersion = version1.version_number < version2.version_number ? version1 : version2;
-  const newerVersion = version1.version_number > version2.version_number ? version1 : version2;
+  const getChangeColor = (hasChanged: boolean) => {
+    return hasChanged ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50';
+  };
+
+  if (loading) {
+    return (
+      <ResponsiveCard className="flex items-center justify-center h-32">
+        <div className="text-center">
+          <Diff className="h-8 w-8 animate-spin mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">Comparando versões...</p>
+        </div>
+      </ResponsiveCard>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar
-        </Button>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">
-            Versão {olderVersion.version_number}
-            <span className="text-xs ml-1">
-              ({format(new Date(olderVersion.changed_at), "dd/MM/yy HH:mm", { locale: ptBR })})
-            </span>
-          </Badge>
-          <ArrowRight className="h-4 w-4" />
-          <Badge variant="default">
-            Versão {newerVersion.version_number}
-            <span className="text-xs ml-1">
-              ({format(new Date(newerVersion.changed_at), "dd/MM/yy HH:mm", { locale: ptBR })})
-            </span>
-          </Badge>
-        </div>
-      </div>
-
-      <ScrollArea className="h-[450px]">
-        <div className="space-y-4 pr-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Badge variant="outline">{olderVersion.status}</Badge>
-                </div>
-                <div>
-                  <Badge variant={olderVersion.status !== newerVersion.status ? "default" : "outline"}>
-                    {newerVersion.status}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Diagnóstico</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderDiagnosisComparison()}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Planejamento</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderPlanningComparison()}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Encaminhamentos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderReferralsComparison()}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Informações da Alteração</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-muted-foreground mb-1">Alterado por</div>
-                  <div>{olderVersion.changed_by_name}</div>
-                  <div className="text-muted-foreground mt-2 mb-1">Resumo</div>
-                  <div>{olderVersion.change_summary}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">Alterado por</div>
-                  <div>{newerVersion.changed_by_name}</div>
-                  <div className="text-muted-foreground mt-2 mb-1">Resumo</div>
-                  <div>{newerVersion.change_summary}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md">
-            💡 Áreas destacadas em amarelo indicam diferenças entre as versões
+    <ResponsiveLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Diff className="h-6 w-6" />
+              Comparação de Versões
+            </h2>
+            <p className="text-muted-foreground">
+              Comparando v{version1.version_number} com v{version2.version_number}
+            </p>
           </div>
+          <Button variant="outline" onClick={onClose}>
+            Fechar
+          </Button>
         </div>
-      </ScrollArea>
-    </div>
+
+        {/* Informações das versões */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ResponsiveCard className={getChangeColor(false)}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Versão {version1.version_number}
+              </CardTitle>
+              <CardDescription>
+                {version1.change_summary || `Versão ${version1.version_number}`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-3 w-3" />
+                {version1.changed_by}
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-3 w-3" />
+                {new Date(version1.changed_at).toLocaleDateString('pt-BR')}
+              </div>
+              <Badge variant="outline">{version1.status}</Badge>
+            </CardContent>
+          </ResponsiveCard>
+
+          <ResponsiveCard className={getChangeColor(false)}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Versão {version2.version_number}
+              </CardTitle>
+              <CardDescription>
+                {version2.change_summary || `Versão ${version2.version_number}`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-3 w-3" />
+                {version2.changed_by}
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-3 w-3" />
+                {new Date(version2.changed_at).toLocaleDateString('pt-BR')}
+              </div>
+              <Badge variant="outline">{version2.status}</Badge>
+            </CardContent>
+          </ResponsiveCard>
+        </div>
+
+        {/* Diferenças */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Diferenças Encontradas</h3>
+          
+          {differences.length === 0 ? (
+            <ResponsiveCard className="text-center py-8">
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+              <h3 className="text-lg font-medium mb-2">Nenhuma diferença encontrada</h3>
+              <p className="text-muted-foreground">
+                As versões são idênticas em todos os campos comparados.
+              </p>
+            </ResponsiveCard>
+          ) : (
+            <div className="space-y-4">
+              {differences.map((diff, index) => (
+                <ResponsiveCard key={index} className={getChangeColor(diff.hasChanged)}>
+                  <div className="flex items-start gap-3">
+                    {getChangeIcon(diff.hasChanged)}
+                    <div className="flex-1">
+                      <h4 className="font-medium mb-2">{diff.label}</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                            Versão {version1.version_number}
+                          </label>
+                          <div className="p-3 bg-muted rounded border">
+                            {renderValue(diff.oldValue)}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                            Versão {version2.version_number}
+                          </label>
+                          <div className="p-3 bg-muted rounded border">
+                            {renderValue(diff.newValue)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ResponsiveCard>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Resumo */}
+        <ResponsiveCard>
+          <CardHeader>
+            <CardTitle className="text-lg">Resumo da Comparação</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-blue-600">{differences.length}</div>
+                <div className="text-sm text-muted-foreground">Total de Diferenças</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {differences.filter(d => !d.hasChanged).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Campos Iguais</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {differences.filter(d => d.hasChanged).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Campos Alterados</div>
+              </div>
+            </div>
+          </CardContent>
+        </ResponsiveCard>
+      </div>
+    </ResponsiveLayout>
   );
 }

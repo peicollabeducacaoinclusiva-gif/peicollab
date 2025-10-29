@@ -1,58 +1,30 @@
 import { useEffect } from 'react';
-import { useOnlineStatus } from './useOnlineStatus';
-import { PendingChangesService } from '@/services/pendingChangesService';
-import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
+import { useOfflineSync } from './useOfflineSync';
 
-/**
- * Hook que sincroniza mudanças pendentes automaticamente ao reconectar
- */
 export function useSyncOnReconnect() {
-  const isOnline = useOnlineStatus();
-  const queryClient = useQueryClient();
+  const { isOnline, pendingChanges, syncData } = useOfflineSync();
 
   useEffect(() => {
-    if (isOnline) {
-      syncChanges();
+    // Sincronizar automaticamente quando voltar online e houver mudanças pendentes
+    if (isOnline && pendingChanges > 0) {
+      const timer = setTimeout(() => {
+        syncData();
+      }, 2000); // Aguarda 2 segundos após voltar online
+
+      return () => clearTimeout(timer);
     }
-  }, [isOnline]);
+  }, [isOnline, pendingChanges, syncData]);
 
-  async function syncChanges() {
-    try {
-      const pendingCount = await PendingChangesService.getPendingCount();
-      
-      if (pendingCount === 0) {
-        console.log('✅ Nenhuma mudança pendente para sincronizar');
-        return;
+  // Sincronização periódica (a cada 5 minutos quando online)
+  useEffect(() => {
+    if (!isOnline) return;
+
+    const interval = setInterval(() => {
+      if (pendingChanges > 0) {
+        syncData();
       }
+    }, 5 * 60 * 1000); // 5 minutos
 
-      toast.loading(`Sincronizando ${pendingCount} mudanças...`, {
-        id: 'sync-toast',
-      });
-
-      const result = await PendingChangesService.syncPendingChanges();
-
-      if (result.failed === 0) {
-        toast.success(`${result.success} mudanças sincronizadas com sucesso!`, {
-          id: 'sync-toast',
-        });
-        
-        // Invalida todas as queries para recarregar dados atualizados
-        queryClient.invalidateQueries();
-      } else {
-        toast.warning(
-          `${result.success} sincronizadas, ${result.failed} falharam`,
-          {
-            id: 'sync-toast',
-            description: 'Algumas mudanças não puderam ser sincronizadas.',
-          }
-        );
-      }
-    } catch (error) {
-      console.error('❌ Erro ao sincronizar mudanças:', error);
-      toast.error('Erro ao sincronizar mudanças', {
-        id: 'sync-toast',
-      });
-    }
-  }
+    return () => clearInterval(interval);
+  }, [isOnline, pendingChanges, syncData]);
 }

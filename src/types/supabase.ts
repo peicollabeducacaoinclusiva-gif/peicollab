@@ -1,37 +1,7 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// ./src/types/supabase.ts
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       family_access_tokens: {
@@ -71,22 +41,7 @@ export type Database = {
           token_hash?: string
           used?: boolean
         }
-        Relationships: [
-          {
-            foreignKeyName: "family_access_tokens_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "family_access_tokens_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_access_attempts: {
         Row: {
@@ -140,15 +95,7 @@ export type Database = {
           user_agent?: string | null
           verified?: boolean | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_access_logs_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_accessibility_resources: {
         Row: {
@@ -175,15 +122,7 @@ export type Database = {
           resource_type?: string
           usage_frequency?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_accessibility_resources_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_barriers: {
         Row: {
@@ -210,15 +149,7 @@ export type Database = {
           pei_id?: string
           severity?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_barriers_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_comments: {
         Row: {
@@ -245,29 +176,7 @@ export type Database = {
           student_id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_comments_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pei_comments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pei_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_family_tokens: {
         Row: {
@@ -297,19 +206,12 @@ export type Database = {
           token?: string
           token_hash?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_family_tokens_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_goals: {
         Row: {
           barrier_id: string | null
+          category: Database["public"]["Enums"]["pei_goal_category"] | null
           created_at: string | null
           description: string
           id: string
@@ -322,6 +224,7 @@ export type Database = {
         }
         Insert: {
           barrier_id?: string | null
+          category?: Database["public"]["Enums"]["pei_goal_category"] | null
           created_at?: string | null
           description: string
           id?: string
@@ -334,6 +237,7 @@ export type Database = {
         }
         Update: {
           barrier_id?: string | null
+          category?: Database["public"]["Enums"]["pei_goal_category"] | null
           created_at?: string | null
           description?: string
           id?: string
@@ -344,22 +248,7 @@ export type Database = {
           target_date?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_goals_barrier_id_fkey"
-            columns: ["barrier_id"]
-            isOneToOne: false
-            referencedRelation: "pei_barriers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pei_goals_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_history: {
         Row: {
@@ -401,15 +290,61 @@ export type Database = {
           status?: Database["public"]["Enums"]["pei_status"] | null
           version_number?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_history_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      pei_meeting_participants: {
+        Row: {
+          id: string
+          meeting_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          meeting_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          meeting_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pei_meetings: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          location_or_link: string | null
+          pei_id: string
+          scheduled_for: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          location_or_link?: string | null
+          pei_id: string
+          scheduled_for: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          location_or_link?: string | null
+          pei_id?: string
+          scheduled_for?: string
+          title?: string
+        }
+        Relationships: []
       }
       pei_notifications: {
         Row: {
@@ -439,15 +374,7 @@ export type Database = {
           read_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_notifications_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_referrals: {
         Row: {
@@ -477,19 +404,12 @@ export type Database = {
           reason?: string | null
           referred_to?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_referrals_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       pei_reviews: {
         Row: {
           created_at: string | null
+          evaluation_data: Json | null
           id: string
           next_review_date: string | null
           notes: string | null
@@ -500,6 +420,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          evaluation_data?: Json | null
           id?: string
           next_review_date?: string | null
           notes?: string | null
@@ -510,6 +431,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          evaluation_data?: Json | null
           id?: string
           next_review_date?: string | null
           notes?: string | null
@@ -518,23 +440,9 @@ export type Database = {
           reviewer_id?: string | null
           reviewer_role?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_reviews_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pei_reviews_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
+
       pei_teachers: {
         Row: {
           assigned_at: string | null
@@ -557,15 +465,7 @@ export type Database = {
           pei_id?: string
           teacher_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "pei_teachers_pei_id_fkey"
-            columns: ["pei_id"]
-            isOneToOne: false
-            referencedRelation: "peis"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       peis: {
         Row: {
@@ -581,7 +481,7 @@ export type Database = {
           planning_data: Json | null
           status: Database["public"]["Enums"]["pei_status"]
           student_id: string
-          tenant_id: string
+          school_id: string
           updated_at: string | null
         }
         Insert: {
@@ -597,7 +497,7 @@ export type Database = {
           planning_data?: Json | null
           status?: Database["public"]["Enums"]["pei_status"]
           student_id: string
-          tenant_id: string
+          school_id: string
           updated_at?: string | null
         }
         Update: {
@@ -613,39 +513,10 @@ export type Database = {
           planning_data?: Json | null
           status?: Database["public"]["Enums"]["pei_status"]
           student_id?: string
-          tenant_id?: string
+          school_id?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "peis_assigned_teacher_id_fkey"
-            columns: ["assigned_teacher_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "peis_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "peis_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "peis_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -654,7 +525,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           role: Database["public"]["Enums"]["user_role"]
-          tenant_id: string | null
+          school_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -663,7 +534,7 @@ export type Database = {
           id: string
           is_active?: boolean | null
           role: Database["public"]["Enums"]["user_role"]
-          tenant_id?: string | null
+          school_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -672,18 +543,10 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
-          tenant_id?: string | null
+          school_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       signup_debug_logs: {
         Row: {
@@ -734,15 +597,7 @@ export type Database = {
           student_id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "student_access_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       student_family: {
         Row: {
@@ -766,69 +621,49 @@ export type Database = {
           relationship?: string | null
           student_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "student_family_family_user_id_fkey"
-            columns: ["family_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_family_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       students: {
         Row: {
           created_at: string | null
           date_of_birth: string | null
           email: string | null
+          family_guidance_notes: string | null
           father_name: string | null
           id: string
           mother_name: string | null
           name: string
           phone: string | null
-          tenant_id: string
+          school_id: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           date_of_birth?: string | null
           email?: string | null
+          family_guidance_notes?: string | null
           father_name?: string | null
           id?: string
           mother_name?: string | null
           name: string
           phone?: string | null
-          tenant_id: string
+          school_id: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           date_of_birth?: string | null
           email?: string | null
+          family_guidance_notes?: string | null
           father_name?: string | null
           id?: string
           mother_name?: string | null
           name?: string
           phone?: string | null
-          tenant_id?: string
+          school_id?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "students_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tenants: {
         Row: {
@@ -894,30 +729,22 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          tenant_id: string
+          school_id: string
           user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
-          tenant_id: string
+          school_id: string
           user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
-          tenant_id?: string
+          school_id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_tenants_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_tutorial_status: {
         Row: {
@@ -942,18 +769,49 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      },
+      pei_specialist_orientations: {
+        Row: {
+          created_at: string | null
+          guidance: string
+          id: string
+          orientation_field: string
+          pei_id: string
+          specialist_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          guidance: string
+          id?: string
+          orientation_field: string
+          pei_id: string
+          specialist_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          guidance?: string
+          id?: string
+          orientation_field?: string
+          pei_id?: string
+          specialist_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
+    
     Views: {
       [_ in never]: never
     }
     Functions: {
       approve_pei_family: {
-        Args: { access_token: string; pei_uuid: string }
+        Args: { pei_uuid: string; access_token: string }
         Returns: Json
       }
       can_access_pei: {
-        Args: { _pei_id: string; _user_id: string }
+        Args: { _user_id: string; _pei_id: string }
         Returns: boolean
       }
       can_family_view_pei_via_token: {
@@ -961,7 +819,7 @@ export type Database = {
         Returns: boolean
       }
       can_view_student: {
-        Args: { _student_id: string; _user_id: string }
+        Args: { _user_id: string; _student_id: string }
         Returns: boolean
       }
       clean_expired_tokens: {
@@ -981,7 +839,7 @@ export type Database = {
         Returns: string
       }
       get_pei_for_family: {
-        Args: { access_token: string; pei_uuid: string }
+        Args: { pei_uuid: string; access_token: string }
         Returns: Json
       }
       get_user_primary_role: {
@@ -998,16 +856,10 @@ export type Database = {
       }
       get_users_with_emails: {
         Args: Record<PropertyKey, never>
-        Returns: {
-          email: string
-          user_id: string
-        }[]
+        Returns: { user_id: string; email: string }[]
       }
       has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
+        Args: { _user_id: string; _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
       hash_token: {
@@ -1015,11 +867,11 @@ export type Database = {
         Returns: string
       }
       user_can_access_pei: {
-        Args: { _pei_id: string; _user_id: string }
+        Args: { _user_id: string; _pei_id: string }
         Returns: boolean
       }
       user_has_tenant_access: {
-        Args: { _tenant_id: string; _user_id: string }
+        Args: { _user_id: string; _school_id: string }
         Returns: boolean
       }
       validate_family_token: {
@@ -1028,21 +880,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role:
-        | "superadmin"
-        | "coordinator"
-        | "school_manager"
-        | "aee_teacher"
-        | "teacher"
-        | "family"
+      app_role: "superadmin" | "coordinator" | "school_manager" | "aee_teacher" | "teacher" | "family" | "specialist"
+      pei_goal_category: "academic" | "functional"
+      pei_meeting_participant_status: "invited" | "confirmed" | "declined" | "attended"
+      pei_meeting_status: "scheduled" | "completed" | "cancelled"
       pei_status: "draft" | "pending" | "returned" | "approved"
-      user_role:
-        | "superadmin"
-        | "coordinator"
-        | "teacher"
-        | "family"
-        | "aee_teacher"
-        | "school_manager"
+      user_role: "superadmin" | "coordinator" | "teacher" | "family" | "aee_teacher" | "school_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1050,147 +893,5 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
-  public: {
-    Enums: {
-      app_role: [
-        "superadmin",
-        "coordinator",
-        "school_manager",
-        "aee_teacher",
-        "teacher",
-        "family",
-      ],
-      pei_status: ["draft", "pending", "returned", "approved"],
-      user_role: [
-        "superadmin",
-        "coordinator",
-        "teacher",
-        "family",
-        "aee_teacher",
-        "school_manager",
-      ],
-    },
-  },
-} as const
-
+export type Tables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"]
+export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T]

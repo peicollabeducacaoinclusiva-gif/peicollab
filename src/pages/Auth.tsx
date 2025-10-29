@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
-import { ArrowLeft, Mail, Lock, User, Shield } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Shield, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Password validation schema - LGPD and security compliant
 const passwordSchema = z.string()
@@ -133,11 +134,11 @@ const Auth = () => {
           throw error;
         }
 
-        // Check if user is active
+        // Check if user is active and has proper setup
         if (data.user) {
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
-            .select("is_active")
+            .select("is_active, school_id")
             .eq("id", data.user.id)
             .single();
 
@@ -149,6 +150,12 @@ const Auth = () => {
             await supabase.auth.signOut();
             throw new Error("Sua conta está inativa. Entre em contato com o administrador.");
           }
+
+          // Check if user has school assigned
+          if (!profile?.school_id) {
+            await supabase.auth.signOut();
+            throw new Error("Sua conta ainda não foi vinculada a uma escola. Entre em contato com o administrador.");
+          }
         }
 
         toast({
@@ -156,15 +163,22 @@ const Auth = () => {
           description: "Bem-vindo de volta ao PEI Collab.",
         });
       } else {
-        const { error } = await supabase.auth.signUp({
+        // Validate password for signup
+        const validation = passwordSchema.safeParse(password);
+        if (!validation.success) {
+          setPasswordError(validation.error.issues[0].message);
+          setLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               full_name: fullName,
-              role: "teacher",
             },
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            // Removido emailRedirectTo para evitar bloqueio de extensões
           },
         });
 
@@ -176,17 +190,27 @@ const Auth = () => {
         }
 
         toast({
-          title: "Cadastro realizado!",
-          description: "Você já pode fazer login.",
+          title: "Cadastro solicitado!",
+          description: "Sua conta foi criada mas ainda precisa ser ativada por um administrador. Você receberá um email quando estiver ativa.",
         });
         setIsLogin(true);
       }
     } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message || "Ocorreu um erro. Tente novamente.",
-        variant: "destructive",
-      });
+      
+      // Tratamento especial para erros de rede e bloqueios
+      if (error.message === "Failed to fetch" || error.name === "NetworkError" || error.name === "AuthRetryableFetchError") {
+        toast({
+          title: "Erro de Conexão",
+          description: "A requisição foi bloqueada. Isso geralmente acontece por extensões de navegador (bloqueadores de anúncios). Tente desabilitar suas extensões ou usar modo anônimo.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: error.message || "Ocorreu um erro. Tente novamente.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -243,6 +267,15 @@ const Auth = () => {
         </CardHeader>
 
         <CardContent>
+          {!isLogin && !isForgotPassword && !isResetPassword && (
+            <Alert className="mb-4 border-blue-200 bg-blue-50">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-800">
+                Após o cadastro, sua conta precisará ser ativada por um administrador antes de você poder acessar o sistema.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleAuth} className="space-y-4">
             {!isLogin && !isForgotPassword && !isResetPassword && (
               <div className="space-y-2">
@@ -305,7 +338,7 @@ const Auth = () => {
                     minLength={8}
                   />
                 </div>
-                {isResetPassword && (
+                {(isResetPassword || !isLogin) && (
                   <p className="text-xs text-gray-500">
                     Mínimo 8 caracteres, incluindo maiúscula, minúscula e número
                   </p>

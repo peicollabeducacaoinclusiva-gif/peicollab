@@ -48,7 +48,7 @@ jspm_packages
 # database
 *.sqlite
 *.sqlite3
-_schema.sql
+schema.sql
 
 # node_modules
 node_modules/

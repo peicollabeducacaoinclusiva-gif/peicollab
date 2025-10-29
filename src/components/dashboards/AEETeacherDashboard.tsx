@@ -21,7 +21,7 @@ interface AEETeacherDashboardProps {
     id: string;
     full_name: string;
     role: string;
-    tenant_id: string | null;
+    school_id: string | null;
   };
 }
 
@@ -33,7 +33,7 @@ const AEETeacherDashboard = ({ profile }: AEETeacherDashboardProps) => {
 
   useEffect(() => {
     loadPEIs();
-  }, [profile.tenant_id]);
+  }, [profile.school_id]);
 
   const loadPEIs = async () => {
     try {
@@ -44,9 +44,9 @@ const AEETeacherDashboard = ({ profile }: AEETeacherDashboardProps) => {
         .select(`
           *,
           students (name, date_of_birth),
-          profiles!peis_assigned_teacher_id_fkey (full_name)
+          assigned_teacher:profiles!peis_assigned_teacher_id_fkey (full_name)
         `)
-        .eq("tenant_id", profile.tenant_id)
+        .eq("school_id", profile.school_id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -160,7 +160,7 @@ const AEETeacherDashboard = ({ profile }: AEETeacherDashboardProps) => {
                       {pei.students?.name || "N/A"}
                     </TableCell>
                     <TableCell>
-                      {pei.profiles?.full_name || "Não atribuído"}
+                      {pei.assigned_teacher?.full_name || "Não atribuído"}
                     </TableCell>
                     <TableCell>{getStatusBadge(pei.status)}</TableCell>
                     <TableCell>

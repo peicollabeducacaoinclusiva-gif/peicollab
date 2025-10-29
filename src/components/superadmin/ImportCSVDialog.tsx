@@ -36,7 +36,7 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
   const getCSVTemplate = () => {
     const templates = {
       users: "full_name,email,role,tenant_id\nJoão Silva,joao@email.com,teacher,uuid-da-escola",
-      tenants: "name\nEscola Municipal ABC",
+      tenants: "network_name,network_email,network_phone,network_address,network_responsible\n\"Rede Municipal de Ensino\",\"contato@escola.com\",\"(11) 99999-9999\",\"Rua das Flores 123\",\"João Silva\"",
       students: "name,date_of_birth,father_name,mother_name,tenant_id\nMaria Silva,2010-05-15,José Silva,Ana Silva,uuid-da-escola",
       peis: "student_id,assigned_teacher_id,tenant_id,status\nuuid-do-aluno,uuid-do-professor,uuid-da-escola,draft",
     };
@@ -58,11 +58,34 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
     const lines = text.split("\n").filter((line) => line.trim());
     if (lines.length < 2) return [];
 
-    const headers = lines[0].split(",").map((h) => h.trim());
+    // Função para fazer parse correto de CSV com vírgulas dentro dos campos
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      
+      result.push(current.trim());
+      return result;
+    };
+
+    const headers = parseCSVLine(lines[0]);
     const rows = lines.slice(1);
 
     return rows.map((row) => {
-      const values = row.split(",").map((v) => v.trim());
+      const values = parseCSVLine(row);
       const obj: any = {};
       headers.forEach((header, index) => {
         obj[header] = values[index] || null;
@@ -78,7 +101,10 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
     setLoading(true);
     try {
       const text = await file.text();
+      console.log("Conteúdo do arquivo:", text);
+      
       const data = parseCSV(text);
+      console.log("Dados parseados:", data);
 
       if (data.length === 0) {
         throw new Error("Arquivo CSV vazio ou inválido");
@@ -86,9 +112,12 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
 
       let successCount = 0;
       let errorCount = 0;
+      const errors: string[] = [];
 
       for (const item of data) {
         try {
+          console.log("Processando item:", item);
+          
           if (type === "users") {
             // Create user in auth
             const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -104,20 +133,54 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
             successCount++;
           } else {
             const table = type === "tenants" ? "tenants" : type === "students" ? "students" : "peis";
+            
+            // Para tenants, garantir que o campo 'network_name' existe e não está vazio
+            if (type === "tenants") {
+              if (!item.network_name || item.network_name.trim() === "") {
+                throw new Error("Nome da rede de ensino é obrigatório");
+              }
+              
+              // Limpar campos vazios e definir valores padrão
+              const cleanItem = {
+                network_name: item.network_name.trim(),
+                network_email: item.network_email?.trim() || null,
+                network_phone: item.network_phone?.trim() || null,
+                network_address: item.network_address?.trim() || null,
+                network_responsible: item.network_responsible?.trim() || null,
+                is_active: true
+              };
+              
+              console.log("Dados limpos para inserção:", cleanItem);
+              item = cleanItem;
+            }
+            
+            console.log(`Inserindo no banco - tabela: ${table}, dados:`, item);
             const { error } = await supabase.from(table).insert(item);
-            if (error) throw error;
+            if (error) {
+              console.error("Erro do Supabase:", error);
+              throw error;
+            }
             successCount++;
           }
         } catch (error: any) {
           console.error(`Erro ao importar item:`, error);
+          errors.push(`${item.name || 'Item'}: ${error.message}`);
           errorCount++;
         }
       }
 
-      toast({
-        title: "Importação concluída",
-        description: `${successCount} registros importados com sucesso. ${errorCount} erros.`,
-      });
+      if (errorCount > 0) {
+        toast({
+          title: "Importação com erros",
+          description: `${successCount} registros importados com sucesso. ${errorCount} erros. Verifique o console para detalhes.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Importação concluída",
+          description: `${successCount} registros importados com sucesso.`,
+        });
+      }
 
       onImportComplete();
       setOpen(false);

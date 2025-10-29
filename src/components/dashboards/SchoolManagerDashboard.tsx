@@ -37,10 +37,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Users, FileText, Upload, PlusCircle, Activity } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { GraduationCap, Users, FileText, Upload, PlusCircle, Activity, Download } from "lucide-react";
 import StudentsTable from "@/components/superadmin/StudentsTable";
-import PEIsTable from "@/components/superadmin/PEIsTable";
+import SimplePEIsTable from "@/components/superadmin/SimplePEIsTable";
 import UsersTable from "@/components/superadmin/UsersTable";
+import { SimpleAuditLogsViewer } from "@/components/shared/SimpleAuditLogsViewer";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
 interface SchoolManagerDashboardProps {
@@ -48,19 +50,19 @@ interface SchoolManagerDashboardProps {
     id: string;
     full_name: string;
     role: string;
-    tenant_id: string | null;
+    school_id: string | null;
   };
 }
 
 const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
-  const [activeTenant, setActiveTenant] = useState<string | null>(profile.tenant_id);
+  const [activeTenant, setActiveTenant] = useState<string | null>(profile.school_id);
   const [tenants, setTenants] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [peis, setPeis] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [openAddStudent, setOpenAddStudent] = useState(false);
+  const [openExportDialog, setOpenExportDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -76,7 +78,7 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
   const loadTenants = async () => {
     const { data, error } = await supabase
       .from("user_tenants")
-      .select("tenant_id, tenants(name)")
+      .select("school_id, schools(name)")
       .eq("user_id", profile.id);
 
     if (error) {
@@ -85,8 +87,8 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
     }
 
     const tenantList = data?.map((t: any) => ({
-      id: t.tenant_id,
-      name: t.tenants?.name || "Escola",
+      id: t.school_id,
+      name: t.schools?.name || "Escola",
     })) || [];
 
     setTenants(tenantList);
@@ -100,20 +102,50 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
     try {
       setLoading(true);
 
-      const [{ data: studentsData }, { data: peisData }, { data: usersData }, { data: logsData }] =
+      const [{ data: studentsData, error: studentsError }, { data: peisData, error: peisError }, { data: usersData, error: usersError }] =
         await Promise.all([
-          supabase.from("students").select("*").eq("tenant_id", activeTenant).order("name"),
-          supabase.from("peis").select("*, students(name), profiles!peis_assigned_teacher_id_fkey(full_name)").eq("tenant_id", activeTenant),
-          supabase.from("profiles").select("*, tenants(name)").eq("tenant_id", activeTenant),
-          supabase.from("signup_debug_logs").select("*").order("created_at", { ascending: false }).limit(50),
+          supabase.from("students").select("*").eq("school_id", activeTenant).order("name"),
+          supabase.from("peis").select(`
+            *,
+            students(name, date_of_birth),
+            assigned_teacher:profiles!peis_assigned_teacher_id_fkey(full_name),
+            created_by_profile:profiles!peis_created_by_fkey(full_name)
+          `).eq("school_id", activeTenant).order("created_at", { ascending: false }),
+          supabase.from("profiles").select("*, schools(name)").eq("school_id", activeTenant),
         ]);
+
+      if (studentsError) {
+        console.error("Erro ao carregar alunos:", studentsError);
+        toast({
+          title: "Erro",
+          description: `Falha ao carregar alunos: ${studentsError.message}`,
+          variant: "destructive",
+        });
+      }
+
+      if (peisError) {
+        console.error("Erro ao carregar PEIs:", peisError);
+        toast({
+          title: "Erro",
+          description: `Falha ao carregar PEIs: ${peisError.message}`,
+          variant: "destructive",
+        });
+      }
+
+      if (usersError) {
+        console.error("Erro ao carregar usuários:", usersError);
+        toast({
+          title: "Erro",
+          description: `Falha ao carregar usuários: ${usersError.message}`,
+          variant: "destructive",
+        });
+      }
 
       setStudents(studentsData || []);
       setPeis(peisData || []);
       setUsers(usersData || []);
-      setLogs(logsData || []);
     } catch (error) {
-      console.error(error);
+      console.error("Erro geral:", error);
       toast({
         title: "Erro",
         description: "Falha ao carregar dados",
@@ -132,7 +164,7 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
     name: String(formData.get("name") || "").trim(),
     email: String(formData.get("email") || "") || null,
     phone: String(formData.get("phone") || "") || null,
-    tenant_id: activeTenant!,
+    school_id: activeTenant!,
   };
 
     const { error } = await supabase
@@ -157,7 +189,7 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
           name: row["Nome"],
           email: row["Email"] || null,
           phone: row["Telefone"] || null,
-          tenant_id: activeTenant,
+          school_id: activeTenant,
         }));
 
         const { error } = await supabase.from("students").insert(formatted);
@@ -170,6 +202,69 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
         else toast({ title: "Alunos importados com sucesso" });
         loadData();
       },
+    });
+  };
+
+  const handleCSVExport = () => {
+    if (students.length === 0) {
+      toast({
+        title: "Nenhum aluno encontrado",
+        description: "Não há alunos para exportar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Preparar dados para exportação com formatação melhorada
+    const exportData = students.map(student => ({
+      'ID': student.id,
+      'Nome': student.name,
+      'Email': student.email || '',
+      'Telefone': student.phone || '',
+      'Data de Nascimento': student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString('pt-BR') : '',
+      'Escola': student.tenant_name || '',
+      'Status': student.status || 'Ativo',
+      'Criado em': new Date(student.created_at).toLocaleDateString('pt-BR'),
+      'Última atualização': student.updated_at ? new Date(student.updated_at).toLocaleDateString('pt-BR') : '',
+    }));
+
+    // Gerar CSV com configurações otimizadas
+    const csv = Papa.unparse(exportData, {
+      header: true,
+      delimiter: ',',
+      newline: '\n',
+      quotes: true,
+      quoteChar: '"',
+      escapeChar: '"',
+    });
+
+    // Adicionar BOM para compatibilidade com Excel
+    const BOM = '\uFEFF';
+    const csvWithBOM = BOM + csv;
+
+    // Criar e baixar arquivo
+    const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    // Nome do arquivo com timestamp
+    const timestamp = new Date().toISOString().split('T')[0];
+    const schoolName = tenants.find(t => t.id === activeTenant)?.name || 'Escola';
+    const fileName = `alunos_${schoolName.replace(/\s+/g, '_')}_${timestamp}.csv`;
+    
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Limpar URL do objeto
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Exportação realizada com sucesso!",
+      description: `${students.length} alunos exportados para ${fileName}`,
     });
   };
 
@@ -275,6 +370,9 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
             <Button asChild variant="secondary">
               <label htmlFor="csv-upload" className="cursor-pointer"><Upload className="mr-2 h-4 w-4" /> Importar CSV</label>
             </Button>
+            <Button onClick={() => setOpenExportDialog(true)} variant="outline">
+              <Download className="mr-2 h-4 w-4" /> Exportar CSV
+            </Button>
             <input id="csv-upload" type="file" accept=".csv" className="hidden" onChange={(e) => e.target.files?.[0] && handleCSVUpload(e.target.files[0])} />
           </div>
 
@@ -295,7 +393,83 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
 
         {/* PEIs */}
         <TabsContent value="peis">
-          <PEIsTable peis={peis} onPEIDeleted={loadData} />
+          <div className="space-y-4">
+            
+            {/* Estatísticas dos PEIs */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Total de PEIs</p>
+                      <p className="text-2xl font-bold">{peis.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 rounded-full bg-green-500"></div>
+                    <div>
+                      <p className="text-sm font-medium">Aprovados</p>
+                      <p className="text-2xl font-bold">
+                        {peis.filter(p => p.status === 'approved').length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 rounded-full bg-yellow-500"></div>
+                    <div>
+                      <p className="text-sm font-medium">Pendentes</p>
+                      <p className="text-2xl font-bold">
+                        {peis.filter(p => p.status === 'pending_validation').length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+                    <div>
+                      <p className="text-sm font-medium">Rascunhos</p>
+                      <p className="text-2xl font-bold">
+                        {peis.filter(p => p.status === 'draft').length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tabela de PEIs */}
+            <Card>
+              <CardHeader>
+                <CardTitle>PEIs da Escola</CardTitle>
+                <CardDescription>
+                  Lista de todos os PEIs cadastrados na escola selecionada
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-sm text-muted-foreground">
+                    Total de PEIs: {peis.length}
+                  </div>
+                  <SimplePEIsTable peis={peis} onPEIDeleted={loadData} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Users */}
@@ -303,26 +477,49 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
           <UsersTable users={users} tenants={tenants} onUserUpdated={loadData} />
         </TabsContent>
 
-        {/* Logs */}
+        {/* Logs de Auditoria */}
         <TabsContent value="logs">
-          <Card>
-            <CardHeader>
-              <CardTitle>Logs do Sistema</CardTitle>
-              <CardDescription>Últimos eventos e registros</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="text-sm space-y-2 max-h-[400px] overflow-y-auto">
-                {logs.map((log) => (
-                  <li key={log.id} className="border-b pb-1">
-                    <span className="text-muted-foreground">{new Date(log.created_at).toLocaleString()} — </span>
-                    <strong>{log.step}</strong>: {log.message || log.error}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+          <SimpleAuditLogsViewer 
+            tenantId={activeTenant} 
+            limit={100} 
+            showFilters={true} 
+          />
         </TabsContent>
       </Tabs>
+
+      {/* Dialog de Exportação */}
+      <Dialog open={openExportDialog} onOpenChange={setOpenExportDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Exportar Alunos</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Serão exportados <strong>{students.length}</strong> alunos da escola <strong>{tenants.find(t => t.id === activeTenant)?.name}</strong>.
+            </div>
+            <div className="text-sm">
+              <strong>Campos incluídos:</strong>
+              <ul className="mt-2 space-y-1 text-muted-foreground">
+                <li>• ID, Nome, Email, Telefone</li>
+                <li>• Data de Nascimento, Escola, Status</li>
+                <li>• Data de criação e última atualização</li>
+              </ul>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setOpenExportDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => {
+                handleCSVExport();
+                setOpenExportDialog(false);
+              }}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

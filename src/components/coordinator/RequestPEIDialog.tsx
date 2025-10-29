@@ -72,7 +72,7 @@ const RequestPEIDialog = ({
       if (studentsError) throw studentsError;
       setStudents(studentsData || []);
 
-      // Carregar professores do tenant através de user_tenants + user_roles
+      // Carregar professores do tenant através de user_tenants + profiles
       // Primeiro, buscar todos os user_ids do tenant
       const { data: userTenantsData, error: userTenantsError } = await supabase
         .from("user_tenants")
@@ -84,17 +84,17 @@ const RequestPEIDialog = ({
       const userIds = userTenantsData?.map((ut: any) => ut.user_id) || [];
 
       if (userIds.length > 0) {
-        // Buscar roles - filtrar apenas teacher e aee_teacher
+        // Buscar professores - filtrar apenas teacher e aee_teacher
         const { data: rolesData, error: rolesError } = await supabase
-          .from("user_roles")
-          .select("user_id, role")
-          .in("user_id", userIds)
+          .from("profiles")
+          .select("id, full_name, role")
+          .in("id", userIds)
           .in("role", ["teacher", "aee_teacher"]);
 
         if (rolesError) throw rolesError;
 
         // Criar Set com IDs de professores
-        const teacherUserIds = new Set(rolesData?.map((r: any) => r.user_id) || []);
+        const teacherUserIds = new Set(rolesData?.map((r: any) => r.id) || []);
 
         if (teacherUserIds.size > 0) {
           // Buscar profiles dos professores

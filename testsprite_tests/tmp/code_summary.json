@@ -1,0 +1,216 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "React",
+    "Vite",
+    "Tailwind CSS",
+    "Supabase",
+    "PostgreSQL",
+    "PWA",
+    "IndexedDB",
+    "React Router",
+    "React Hook Form",
+    "Zod",
+    "Radix UI",
+    "Lucide React",
+    "TanStack Query",
+    "Dexie.js"
+  ],
+  "features": [
+    {
+      "name": "Authentication System",
+      "description": "Sistema de autenticação com múltiplos roles (superadmin, coordinator, teacher, family, school_manager, aee_teacher, specialist, education_secretary, school_director)",
+      "files": [
+        "src/pages/Auth.tsx",
+        "src/pages/Dashboard.tsx",
+        "src/hooks/usePermissions.ts",
+        "src/hooks/useTenant.ts",
+        "src/lib/supabaseClient.ts",
+        "src/integrations/supabase/client.ts"
+      ]
+    },
+    {
+      "name": "Role-based Dashboards",
+      "description": "Dashboards específicos para cada tipo de usuário com funcionalidades personalizadas",
+      "files": [
+        "src/components/dashboards/SuperadminDashboard.tsx",
+        "src/components/dashboards/CoordinatorDashboard.tsx",
+        "src/components/dashboards/TeacherDashboard.tsx",
+        "src/components/dashboards/FamilyDashboard.tsx",
+        "src/components/dashboards/SchoolManagerDashboard.tsx",
+        "src/components/dashboards/AEETeacherDashboard.tsx",
+        "src/components/dashboards/SpecialistDashboard.tsx",
+        "src/components/dashboards/EducationSecretaryDashboard.tsx",
+        "src/components/dashboards/SchoolDirectorDashboard.tsx"
+      ]
+    },
+    {
+      "name": "PEI Management",
+      "description": "Sistema completo de criação, edição e acompanhamento de Planos Educacionais Individualizados",
+      "files": [
+        "src/pages/CreatePEI.tsx",
+        "src/components/pei/DiagnosisSection.tsx",
+        "src/components/pei/PlanningSection.tsx",
+        "src/components/pei/StudentIdentificationSection.tsx",
+        "src/components/pei/ReferralsSection.tsx",
+        "src/components/pei/PEITemplateSelector.tsx",
+        "src/components/pei/PEIVersionCompare.tsx",
+        "src/components/pei/PEIVersionHistory.tsx",
+        "src/components/pei/ProgressIndicator.tsx",
+        "src/components/pei/ReportView.tsx",
+        "src/hooks/usePEIVersioning.ts"
+      ]
+    },
+    {
+      "name": "Student Management",
+      "description": "Gestão completa de alunos com cadastro, edição e visualização de dados",
+      "files": [
+        "src/components/superadmin/CreateStudentDialog.tsx",
+        "src/components/superadmin/EditStudentDialog.tsx",
+        "src/components/superadmin/StudentsTable.tsx",
+        "src/components/superadmin/StudentsTableWithCache.tsx",
+        "src/components/forms/OfflineStudentForm.tsx"
+      ]
+    },
+    {
+      "name": "Multi-tenant Architecture",
+      "description": "Arquitetura multi-tenant hierárquica (rede → escolas → usuários)",
+      "files": [
+        "src/components/superadmin/CreateTenantDialog.tsx",
+        "src/components/superadmin/EditTenantDialog.tsx",
+        "src/components/superadmin/TenantsTable.tsx",
+        "src/hooks/useTenant.ts"
+      ]
+    },
+    {
+      "name": "User Management",
+      "description": "Sistema de gestão de usuários com criação, edição e atribuição de roles",
+      "files": [
+        "src/components/superadmin/CreateUserDialog.tsx",
+        "src/components/superadmin/EditUserDialog.tsx",
+        "src/components/superadmin/UsersTable.tsx",
+        "src/components/superadmin/SuperadminUserManagement.tsx"
+      ]
+    },
+    {
+      "name": "Family Access System",
+      "description": "Sistema de acesso seguro para famílias visualizarem PEIs dos filhos",
+      "files": [
+        "src/pages/FamilyAccess.tsx",
+        "src/pages/FamilyPEIView.tsx",
+        "src/pages/SecureFamilyAccess.tsx",
+        "src/components/family/FamilyPEIAccess.tsx",
+        "src/components/coordinator/GenerateFamilyTokenDialog.tsx",
+        "src/components/coordinator/FamilyTokenManager.tsx"
+      ]
+    },
+    {
+      "name": "Offline-First Architecture",
+      "description": "Funcionalidade offline com sincronização automática quando online",
+      "files": [
+        "src/lib/offlineStorage.ts",
+        "src/lib/offlineDatabase.ts",
+        "src/hooks/useOfflineQuery.ts",
+        "src/hooks/useOfflineSync.ts",
+        "src/hooks/useOnlineStatus.ts",
+        "src/hooks/useSyncOnReconnect.ts",
+        "src/components/shared/OfflineIndicator.tsx",
+        "src/components/shared/PendingChangesIndicator.tsx",
+        "src/services/SyncService.ts",
+        "src/services/cacheService.ts",
+        "src/services/pendingChangesService.ts"
+      ]
+    },
+    {
+      "name": "PWA Features",
+      "description": "Progressive Web App com service worker, cache e notificações push",
+      "files": [
+        "src/components/shared/PWAUpdatePrompt.tsx",
+        "src/lib/notifications.ts",
+        "src/components/shared/NotificationManager.tsx",
+        "src/components/shared/NotificationBell.tsx",
+        "vite.config.ts"
+      ]
+    },
+    {
+      "name": "Gamified Student Interface",
+      "description": "Interface gamificada para estudantes com sistema de conquistas e atividades",
+      "files": [
+        "src/components/student/StudentGamifiedDashboard.tsx",
+        "src/components/student/AchievementSystem.tsx",
+        "src/components/student/GamifiedActivity.tsx"
+      ]
+    },
+    {
+      "name": "Mobile-First Design",
+      "description": "Design responsivo e mobile-first com navegação otimizada para dispositivos móveis",
+      "files": [
+        "src/components/shared/MobileNavigation.tsx",
+        "src/components/shared/ResponsiveLayout.tsx",
+        "src/components/forms/MobilePEIForm.tsx",
+        "src/hooks/use-mobile.tsx"
+      ]
+    },
+    {
+      "name": "Performance Optimization",
+      "description": "Otimizações de performance para dispositivos móveis e conexões lentas",
+      "files": [
+        "src/lib/performanceOptimizer.ts",
+        "src/lib/databaseTests.ts"
+      ]
+    },
+    {
+      "name": "Audit and Logging",
+      "description": "Sistema de auditoria e logs para rastreamento de mudanças",
+      "files": [
+        "src/components/shared/AuditLogsViewer.tsx",
+        "src/components/shared/SimpleAuditLogsViewer.tsx"
+      ]
+    },
+    {
+      "name": "CSV Import/Export",
+      "description": "Funcionalidade de importação e exportação de dados via CSV",
+      "files": [
+        "src/components/superadmin/CSVUploadDialog.tsx",
+        "src/components/superadmin/ImportCSVDialog.tsx"
+      ]
+    },
+    {
+      "name": "Testing and Debug Tools",
+      "description": "Ferramentas de teste e debug para desenvolvimento e monitoramento",
+      "files": [
+        "src/components/debug/DatabaseTestRunner.tsx",
+        "src/components/debug/UsabilityTestingManager.tsx",
+        "src/components/debug/ImportTest.tsx",
+        "src/components/dashboards/DebugUser.tsx",
+        "src/lib/usabilityTesting.ts"
+      ]
+    },
+    {
+      "name": "Theme and UI Components",
+      "description": "Sistema de temas e componentes UI reutilizáveis baseados em Radix UI",
+      "files": [
+        "src/components/shared/ThemeToggle.tsx",
+        "src/components/ui/",
+        "src/components/shared/InstitutionalLogo.tsx"
+      ]
+    },
+    {
+      "name": "PEI Meetings and Orientations",
+      "description": "Sistema de reuniões e orientações relacionadas aos PEIs",
+      "files": [
+        "src/pages/PEIMeetings.tsx",
+        "src/pages/PEIOrientations.tsx"
+      ]
+    },
+    {
+      "name": "Tutorial System",
+      "description": "Sistema de tutoriais e onboarding para novos usuários",
+      "files": [
+        "src/components/tutorial/TutorialCards.tsx"
+      ]
+    }
+  ]
+}
+
+
