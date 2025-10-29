@@ -2,7 +2,7 @@
 
 **Sistema Colaborativo para Criação e Acompanhamento de Planos Educacionais Individualizados**
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/your-org/pei-collab)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/peicollabeducacaoinclusiva-gif/peicollab)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/react-18+-blue.svg)](https://reactjs.org/)
@@ -87,15 +87,15 @@ npm install -g supabase
 ### 2. Instalação
 ```bash
 # Clone o repositório
-git clone https://github.com/your-org/pei-collab.git
+git clone https://github.com/peicollabeducacaoinclusiva-gif/peicollab.git
 cd pei-collab
 
 # Instale dependências
 npm install
 
 # Configure variáveis de ambiente
-cp .env.example .env.local
-# Edite .env.local com suas configurações
+cp env.production.example .env.local
+# Edite .env.local com suas configurações do Supabase
 ```
 
 ### 3. Configuração do Supabase
@@ -282,7 +282,41 @@ npm run performance:monitor
 
 ## 🚀 Deploy
 
-### Setup de Produção
+### 🚀 Deploy na Vercel (Recomendado)
+
+#### 1. **Importar Projeto**
+1. Acesse [vercel.com](https://vercel.com) e faça login
+2. Clique em **"New Project"**
+3. Importe o repositório: `peicollabeducacaoinclusiva-gif/peicollab`
+4. Configure:
+   - **Framework Preset:** Vite
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+
+#### 2. **Configurar Variáveis de Ambiente**
+Na Vercel, vá para **Settings** → **Environment Variables** e adicione:
+
+```env
+# Obrigatórias
+VITE_SUPABASE_URL=https://fximylewmvsllkdczovj.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4aW15bGV3bXZzbGxrZGN6b3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTY0NzIsImV4cCI6MjA3NzI3MjQ3Mn0.3FqQqUfVgD3hIh1daa3R1JjouGZ4D4ONR6SmcL9Qids
+VITE_APP_URL=https://seu-app.vercel.app
+VITE_API_URL=https://fximylewmvsllkdczovj.supabase.co
+VITE_DEBUG_MODE=false
+VITE_OFFLINE_MODE=false
+
+# Opcionais (para funcionalidades avançadas)
+VITE_VAPID_PUBLIC_KEY=your_vapid_public_key_here
+VITE_VAPID_PRIVATE_KEY=your_vapid_private_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+```
+
+#### 3. **Deploy Automático**
+- **Push para `main`** = Deploy automático para produção
+- **Push para outras branches** = Preview deployments
+- **Pull Requests** = Deploy de preview para teste
+
+### Setup de Produção Local
 ```bash
 # Script automatizado de setup
 npm run setup:production
@@ -292,17 +326,9 @@ npm run health:check
 ```
 
 ### Provedores Suportados
-- **Vercel** (recomendado)
+- **Vercel** (recomendado) ✅
 - **Netlify**
 - **Servidor próprio** (nginx/apache)
-
-### Variáveis de Ambiente
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
-VITE_VAPID_PUBLIC_KEY=your_vapid_public_key
-SUPABASE_VAPID_PRIVATE_KEY=your_vapid_private_key
-```
 
 ## 📚 Documentação
 
@@ -335,9 +361,9 @@ SUPABASE_VAPID_PRIVATE_KEY=your_vapid_private_key
 - **Documentação** completa
 
 ### Contatos
-- **Issues**: [GitHub Issues](https://github.com/your-org/pei-collab/issues)
-- **Discord**: [Servidor Discord](https://discord.gg/pei-collab)
-- **Email**: suporte@pei-collab.com
+- **Issues**: [GitHub Issues](https://github.com/peicollabeducacaoinclusiva-gif/peicollab/issues)
+- **Repositório**: [GitHub Repository](https://github.com/peicollabeducacaoinclusiva-gif/peicollab)
+- **Email**: peicollabeducacaoinclusiva@gmail.com
 
 ## 📄 Licença
 
