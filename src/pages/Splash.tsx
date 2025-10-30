@@ -9,37 +9,37 @@ const features = [
     icon: FileText,
     title: "PEIs Personalizados e Inteligentes",
     text: "Crie planos educacionais que respeitam o ritmo e as necessidades de cada aluno, com templates inteligentes e acolhedores.",
-    color: "from-indigo-500 to-indigo-400",
+    color: "from-indigo-600 to-purple-600",
   },
   {
     icon: Users,
     title: "Colaboração que Une Pessoas",
     text: "Conecte professores, coordenadores, terapeutas e famílias em tempo real. Porque juntos fazemos mais.",
-    color: "from-purple-500 to-purple-400",
+    color: "from-purple-600 to-fuchsia-500",
   },
   {
     icon: Heart,
     title: "Celebre Cada Conquista",
     text: "Timeline interativa para registrar progressos e conquistas. Cada passo importa na jornada de aprendizado.",
-    color: "from-blue-500 to-cyan-400",
+    color: "from-blue-600 to-indigo-600",
   },
   {
     icon: TrendingUp,
     title: "Insights que Orientam",
     text: "Relatórios visuais e claros que ajudam a tomar decisões pedagógicas mais assertivas e humanas.",
-    color: "from-purple-500 to-pink-400",
+    color: "from-indigo-600 to-blue-600",
   },
   {
     icon: Brain,
     title: "O Aluno no Centro de Tudo",
     text: "Interface pensada com carinho para colocar cada estudante no centro, respeitando suas potencialidades e sonhos únicos.",
-    color: "from-pink-500 to-rose-400",
+    color: "from-purple-600 to-violet-600",
   },
   {
     icon: Shield,
     title: "Trabalhe de Qualquer Lugar",
     text: "Continue seu trabalho mesmo offline. Suas atualizações são sincronizadas automaticamente ao voltar à internet.",
-    color: "from-teal-500 to-emerald-400",
+    color: "from-indigo-600 to-blue-600",
   },
 ];
 
@@ -93,22 +93,22 @@ const testimonials = [
 // NOVA SEÇÃO: DADOS PARA O MINI-BLOG
 const blogPosts = [
   {
-    title: "Como a Escola X Mapeou o Progresso de Alunos com TEA",
-    description: "Veja o caso de sucesso da Escola Semente da Vida, que utilizou nossos relatórios visuais para criar intervenções pedagógicas mais eficazes.",
-    image: "https://plus.unsplash.com/premium_photo-1663011012690-97167fb627c0?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
-    category: "Estudo de Caso",
+    title: "Diagnóstico de Inclusão em São Gonçalo dos Campos",
+    description: "Painéis de dados identificaram gargalos e avanços na rede, guiando decisões pedagógicas com clareza e evidências.",
+    image: "https://images.unsplash.com/photo-1529078155058-5d716f45d604?w=800&h=600&fit=crop",
+    category: "Benefício Real",
   },
   {
-    title: "A Importância da Colaboração Família-Escola na Inclusão",
-    description: "Neste artigo, exploramos como a comunicação em tempo real fortalece o vínculo e acelera o desenvolvimento dos alunos.",
+    title: "PEI com IA: experiência da Profa. Rosângela",
+    description: "A criação do PEI ficou mais rápida e humana com sugestões inteligentes, mantendo a autoria pedagógica da professora.",
+    image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=800&h=600&fit=crop",
+    category: "Sala de Aula",
+  },
+  {
+    title: "Modelo de Qualidade para Coordenadores e Gestores",
+    description: "Um referencial consistente que atende às demandas da gestão municipal diante dos desafios do cotidiano.",
     image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=600&fit=crop",
-    category: "Artigo",
-  },
-  {
-    title: "Novidade: Templates de PEI para Altas Habilidades",
-    description: "Lançamos novos modelos de planos educacionais focados em superdotação, ajudando a expandir os horizontes de todos os alunos.",
-    image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&h=600&fit=crop",
-    category: "Atualização",
+    category: "Gestão",
   },
 ];
 
@@ -186,7 +186,7 @@ export default function LandingPage() {
   const { scrollYProgress } = useScroll();
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30 text-gray-800 overflow-hidden relative">
+    <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 text-gray-800 overflow-hidden relative">
       {/* Subtle floating elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-40">
         <motion.div
@@ -216,7 +216,7 @@ export default function LandingPage() {
       </div>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 w-full bg-white/90 backdrop-blur-md border-b border-gray-200 z-50 shadow-sm">
+      <header className="fixed top-0 left-0 w-full bg-white/90 backdrop-blur-md border-b border-indigo-100 z-50 shadow-sm">
         <div className="container mx-auto flex items-center justify-between py-4 px-6">
           <motion.div
             className="flex items-center gap-3 cursor-pointer"
@@ -249,16 +249,11 @@ export default function LandingPage() {
           <div className="flex gap-3">
             <Button
               onClick={() => navigate("/auth")}
-              className="bg-gradient-to-r from-indigo-600 to-purple-400 hover:from-indigo-200 hover:to-purple-400 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-            >
-              Login
-            </Button>
-            <Button
-              onClick={() => navigate("/family")}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
             >
-              Acesso da família
+              Acesso ao PEI Collab
             </Button>
+
           </div>
         </div>
       </header>
@@ -305,16 +300,10 @@ export default function LandingPage() {
                 transition={{ delay: 0.7 }}
                 className="flex flex-col sm:flex-row gap-4 mb-8"
               >
+
                 <Button
                   onClick={() => navigate("/auth")}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-6 text-lg rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
-                >
-                  Começar Gratuitamente
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/auth")}
-                  className="border-2 bg-indigo-600 border-gray-300 text-gray-300 hover:bg-gray-50 px-8 py-6 text-lg rounded-xl font-semibold transition-all"
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-6 text-lg rounded-xl font-semibold transition-all shadow-md"
                 >
                   Fazer Login
                 </Button>
@@ -328,7 +317,7 @@ export default function LandingPage() {
               >
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span>100% Gratuito</span>
+                  <span>100% Inclusão e Acessibilidade</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Shield className="w-5 h-5 text-blue-600" />
@@ -336,7 +325,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Award className="w-5 h-5 text-purple-600" />
-                  <span>Certificado LGPD</span>
+                  <span>Seguindo a LGPD</span>
                 </div>
               </motion.div>
             </div>
@@ -368,8 +357,8 @@ export default function LandingPage() {
                     <Users className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">500+ Educadores</p>
-                    <p className="text-sm text-gray-600">Transformando vidas</p>
+                    <p className="font-semibold text-gray-900">INCLUSÃO E ACESSIBILIDADE</p>
+                    <p className="text-sm text-gray-600">Transformando vidas com tecnologia</p>
                   </div>
                 </div>
               </motion.div>
@@ -569,6 +558,17 @@ export default function LandingPage() {
               />
               <div>
                 <p className="font-bold text-gray-900">Santa Bárbara</p>
+                <p className="text-sm text-gray-600">Prefeitura</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 mb-6">
+              <img
+                src="/logo.png"
+                alt="Logo Prefeitura Municipal de São Gonçalo dos Campos"
+                className="w-16 h-16 rounded-full object-cover shadow-md"
+              />
+              <div>
+                <p className="font-bold text-gray-900">São Gonçalo dos Campos</p>
                 <p className="text-sm text-gray-600">Prefeitura</p>
               </div>
             </div>
