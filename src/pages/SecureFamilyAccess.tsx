@@ -39,24 +39,89 @@ export default function SecureFamilyAccess() {
     try {
       console.log("Validando token...");
       
-      // Validar token via RPC
-      const { data: validation, error: rpcError } = await supabase
-        .rpc("validate_family_token", { token_value: token });
+      // Calcular hash SHA-256 do token
+      const tokenHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+      const tokenHash = Array.from(new Uint8Array(tokenHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      if (rpcError) {
-        console.error("Erro na validação:", rpcError);
-        throw new Error("Erro ao validar token");
+      console.log("Hash do token calculado:", tokenHash.substring(0, 10) + "...");
+
+      // Buscar token no banco de dados
+      const { data: tokenData, error: dbError } = await supabase
+        .from('family_access_tokens')
+        .select(`
+          id,
+          student_id,
+          pei_id,
+          expires_at,
+          max_uses,
+          current_uses,
+          used
+        `)
+        .eq('token_hash', tokenHash)
+        .eq('used', false)
+        .single();
+
+      if (dbError || !tokenData) {
+        console.error("Erro ao buscar token:", dbError);
+        throw new Error("Token inválido ou expirado");
       }
 
-      console.log("Resposta da validação:", validation);
+      console.log("Token encontrado:", tokenData);
 
-      const parsedValidation = validation as unknown as ValidationResponse;
-
-      if (!parsedValidation.valid) {
-        setError(parsedValidation.error || "Token inválido ou expirado");
-        setLoading(false);
-        return;
+      // Verificar se expirou
+      const expiresAt = new Date(tokenData.expires_at);
+      if (expiresAt < new Date()) {
+        throw new Error("Token expirado");
       }
+
+      // Verificar se excedeu limite de usos
+      if (tokenData.current_uses >= tokenData.max_uses) {
+        throw new Error("Token excedeu o limite de usos");
+      }
+
+      // Incrementar uso do token
+      await supabase
+        .from('family_access_tokens')
+        .update({ 
+          current_uses: (tokenData.current_uses || 0) + 1,
+          last_accessed_at: new Date().toISOString()
+        })
+        .eq('id', tokenData.id);
+
+      // Buscar dados do estudante
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('name')
+        .eq('id', tokenData.student_id)
+        .single();
+
+      // Buscar dados do tenant via PEI
+      const { data: peiData } = await supabase
+        .from('peis')
+        .select('tenant_id')
+        .eq('id', tokenData.pei_id)
+        .single();
+
+      let tenantName = "Rede";
+      if (peiData?.tenant_id) {
+        const { data: tenantData } = await supabase
+          .from('tenants')
+          .select('network_name')
+          .eq('id', peiData.tenant_id)
+          .single();
+        tenantName = tenantData?.network_name || "Rede";
+      }
+
+      const parsedValidation: ValidationResponse = {
+        valid: true,
+        student_name: studentData?.name || "Estudante",
+        pei_id: tokenData.pei_id,
+        student_id: tokenData.student_id,
+        tenant_name: tenantName,
+        expires_at: tokenData.expires_at
+      };
+
+      console.log("Validação bem-sucedida:", parsedValidation);
 
       // Criar usuário temporário usando o token como identificador
       const guestEmail = `family_guest_${token}@temp.peicollab.app`;

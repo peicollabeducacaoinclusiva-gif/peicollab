@@ -68,6 +68,8 @@ function App() {
               <Route path="/teste" element={<Testes />} />
               <Route path="/debuguser" element={<DebugUser />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/login" element={<Auth />} />
+              <Route path="/home" element={<Dashboard />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/pei/new" element={<CreatePEI />} />
               <Route path="/pei/edit" element={<CreatePEI />} />

@@ -1,5 +1,5 @@
--- 1. Inconsistência no Modelo de Dados: Remover campo 'role' deprecated de 'profiles'
-ALTER TABLE profiles DROP COLUMN IF EXISTS role;
+-- 1. Inconsistência no Modelo de Dados: Remover campo 'role' deprecated de 'profiles' - COMENTADO TEMPORARIAMENTE
+-- ALTER TABLE profiles DROP COLUMN IF EXISTS role;
 
 -- Criar view de compatibilidade (opcional, mas recomendado para mitigar quebras)
 CREATE OR REPLACE VIEW profiles_with_legacy_role AS
@@ -248,7 +248,7 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.user_roles 
     WHERE user_id = _user_id 
-      AND role = 'education_secretary'::app_role
+      AND role = 'education_secretary'::user_role
   );
 $$;
 
@@ -259,7 +259,7 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.user_roles 
     WHERE user_id = _user_id 
-      AND role = 'school_director'::app_role
+      AND role = 'school_director'::user_role
   );
 $$;
 
@@ -424,20 +424,20 @@ CREATE POLICY "education_secretary_can_view_audit" ON public.audit_log
   FOR SELECT USING (
     is_education_secretary(auth.uid()) AND 
     table_name IN ('schools', 'students', 'peis', 'profiles') AND
-    record_id IN (
-      SELECT id FROM public.schools 
-      WHERE tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = auth.uid())
-      UNION
-      SELECT id FROM public.students s
-      JOIN public.schools sc ON sc.id = s.school_id
-      WHERE sc.tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = auth.uid())
-      UNION
-      SELECT id FROM public.peis p
-      JOIN public.schools s ON s.id = p.school_id
-      WHERE s.tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = auth.uid())
-      UNION
-      SELECT id FROM public.profiles 
-      WHERE tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = auth.uid())
+    record_id IN (                                                                      
+      SELECT s.id FROM public.schools s                                                     
+      WHERE s.tenant_id = (SELECT p.tenant_id FROM public.profiles p WHERE p.id = auth.uid())   
+      UNION                                                                             
+      SELECT st.id FROM public.students st                                                  
+      JOIN public.schools sc ON sc.id = st.school_id                                     
+      WHERE sc.tenant_id = (SELECT p.tenant_id FROM public.profiles p WHERE p.id = auth.uid())
+      UNION                                                                             
+      SELECT pe.id FROM public.peis pe                                                      
+      JOIN public.schools s ON s.id = pe.school_id                                       
+      WHERE s.tenant_id = (SELECT p.tenant_id FROM public.profiles p WHERE p.id = auth.uid()) 
+      UNION                                                                             
+      SELECT pr.id FROM public.profiles pr                                                    
+      WHERE pr.tenant_id = (SELECT p.tenant_id FROM public.profiles p WHERE p.id = auth.uid())   
     )
   );
 

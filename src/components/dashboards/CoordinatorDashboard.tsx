@@ -58,6 +58,7 @@ interface PEIData {
   network_name: string;
   status: PEIStatus;
   created_at: string;
+  family_approved_at?: string | null;
 }
 
 interface CoordinatorDashboardProps {
@@ -75,6 +76,8 @@ interface CoordinatorDashboardProps {
 interface Tenant {
   id: string;
   network_name: string;
+  school_id?: string;
+  tenant_id?: string;
 }
 
 interface Stats {
@@ -292,11 +295,33 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       setLoading(true);
 
-      // Nova estrutura multi-tenant: buscar tenants baseado no perfil do usuário
+      // Coordenador deve visualizar dados da escola específica, não da rede
       let tenantsData = [];
       
-      if (profile.tenant_id) {
-        // Usuário tem tenant_id direto (education_secretary, superadmin)
+      if (profile.school_id) {
+        // Coordenador tem school_id, buscar dados da escola específica
+        const { data: school, error: schoolError } = await supabase
+          .from("schools")
+          .select(`
+            id,
+            school_name,
+            tenant_id,
+            tenants(id, network_name)
+          `)
+          .eq("id", profile.school_id)
+          .single();
+        
+        if (schoolError) throw schoolError;
+        
+        // Criar um "tenant" virtual para a escola específica
+        tenantsData = [{
+          id: school.id, // Usar school_id como identificador
+          network_name: school.school_name, // Usar nome da escola
+          school_id: school.id,
+          tenant_id: school.tenant_id
+        }];
+      } else if (profile.tenant_id) {
+        // Fallback: se não tem school_id, usar tenant_id (education_secretary, superadmin)
         const { data: tenant, error: tenantError } = await supabase
           .from("tenants")
           .select("id, network_name")
@@ -305,19 +330,6 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
         
         if (tenantError) throw tenantError;
         tenantsData = [tenant];
-      } else if (profile.school_id) {
-        // Usuário tem school_id, buscar tenant da escola
-        const { data: school, error: schoolError } = await supabase
-          .from("schools")
-          .select(`
-            tenant_id,
-            tenants(id, network_name)
-          `)
-          .eq("id", profile.school_id)
-          .single();
-        
-        if (schoolError) throw schoolError;
-        tenantsData = [school.tenants];
       }
 
       setTenants(tenantsData);
@@ -348,37 +360,60 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     try {
       setLoading(true);
 
-      // Nova estrutura multi-tenant: buscar dados baseado no tenant selecionado
+      // Buscar o tenant selecionado para verificar se é escola ou rede
+      const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+      const isSchoolSpecific = selectedTenant?.school_id;
       const [studentsCount, peisData, commentsData] = await Promise.all([
-        // Buscar estudantes das escolas do tenant
-        supabase
-          .from("students")
-          .select(`
-            id,
-            school_id,
-            schools!inner(tenant_id)
-          `)
-          .eq("schools.tenant_id", selectedTenantId),
+        // Buscar estudantes baseado no tipo de seleção
+        isSchoolSpecific 
+          ? supabase
+              .from("students")
+              .select("id")
+              .eq("school_id", selectedTenantId)
+          : supabase
+              .from("students")
+              .select(`
+                id,
+                school_id,
+                schools!inner(tenant_id)
+              `)
+              .eq("schools.tenant_id", selectedTenantId),
 
-        supabase
-          .from("peis")
-          .select(`
-            id,
-            student_id,
-            status,
-            created_at,
-            assigned_teacher_id,
-            students!inner (
-              name,
-              school_id,
-              schools!inner(tenant_id)
-            ),
-            assigned_teacher:profiles!peis_assigned_teacher_id_fkey (
-              full_name
-            )
-          `)
-          .eq("students.schools.tenant_id", selectedTenantId)
-          .order("created_at", { ascending: false }),
+        // Buscar PEIs baseado no tipo de seleção
+        isSchoolSpecific
+          ? supabase
+              .from("peis")
+              .select(`
+                id,
+                student_id,
+                status,
+                created_at,
+                assigned_teacher_id,
+                family_approved_at,
+                students!inner (
+                  name,
+                  school_id
+                )
+              `)
+              .eq("school_id", selectedTenantId)
+              .order("created_at", { ascending: false })
+          : supabase
+              .from("peis")
+              .select(`
+                id,
+                student_id,
+                status,
+                created_at,
+                assigned_teacher_id,
+                family_approved_at,
+                students!inner (
+                  name,
+                  school_id,
+                  schools!inner(tenant_id)
+                )
+              `)
+              .eq("students.schools.tenant_id", selectedTenantId)
+              .order("created_at", { ascending: false }),
 
         supabase
           .from("pei_comments")
@@ -387,6 +422,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
 
       if (studentsCount.error) throw studentsCount.error;
       if (peisData.error) throw peisData.error;
+
+      console.log("📊 Dashboard - Dados carregados:", {
+        selectedTenantId,
+        isSchoolSpecific,
+        peisCount: peisData.data?.length || 0,
+        peisStatuses: peisData.data?.map((p: any) => ({ id: p.id, status: p.status, student: p.students?.name }))
+      });
 
       const peisWithComments = new Set<string>();
       if (commentsData.data) {
@@ -435,25 +477,52 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
         total: peisData.data?.length || 0,
       });
 
-      const { data: tenantData } = await supabase
-        .from("tenants")
-        .select("network_name")
-        .eq("id", selectedTenantId)
-        .single();
+      // Buscar nome da escola ou rede baseado no tipo de seleção
+      let displayName = "Escola não identificada";
+      if (isSchoolSpecific) {
+        displayName = selectedTenant?.network_name || "Escola não identificada";
+      } else {
+        const { data: tenantData } = await supabase
+          .from("tenants")
+          .select("network_name")
+          .eq("id", selectedTenantId)
+          .single();
+        displayName = tenantData?.network_name || "Rede não identificada";
+      }
+
+      // Buscar nomes dos professores atribuídos aos PEIs
+      const teacherIds = Array.from(new Set(
+        peisData.data?.map((p: any) => p.assigned_teacher_id).filter(Boolean) || []
+      ));
+      
+      let teacherMap: Record<string, string> = {};
+      if (teacherIds.length > 0) {
+        const { data: teachersData } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", teacherIds);
+        
+        teacherMap = (teachersData || []).reduce((acc: Record<string, string>, teacher: any) => {
+          acc[teacher.id] = teacher.full_name;
+          return acc;
+        }, {});
+      }
 
       const formattedPEIs: PEIData[] = peisData.data?.map((p: any) => ({
         id: p.id,
         student_id: p.student_id,
         student_name: p.students?.name || "Aluno não identificado",
-        teacher_name: p.assigned_teacher?.full_name || "Não atribuído",
-        tenant_name: tenantData?.network_name || "Rede não identificada",
+        teacher_name: p.assigned_teacher_id ? (teacherMap[p.assigned_teacher_id] || "Professor não identificado") : "Não atribuído",
+        school_name: displayName,
+        network_name: displayName,
         status: p.status,
         created_at: p.created_at,
+        family_approved_at: p.family_approved_at,
       })) || [];
 
       setPeis(formattedPEIs);
 
-      await loadExtendedStats(selectedTenantId);
+      await loadExtendedStats(selectedTenantId, isSchoolSpecific);
 
     } catch (error: any) {
       toast({
@@ -466,7 +535,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     }
   };
 
-  const loadExtendedStats = async (tenantId: string) => {
+  const loadExtendedStats = async (tenantId: string, isSchoolSpecific?: boolean) => {
     try {
       const [reviewsData, barriersData, goalsData, resourcesData, referralsData] = await Promise.all([
         supabase.from("pei_reviews").select("id, pei_id, reviewer_role, review_date, next_review_date, notes"),
@@ -529,20 +598,43 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   const loadTeacherPerformance = async () => {
     if (!selectedTenantId) return;
     try {
+      const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+      const isSchoolSpecific = selectedTenant?.school_id;
+
       const { data, error } = await supabase
         .from("peis")
         .select(`
           status,
-          profiles!assigned_teacher_id (full_name)
+          assigned_teacher_id
         `)
-        .eq("school_id", selectedTenantId);
+        .eq(isSchoolSpecific ? "school_id" : "tenant_id", selectedTenantId);
 
       if (error) throw error;
+
+      // Buscar nomes dos professores
+      const teacherIds = Array.from(new Set(
+        data?.map((p: any) => p.assigned_teacher_id).filter(Boolean) || []
+      ));
+      
+      let teacherMap: Record<string, string> = {};
+      if (teacherIds.length > 0) {
+        const { data: teachersData } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", teacherIds);
+        
+        teacherMap = (teachersData || []).reduce((acc: Record<string, string>, teacher: any) => {
+          acc[teacher.id] = teacher.full_name;
+          return acc;
+        }, {});
+      }
 
       const performanceMap = new Map<string, { approved: number; returned: number; total: number }>();
 
       data.forEach((pei: any) => {
-        const teacherName = pei.profiles?.full_name || "Não Atribuído";
+        const teacherName = pei.assigned_teacher_id 
+          ? (teacherMap[pei.assigned_teacher_id] || "Professor não identificado") 
+          : "Não Atribuído";
         if (!performanceMap.has(teacherName)) {
           performanceMap.set(teacherName, { approved: 0, returned: 0, total: 0 });
         }
@@ -572,10 +664,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     if (!selectedTenantId || !dateRange?.from || !dateRange?.to) return;
 
     try {
+      const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+      const isSchoolSpecific = selectedTenant?.school_id;
+
       const { data, error } = await supabase
         .from("peis")
         .select("created_at, status")
-        .eq("school_id", selectedTenantId)
+        .eq(isSchoolSpecific ? "school_id" : "tenant_id", selectedTenantId)
         .gte("created_at", format(dateRange.from, "yyyy-MM-dd"))
         .lte("created_at", format(dateRange.to, "yyyy-MM-dd"));
 
@@ -622,10 +717,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   const loadBarrierTypeData = async () => {
     if (!selectedTenantId) return;
     try {
+      const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+      const isSchoolSpecific = selectedTenant?.school_id;
+
       const { data, error } = await supabase
         .from("pei_barriers")
         .select("barrier_type, peis!inner(school_id)")
-        .eq("peis.school_id", selectedTenantId);
+        .eq(isSchoolSpecific ? "peis.school_id" : "peis.tenant_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -643,10 +741,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   const loadResourceUseData = async () => {
     if (!selectedTenantId) return;
     try {
+      const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+      const isSchoolSpecific = selectedTenant?.school_id;
+
       const { data, error } = await supabase
         .from("pei_accessibility_resources")
         .select("resource_type, peis!inner(school_id)")
-        .eq("peis.school_id", selectedTenantId);
+        .eq(isSchoolSpecific ? "peis.school_id" : "peis.tenant_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -664,10 +765,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   const loadReferralData = async () => {
     if (!selectedTenantId) return;
     try {
+      const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+      const isSchoolSpecific = selectedTenant?.school_id;
+
       const { data, error } = await supabase
         .from("pei_referrals")
         .select("referred_to, peis!inner(school_id)")
-        .eq("peis.school_id", selectedTenantId);
+        .eq(isSchoolSpecific ? "peis.school_id" : "peis.tenant_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -685,10 +789,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   const loadGoalProgressData = async () => {
     if (!selectedTenantId) return;
     try {
+      const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+      const isSchoolSpecific = selectedTenant?.school_id;
+
       const { data, error } = await supabase
         .from("pei_goals")
         .select("progress_level, peis!inner(school_id)")
-        .eq("peis.school_id", selectedTenantId);
+        .eq(isSchoolSpecific ? "peis.school_id" : "peis.tenant_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -706,10 +813,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   const loadPeiReviewData = async () => {
     if (!selectedTenantId) return;
     try {
+      const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+      const isSchoolSpecific = selectedTenant?.school_id;
+
       const { data, error } = await supabase
         .from("pei_reviews")
         .select("review_date, peis!inner(school_id)")
-        .eq("peis.school_id", selectedTenantId);
+        .eq(isSchoolSpecific ? "peis.school_id" : "peis.tenant_id", selectedTenantId);
 
       if (error) throw error;
 
@@ -792,6 +902,29 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     setSelectedPeiId(peiId);
     setTokenManagerKey(prev => prev + 1);
     setShowTokenManager(true);
+  };
+
+  const handleChangePEIStatus = async (peiId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("peis")
+        .update({ status: newStatus as any })
+        .eq("id", peiId);
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Status do PEI alterado com sucesso!",
+        description: `Status alterado para: ${getStatusLabel(newStatus as any)}`
+      });
+      loadTenantData();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao alterar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExportReport = async () => {
@@ -992,7 +1125,8 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
         </div>
         <div className="flex gap-2">
           <RequestPEIDialog 
-            tenantId={selectedTenantId} 
+            tenantId={tenants.find(t => t.id === selectedTenantId)?.tenant_id || selectedTenantId} 
+            schoolId={tenants.find(t => t.id === selectedTenantId)?.school_id}
             coordinatorId={profile.id} 
             onPEICreated={loadTenantData} 
           />
@@ -1039,137 +1173,12 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Alunos</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.students}</div>
-                <p className="text-xs text-muted-foreground">Total de alunos na escola</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">PEIs Pendentes</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.peisPending}</div>
-                <p className="text-xs text-muted-foreground">Aguardando sua validação</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">PEIs Aprovados</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.peisApproved}</div>
-                <p className="text-xs text-muted-foreground">PEIs finalizados e aprovados</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Taxa de Conclusão</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{completionRate}%</div>
-                <p className="text-xs text-muted-foreground">De PEIs aprovados</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="col-span-1 lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Progresso Geral dos PEIs</CardTitle>
-                <CardDescription>
-                  Visão geral do status de todos os PEIs na escola.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pl-2">
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center" variant="secondary">Rascunho</Badge>
-                    <Progress value={(stats.peisDraft / stats.total) * 100} />
-                    <span className="ml-2 text-sm font-medium">{stats.peisDraft}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center bg-yellow-500/10 text-yellow-700 border-yellow-200" variant="secondary">Pendente</Badge>
-                    <Progress value={(stats.peisPending / stats.total) * 100} />
-                    <span className="ml-2 text-sm font-medium">{stats.peisPending}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center bg-blue-500/10 text-blue-700 border-blue-200" variant="secondary">Validado</Badge>
-                    <Progress value={(stats.peisValidated / stats.total) * 100} />
-                    <span className="ml-2 text-sm font-medium">{stats.peisValidated}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center bg-orange-500/10 text-orange-700 border-orange-200" variant="secondary">Aguard. Família</Badge>
-                    <Progress value={(stats.peisPendingFamily / stats.total) * 100} />
-                    <span className="ml-2 text-sm font-medium">{stats.peisPendingFamily}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center bg-green-500/10 text-green-700 border-green-200" variant="secondary">Aprovado</Badge>
-                    <Progress value={(stats.peisApproved / stats.total) * 100} />
-                    <span className="ml-2 text-sm font-medium">{stats.peisApproved}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Badge className="mr-2 w-28 justify-center" variant="destructive">Devolvido</Badge>
-                    <Progress value={(stats.peisReturned / stats.total) * 100} />
-                    <span className="ml-2 text-sm font-medium">{stats.peisReturned}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="col-span-1 lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <AlertCircleIcon className="h-5 w-5 mr-2 text-yellow-500" />
-                  Pontos de Atenção
-                </CardTitle>
-                <CardDescription>
-                  Itens que requerem sua atenção imediata.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">PEIs Devolvidos</p>
-                    <p className="text-sm text-muted-foreground">Professores precisam revisar</p>
-                  </div>
-                  <Badge variant="destructive" className="text-lg">{stats.peisReturned}</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">PEIs com Novos Comentários</p>
-                    <p className="text-sm text-muted-foreground">Interações para verificar</p>
-                  </div>
-                  <Badge variant="secondary" className="text-lg bg-yellow-500/10 text-yellow-700 border-yellow-200">{stats.withComments}</Badge>
-                </div>
-                {extendedStats && extendedStats.lateReviews > 0 && (
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                    <div>
-                      <p className="font-medium">Reuniões Atrasadas</p>
-                      <p className="text-sm text-muted-foreground">Reuniões de acompanhamento de PEI</p>
-                    </div>
-                    <Badge variant="destructive" className="text-lg">{extendedStats.lateReviews}</Badge>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <Separator />
-
           <Tabs defaultValue="overview" className="space-y-4">
             <div className="flex items-center justify-between">
               <TabsList>
                 <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="peis">PEIs</TabsTrigger>
+                <TabsTrigger value="stats">Estatísticas</TabsTrigger>
                 <TabsTrigger value="analytics">Análises</TabsTrigger>
               </TabsList>
               <div className="flex items-center space-x-2">
@@ -1233,6 +1242,347 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                 </CardContent>
               </Card>
               <InclusionQuote />
+            </TabsContent>
+            <TabsContent value="peis" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Gestão de PEIs</CardTitle>
+                      <CardDescription>
+                        Visualize, valide e gerencie todos os PEIs da escola. Você pode aprovar, devolver, adicionar comentários e gerar tokens de acesso para famílias.
+                      </CardDescription>
+                    </div>
+                    <Badge variant="secondary" className="text-lg">
+                      {peis.length} PEI{peis.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      <span>Visualizar</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-green-600">
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Aprovar</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-red-600">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>Devolver</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-blue-600">
+                      <Key className="h-3 w-3" />
+                      <span>Token Família</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MoreHorizontal className="h-3 w-3" />
+                      <span>Mais ações</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[600px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Aluno</TableHead>
+                          <TableHead>Professor</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Aprovação da Família</TableHead>
+                          <TableHead>Criado em</TableHead>
+                          <TableHead>Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {peis.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                              Nenhum PEI encontrado
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          peis.map((pei) => (
+                            <TableRow key={pei.id}>
+                              <TableCell className="font-medium">{pei.student_name}</TableCell>
+                              <TableCell>{pei.teacher_name}</TableCell>
+                              <TableCell>
+                                <Select
+                                  value={pei.status}
+                                  onValueChange={(value) => handleChangePEIStatus(pei.id, value)}
+                                >
+                                  <SelectTrigger className="w-[180px] h-8">
+                                    <Badge 
+                                      variant={
+                                        pei.status === 'approved' ? 'default' :
+                                        pei.status === 'pending' ? 'secondary' :
+                                        pei.status === 'returned' ? 'destructive' :
+                                        pei.status === 'draft' ? 'outline' :
+                                        'outline'
+                                      }
+                                    >
+                                      {getStatusLabel(pei.status)}
+                                    </Badge>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="draft">Rascunho</SelectItem>
+                                    <SelectItem value="pending">Pendente</SelectItem>
+                                    <SelectItem value="returned">Devolvido</SelectItem>
+                                    <SelectItem value="approved">Aprovado</SelectItem>
+                                    <SelectItem value="obsolete">Obsoleto</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                {pei.family_approved_at ? (
+                                  <div className="flex items-center gap-2 text-green-600">
+                                    <CheckCircle className="h-4 w-4" />
+                                    <span className="text-xs font-medium">Aprovado</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-amber-600">
+                                    <Clock className="h-4 w-4" />
+                                    <span className="text-xs font-medium">Pendente</span>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {new Date(pei.created_at).toLocaleDateString('pt-BR')}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleViewPEIDetails(pei.id)}
+                                    title="Visualizar detalhes"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  {pei.status === 'pending_validation' && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleApprovePEI(pei.id)}
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        title="Aprovar PEI"
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleReturnPEI(pei.id)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        title="Devolver para correção"
+                                      >
+                                        <AlertCircle className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {(pei.status === 'validated' || pei.status === 'pending_family') && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleGenerateToken(pei.id)}
+                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                      title="Gerar token para família"
+                                    >
+                                      <Key className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {(pei.status === 'approved' || pei.status === 'pending_family') && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleManageTokens(pei.id)}
+                                      title="Gerenciar tokens de acesso"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="stats" className="space-y-4">
+              {/* Cards de Estatísticas Principais */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Alunos</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.students}</div>
+                    <p className="text-xs text-muted-foreground">Total de alunos na escola</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">PEIs Pendentes</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.peisPending}</div>
+                    <p className="text-xs text-muted-foreground">Aguardando sua validação</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">PEIs Aprovados</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.peisApproved}</div>
+                    <p className="text-xs text-muted-foreground">PEIs finalizados e aprovados</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Taxa de Conclusão</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{completionRate}%</div>
+                    <p className="text-xs text-muted-foreground">De PEIs aprovados</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Cards de Estatísticas Secundárias */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total de PEIs</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.total}</div>
+                    <p className="text-xs text-muted-foreground">Todos os PEIs</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">PEIs em Rascunho</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.peisDraft}</div>
+                    <p className="text-xs text-muted-foreground">Ainda não submetidos</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">PEIs Validados</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.peisValidated}</div>
+                    <p className="text-xs text-muted-foreground">Validados pelo coordenador</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Devolvidos</CardTitle>
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.peisReturned}</div>
+                    <p className="text-xs text-muted-foreground">Precisam de revisão</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Progresso Geral */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="col-span-1 lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Progresso Geral dos PEIs</CardTitle>
+                    <CardDescription>
+                      Visão geral do status de todos os PEIs na escola.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pl-2">
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <Badge className="mr-2 w-28 justify-center" variant="secondary">Rascunho</Badge>
+                        <Progress value={(stats.peisDraft / stats.total) * 100} />
+                        <span className="ml-2 text-sm font-medium">{stats.peisDraft}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Badge className="mr-2 w-28 justify-center bg-yellow-500/10 text-yellow-700 border-yellow-200" variant="secondary">Pendente</Badge>
+                        <Progress value={(stats.peisPending / stats.total) * 100} />
+                        <span className="ml-2 text-sm font-medium">{stats.peisPending}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Badge className="mr-2 w-28 justify-center bg-blue-500/10 text-blue-700 border-blue-200" variant="secondary">Validado</Badge>
+                        <Progress value={(stats.peisValidated / stats.total) * 100} />
+                        <span className="ml-2 text-sm font-medium">{stats.peisValidated}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Badge className="mr-2 w-28 justify-center bg-orange-500/10 text-orange-700 border-orange-200" variant="secondary">Aguard. Família</Badge>
+                        <Progress value={(stats.peisPendingFamily / stats.total) * 100} />
+                        <span className="ml-2 text-sm font-medium">{stats.peisPendingFamily}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Badge className="mr-2 w-28 justify-center bg-green-500/10 text-green-700 border-green-200" variant="secondary">Aprovado</Badge>
+                        <Progress value={(stats.peisApproved / stats.total) * 100} />
+                        <span className="ml-2 text-sm font-medium">{stats.peisApproved}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Badge className="mr-2 w-28 justify-center" variant="destructive">Devolvido</Badge>
+                        <Progress value={(stats.peisReturned / stats.total) * 100} />
+                        <span className="ml-2 text-sm font-medium">{stats.peisReturned}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="col-span-1 lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <AlertCircleIcon className="h-5 w-5 mr-2 text-yellow-500" />
+                      Pontos de Atenção
+                    </CardTitle>
+                    <CardDescription>
+                      Itens que requerem sua atenção imediata.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">PEIs Devolvidos</p>
+                        <p className="text-sm text-muted-foreground">Professores precisam revisar</p>
+                      </div>
+                      <Badge variant="destructive" className="text-lg">{stats.peisReturned}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">PEIs com Novos Comentários</p>
+                        <p className="text-sm text-muted-foreground">Interações para verificar</p>
+                      </div>
+                      <Badge variant="secondary" className="text-lg bg-yellow-500/10 text-yellow-700 border-yellow-200">{stats.withComments}</Badge>
+                    </div>
+                    {extendedStats && extendedStats.lateReviews > 0 && (
+                      <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                        <div>
+                          <p className="font-medium">Reuniões Atrasadas</p>
+                          <p className="text-sm text-muted-foreground">Reuniões de acompanhamento de PEI</p>
+                        </div>
+                        <Badge variant="destructive" className="text-lg">{extendedStats.lateReviews}</Badge>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
             <TabsContent value="analytics" className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -1393,7 +1743,13 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
       {selectedPeiId && showTokenDialog && (
         <GenerateFamilyTokenDialog
           key={tokenDialogKey}
+          studentId={peis.find(p => p.id === selectedPeiId)?.student_id || ''}
           peiId={selectedPeiId}
+          studentName={peis.find(p => p.id === selectedPeiId)?.student_name || ''}
+          onClose={() => {
+            setShowTokenDialog(false);
+            loadTenantData(); // Recarregar dados para atualizar os tokens
+          }}
         />
       )}
 

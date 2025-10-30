@@ -16,6 +16,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TYPE "public"."user_role" AS ENUM (
     'superadmin',
+    'education_secretary',
     'coordinator', 
     'school_manager',
     'aee_teacher',

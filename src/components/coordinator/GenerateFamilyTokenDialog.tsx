@@ -27,13 +27,15 @@ interface GenerateFamilyTokenDialogProps {
   peiId: string;
   studentName: string;
   onTokenGenerated?: (token: string) => void;
+  onClose?: () => void;
 }
 
 export function GenerateFamilyTokenDialog({ 
   studentId, 
   peiId, 
   studentName, 
-  onTokenGenerated 
+  onTokenGenerated,
+  onClose 
 }: GenerateFamilyTokenDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -52,13 +54,22 @@ export function GenerateFamilyTokenDialog({
     try {
       setLoading(true);
 
-      // Gerar token seguro
-      const token = crypto.randomUUID();
-      const tokenHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+      // Obter usuário atual
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
+      // Gerar token seguro (hex simples de 32 caracteres)
+      const tokenArray = new Uint8Array(16);
+      crypto.getRandomValues(tokenArray);
+      const token = Array.from(tokenArray).map(b => b.toString(16).padStart(2, '0')).join('');
 
       // Calcular data de expiração
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + parseInt(formData.expiresIn));
+
+      // Inserir token no banco (armazenando o hash SHA-256)
+      const tokenHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+      const tokenHash = Array.from(new Uint8Array(tokenHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
       // Inserir token no banco
       const { data, error } = await supabase
@@ -66,10 +77,11 @@ export function GenerateFamilyTokenDialog({
         .insert({
           student_id: studentId,
           pei_id: peiId,
-          token_hash: Array.from(new Uint8Array(tokenHash)).map(b => b.toString(16).padStart(2, '0')).join(''),
+          token_hash: tokenHash,
           expires_at: expiresAt.toISOString(),
           max_uses: parseInt(formData.maxUses),
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          current_uses: 0,
+          created_by: userData.user?.id
         })
         .select()
         .single();
@@ -83,6 +95,9 @@ export function GenerateFamilyTokenDialog({
         title: "Token gerado com sucesso",
         description: "O token de acesso familiar foi criado e está pronto para uso.",
       });
+
+      // Chamar callback de fechamento se fornecido
+      onClose?.();
 
     } catch (error) {
       console.error('Erro ao gerar token:', error);

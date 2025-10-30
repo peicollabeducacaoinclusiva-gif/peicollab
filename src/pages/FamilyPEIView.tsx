@@ -35,37 +35,73 @@ const FamilyPEIView = () => {
 
   const validateAndLoadPEI = async () => {
     try {
-      // Validate token and load PEI data using secure function
-      const { data, error } = await supabase.rpc('get_pei_for_family', {
-        pei_uuid: peiId,
-        access_token: token
-      });
+      // Validar token primeiro
+      const tokenHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+      const tokenHash = Array.from(new Uint8Array(tokenHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      if (error) throw error;
-      
-      if (!data) {
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('family_access_tokens')
+        .select('pei_id, student_id, expires_at')
+        .eq('token_hash', tokenHash)
+        .eq('used', false)
+        .single();
+
+      if (tokenError || !tokenData) {
+        throw new Error("Token inválido ou expirado");
+      }
+
+      // Verificar se o token pertence ao PEI correto
+      if (tokenData.pei_id !== peiId) {
+        throw new Error("Token não corresponde ao PEI solicitado");
+      }
+
+      // Buscar dados do PEI
+      const { data: peiData, error: peiError } = await supabase
+        .from('peis')
+        .select('*')
+        .eq('id', peiId)
+        .single();
+
+      if (peiError || !peiData) {
         throw new Error("PEI não encontrado");
       }
 
-      // Parse the JSON response
-      const peiData = typeof data === 'string' ? JSON.parse(data) : data;
-      
+      // Buscar dados do estudante
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('*')
+        .eq('id', tokenData.student_id)
+        .single();
+
+      // Buscar dados do tenant
+      let tenantData = null;
+      if (peiData.tenant_id) {
+        const { data: tnData } = await supabase
+          .from('tenants')
+          .select('*')
+          .eq('id', peiData.tenant_id)
+          .single();
+        tenantData = tnData;
+      }
+
       setPei({
         ...peiData,
-        students: peiData.student,
-        tenants: peiData.tenant
+        student: studentData || {},
+        students: studentData || {},
+        tenant: tenantData || {},
+        tenants: tenantData || {}
       });
 
-      // Update last accessed
+      // Atualizar último acesso do token
       await supabase
-        .from("pei_family_tokens")
+        .from("family_access_tokens")
         .update({ last_accessed_at: new Date().toISOString() })
-        .eq("token", token)
-        .eq("pei_id", peiId);
+        .eq('token_hash', tokenHash);
 
       // Load comments
       loadComments();
     } catch (error: any) {
+      console.error('Erro ao carregar PEI:', error);
       toast({
         title: "Erro ao carregar PEI",
         description: error.message,
@@ -122,10 +158,15 @@ const FamilyPEIView = () => {
   const handleApprovePEI = async () => {
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.rpc('approve_pei_family', {
-        pei_uuid: peiId,
-        access_token: token
-      });
+      // Atualizar o PEI com aprovação familiar
+      const { error } = await supabase
+        .from('peis')
+        .update({
+          family_approved_at: new Date().toISOString(),
+          family_approved_by: 'Família via link de acesso',
+          status: 'approved' // Definir status como aprovado
+        })
+        .eq('id', peiId);
 
       if (error) throw error;
 
@@ -134,8 +175,10 @@ const FamilyPEIView = () => {
         description: "Obrigado! Seu consentimento foi registrado com sucesso.",
       });
 
+      // Recarregar os dados do PEI
       validateAndLoadPEI();
     } catch (error: any) {
+      console.error('Erro ao aprovar PEI:', error);
       toast({
         title: "Erro ao aprovar PEI",
         description: error.message,
@@ -193,7 +236,7 @@ const FamilyPEIView = () => {
                 <div className="space-y-1 text-sm text-muted-foreground">
                   <p className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    {pei.tenants?.name}
+                    {pei.tenants?.network_name || pei.tenant?.network_name || 'Rede Educacional'}
                   </p>
                   <p className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />

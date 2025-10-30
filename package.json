@@ -1,7 +1,7 @@
 {
   "name": "pei-collab",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -126,12 +126,12 @@
     ]
   },
   "engines": {
-    "node": "18.x",
-    "npm": "9.x"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/peicollabeducacaoinclusiva-gif/peicollab.git"
+    "url": "https://github.com/your-org/pei-collab.git"
   },
   "keywords": [
     "education",
@@ -146,8 +146,5 @@
   ],
   "author": "PEI Collab Team",
   "license": "MIT",
-  "homepage": "https://peicollab.com.br",
-  "overrides": {
-  "@typescript-eslint/eslint-plugin": "8.38.0"
-}
+  "homepage": "https://peicollab.com.br"
 }

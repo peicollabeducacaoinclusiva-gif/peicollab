@@ -107,9 +107,7 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
           supabase.from("students").select("*").eq("school_id", activeTenant).order("name"),
           supabase.from("peis").select(`
             *,
-            students(name, date_of_birth),
-            assigned_teacher:profiles!peis_assigned_teacher_id_fkey(full_name),
-            created_by_profile:profiles!peis_created_by_fkey(full_name)
+            students(name, date_of_birth)
           `).eq("school_id", activeTenant).order("created_at", { ascending: false }),
           supabase.from("profiles").select("*, schools(name)").eq("school_id", activeTenant),
         ]);
@@ -141,8 +139,33 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
         });
       }
 
+      // Buscar nomes dos professores e criadores para os PEIs
+      const teacherIds = Array.from(new Set(
+        peisData?.map((p: any) => [p.assigned_teacher_id, p.created_by]).flat().filter(Boolean) || []
+      ));
+      
+      let userMap: Record<string, { full_name: string }> = {};
+      if (teacherIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", teacherIds);
+        
+        userMap = (profilesData || []).reduce((acc: Record<string, any>, profile: any) => {
+          acc[profile.id] = { full_name: profile.full_name };
+          return acc;
+        }, {});
+      }
+
+      // Adicionar os dados dos professores aos PEIs
+      const peisWithTeachers = (peisData || []).map((pei: any) => ({
+        ...pei,
+        assigned_teacher: pei.assigned_teacher_id ? userMap[pei.assigned_teacher_id] || null : null,
+        created_by_profile: pei.created_by ? userMap[pei.created_by] || null : null,
+      }));
+
       setStudents(studentsData || []);
-      setPeis(peisData || []);
+      setPeis(peisWithTeachers);
       setUsers(usersData || []);
     } catch (error) {
       console.error("Erro geral:", error);

@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface RequestPEIDialogProps {
   tenantId: string;
+  schoolId?: string;
   coordinatorId: string;
   onPEICreated: () => void;
   disabled?: boolean;
@@ -40,6 +41,7 @@ interface Teacher {
 
 const RequestPEIDialog = ({
   tenantId,
+  schoolId,
   coordinatorId,
   onPEICreated,
   disabled = false,
@@ -53,69 +55,82 @@ const RequestPEIDialog = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (open && tenantId) {
+    if (open && (tenantId || schoolId)) {
       loadData();
     }
-  }, [open, tenantId]);
+  }, [open, tenantId, schoolId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
 
-      // Carregar alunos do tenant
+      // Carregar alunos da escola ou tenant
       const { data: studentsData, error: studentsError } = await supabase
         .from("students")
         .select("id, name")
-        .eq("tenant_id", tenantId)
+        .eq(schoolId ? "school_id" : "tenant_id", schoolId || tenantId)
         .order("name");
 
       if (studentsError) throw studentsError;
       setStudents(studentsData || []);
 
-      // Carregar professores do tenant através de user_tenants + profiles
-      // Primeiro, buscar todos os user_ids do tenant
-      const { data: userTenantsData, error: userTenantsError } = await supabase
-        .from("user_tenants")
-        .select("user_id")
-        .eq("tenant_id", tenantId);
-
-      if (userTenantsError) throw userTenantsError;
-
-      const userIds = userTenantsData?.map((ut: any) => ut.user_id) || [];
-
-      if (userIds.length > 0) {
-        // Buscar professores - filtrar apenas teacher e aee_teacher
-        const { data: rolesData, error: rolesError } = await supabase
+      // Carregar professores da escola ou tenant
+      if (schoolId) {
+        // Buscar professores diretamente por school_id
+        const { data: teachersData, error: teachersError } = await supabase
           .from("profiles")
           .select("id, full_name, role")
-          .in("id", userIds)
-          .in("role", ["teacher", "aee_teacher"]);
+          .eq("school_id", schoolId)
+          .in("role", ["teacher", "aee_teacher"])
+          .order("full_name");
 
-        if (rolesError) throw rolesError;
+        if (teachersError) throw teachersError;
+        setTeachers(teachersData || []);
+      } else {
+        // Buscar professores do tenant através de user_tenants + profiles
+        const { data: userTenantsData, error: userTenantsError } = await supabase
+          .from("user_tenants")
+          .select("user_id")
+          .eq("tenant_id", tenantId);
 
-        // Criar Set com IDs de professores
-        const teacherUserIds = new Set(rolesData?.map((r: any) => r.id) || []);
+        if (userTenantsError) throw userTenantsError;
 
-        if (teacherUserIds.size > 0) {
-          // Buscar profiles dos professores
-          const { data: profilesData, error: profilesError } = await supabase
+        const userIds = userTenantsData?.map((ut: any) => ut.user_id) || [];
+
+        if (userIds.length > 0) {
+          // Buscar professores - filtrar apenas teacher e aee_teacher
+          const { data: rolesData, error: rolesError } = await supabase
             .from("profiles")
-            .select("id, full_name")
-            .in("id", Array.from(teacherUserIds));
+            .select("id, full_name, role")
+            .in("id", userIds)
+            .in("role", ["teacher", "aee_teacher"]);
 
-          if (profilesError) throw profilesError;
+          if (rolesError) throw rolesError;
 
-          const teachersData: Teacher[] = profilesData?.map((p: any) => ({
-            id: p.id,
-            full_name: p.full_name,
-          })) || [];
+          // Criar Set com IDs de professores
+          const teacherUserIds = new Set(rolesData?.map((r: any) => r.id) || []);
 
-          setTeachers(teachersData);
+          if (teacherUserIds.size > 0) {
+            // Buscar profiles dos professores
+            const { data: profilesData, error: profilesError } = await supabase
+              .from("profiles")
+              .select("id, full_name")
+              .in("id", Array.from(teacherUserIds));
+
+            if (profilesError) throw profilesError;
+
+            const teachersData: Teacher[] = profilesData?.map((p: any) => ({
+              id: p.id,
+              full_name: p.full_name,
+            })) || [];
+
+            setTeachers(teachersData);
+          } else {
+            setTeachers([]);
+          }
         } else {
           setTeachers([]);
         }
-      } else {
-        setTeachers([]);
       }
 
     } catch (error: any) {
@@ -143,12 +158,22 @@ const RequestPEIDialog = ({
     try {
       setLoading(true);
 
+      // Buscar school_id do aluno selecionado
+      const { data: studentData, error: studentError } = await supabase
+        .from("students")
+        .select("school_id, tenant_id")
+        .eq("id", selectedStudentId)
+        .single();
+
+      if (studentError) throw studentError;
+
       // Criar PEI
       const { data: peiData, error: peiError } = await supabase
         .from("peis")
         .insert({
           student_id: selectedStudentId,
-          tenant_id: tenantId,
+          school_id: schoolId || studentData.school_id,
+          tenant_id: tenantId || studentData.tenant_id,
           created_by: coordinatorId,
           assigned_teacher_id: selectedTeacherId,
           status: "draft",
@@ -160,6 +185,15 @@ const RequestPEIDialog = ({
         .single();
 
       if (peiError) throw peiError;
+
+      console.log("✅ PEI criado com sucesso:", {
+        peiId: peiData.id,
+        studentId: selectedStudentId,
+        schoolId: schoolId || studentData.school_id,
+        tenantId: tenantId || studentData.tenant_id,
+        teacherId: selectedTeacherId,
+        status: "draft"
+      });
 
       toast({
         title: "PEI solicitado com sucesso!",

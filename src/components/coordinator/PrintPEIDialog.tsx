@@ -33,14 +33,34 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
         .select(`
           *,
           students(name, date_of_birth),
-          tenants(name),
-          profiles!peis_assigned_teacher_id_fkey(full_name)
+          tenants(name)
         `)
         .eq("id", peiId)
         .single();
 
       if (peiError) throw peiError;
-      setPei(peiData);
+      
+      // Buscar nome do professor atribuído
+      let teacherData = null;
+      if (peiData.assigned_teacher_id) {
+        const { data: teacherProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", peiData.assigned_teacher_id)
+          .single();
+        
+        if (teacherProfile) {
+          teacherData = { full_name: teacherProfile.full_name };
+        }
+      }
+      
+      // Adicionar dados do professor ao objeto PEI
+      const peiWithTeacher = {
+        ...peiData,
+        profiles: teacherData,
+      };
+      
+      setPei(peiWithTeacher);
 
       // Carregar logo da escola
       if (peiData.tenant_id) {

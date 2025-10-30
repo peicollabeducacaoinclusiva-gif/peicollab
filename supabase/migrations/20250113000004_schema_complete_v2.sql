@@ -48,8 +48,8 @@ CREATE TYPE "public"."pei_goal_category" AS ENUM (
 -- 3. ALTERAÇÕES EM TABELAS EXISTENTES (Melhorias V2.2)
 -- ----------------------------------------------------------------------------
 
--- PROFILES: Remover campo 'role' (DEPRECATED)
-ALTER TABLE "public"."profiles" DROP COLUMN IF EXISTS "role";
+-- PROFILES: Remover campo 'role' (DEPRECATED) - COMENTADO TEMPORARIAMENTE
+-- ALTER TABLE "public"."profiles" DROP COLUMN IF EXISTS "role";
 
 -- STUDENTS: Adicionar coluna para Full-Text Search
 ALTER TABLE "public"."students" ADD COLUMN IF NOT EXISTS "search_vector" tsvector;

@@ -272,31 +272,18 @@ const PEIDetailDialog = ({
     try {
       setLoading(true);
 
-      // Gerar token usando função RPC
-      const { data: tokenValue, error: tokenError } = await supabase
-        .rpc("generate_secure_token");
+      // Gerar token seguro (hex simples de 32 caracteres)
+      const tokenArray = new Uint8Array(16);
+      crypto.getRandomValues(tokenArray);
+      const tokenValue = Array.from(tokenArray).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      if (tokenError) {
-        console.error("Error generating token:", tokenError);
-        throw new Error("Erro ao gerar token: " + tokenError.message);
-      }
+      // Calcular hash SHA-256 do token
+      const tokenHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tokenValue));
+      const tokenHash = Array.from(new Uint8Array(tokenHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      if (!tokenValue) {
-        throw new Error("Token não foi gerado");
-      }
-
-      // Hash do token usando função RPC
-      const { data: tokenHash, error: hashError } = await supabase
-        .rpc("hash_token", { token_value: tokenValue });
-
-      if (hashError) {
-        console.error("Error hashing token:", hashError);
-        throw new Error("Erro ao processar token: " + hashError.message);
-      }
-
-      if (!tokenHash) {
-        throw new Error("Hash do token não foi gerado");
-      }
+      // Calcular data de expiração (7 dias)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
 
       // Criar registro
       const { error: insertError } = await supabase
@@ -306,7 +293,9 @@ const PEIDetailDialog = ({
           pei_id: peiId,
           token_hash: tokenHash,
           created_by: currentUserId,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          expires_at: expiresAt.toISOString(),
+          max_uses: 10,
+          current_uses: 0,
         });
 
       if (insertError) {

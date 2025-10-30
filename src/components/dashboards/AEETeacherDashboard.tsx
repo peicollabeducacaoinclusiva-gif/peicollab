@@ -43,14 +43,38 @@ const AEETeacherDashboard = ({ profile }: AEETeacherDashboardProps) => {
         .from("peis")
         .select(`
           *,
-          students (name, date_of_birth),
-          assigned_teacher:profiles!peis_assigned_teacher_id_fkey (full_name)
+          students (name, date_of_birth)
         `)
         .eq("school_id", profile.school_id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPeis(data || []);
+      
+      // Buscar nomes dos professores atribuídos aos PEIs
+      const teacherIds = Array.from(new Set(
+        data?.map((p: any) => p.assigned_teacher_id).filter(Boolean) || []
+      ));
+      
+      let teacherMap: Record<string, string> = {};
+      if (teacherIds.length > 0) {
+        const { data: teachersData } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", teacherIds);
+        
+        teacherMap = (teachersData || []).reduce((acc: Record<string, string>, teacher: any) => {
+          acc[teacher.id] = teacher.full_name;
+          return acc;
+        }, {});
+      }
+
+      // Adicionar os dados dos professores aos PEIs
+      const peisWithTeachers = (data || []).map((pei: any) => ({
+        ...pei,
+        assigned_teacher: pei.assigned_teacher_id ? { full_name: teacherMap[pei.assigned_teacher_id] || "Professor não identificado" } : null,
+      }));
+
+      setPeis(peisWithTeachers);
 
     } catch (error: any) {
       toast({

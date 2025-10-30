@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { supabase, refreshSchema, testUserRolesRelation, getUserPrimaryRole } from "@/lib/supabaseClient"
+import { supabase, getUserPrimaryRole } from "@/lib/supabaseClient"
 import type { User } from "@supabase/supabase-js"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -234,15 +234,7 @@ const Dashboard = () => {
     try {
       console.log("🔍 Carregando perfil para userId:", userId)
 
-      // 1. Tentar refresh do schema se necessário
-      console.log("🔄 Verificando schema...")
-      const schemaOk = await testUserRolesRelation()
-      if (!schemaOk) {
-        console.log("⚠️ Schema com problemas, tentando refresh...")
-        await refreshSchema()
-        // Aguardar um pouco para o cache ser aplicado
-        await new Promise(resolve => setTimeout(resolve, 2000))
-      }
+      // 1. Evitar operações que dependem do cache do PostgREST
 
       // 2. Buscar dados básicos do profile (sem user_roles por enquanto)
       const { data: profileData, error: profileError } = await supabase
@@ -376,12 +368,13 @@ const Dashboard = () => {
 
         const { data: inserted, error: insertError } = await supabase
           .from("profiles")
-          .insert({
+          .upsert({
             id: userId,
             full_name: defaultName,
             school_id: null, // Será definido posteriormente
+            role: finalRole, // Adicionar role obrigatória
             is_active: false,
-          })
+          }, { onConflict: "id" })
           .select("id, full_name, school_id, is_active")
           .single()
 
@@ -389,10 +382,10 @@ const Dashboard = () => {
         if (inserted && !insertError) {
           const { error: roleError } = await supabase
             .from("user_roles")
-            .insert({
+            .upsert({
               user_id: userId,
               role: finalRole
-            })
+            }, { onConflict: "user_id,role" })
           
           if (roleError) {
             console.error("❌ Erro ao inserir role:", roleError)

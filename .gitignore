@@ -53,8 +53,17 @@ schema.sql
 # node_modules
 node_modules/
 
-# Ignora todos os arquivos .md
-*.md
+# Ignora arquivos .md específicos
+CHANGELOG_COMMIT.md
+axe-accessibility-report.md
+final-accessibility-improvement.md
+security-audit-report.md
+test-report-mcp.md
+testing-summary-report.md
+usability-test-report.md
+tatus
 
-# Exceto o README.md
+# Mantém arquivos importantes
 !README.md
+!CHANGELOG.md
+!testsprite_tests/*.md

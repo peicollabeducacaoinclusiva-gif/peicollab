@@ -81,6 +81,7 @@ const CreatePEI = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const peiId = searchParams.get("id");
+  const studentIdFromUrl = searchParams.get("studentId");
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(false);
@@ -106,8 +107,21 @@ const CreatePEI = () => {
   useEffect(() => {
     loadStudents();
     loadTenantInfo();
-    if (peiId) loadPEI();
+    if (peiId) {
+      loadPEI();
+    }
   }, [peiId]);
+
+  // Separar useEffect para lidar com studentId da URL após carregar os alunos
+  useEffect(() => {
+    if (studentIdFromUrl && students.length > 0) {
+      setSelectedStudentId(studentIdFromUrl);
+      const student = students.find((s) => s.id === studentIdFromUrl);
+      if (student) {
+        setStudentData(student);
+      }
+    }
+  }, [studentIdFromUrl, students]);
 
   const loadTenantInfo = async () => {
     try {
@@ -138,34 +152,55 @@ const CreatePEI = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Buscar perfil sem user_roles
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select(`
-          id, 
-          tenant_id,
-          user_roles(role)
-        `)
+        .select("id, tenant_id, school_id")
         .eq("id", user.id)
-        .single<{ id: string; tenant_id: string; user_roles: Array<{ role: string }> }>();
+        .single<{ id: string; tenant_id: string; school_id: string | null }>();
 
       if (!profile) throw new Error("Perfil não encontrado");
       
-      const primaryRole = profile.user_roles?.[0]?.role || 'teacher';
+      // Buscar role separadamente
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .limit(1);
+      
+      const primaryRole = userRoles?.[0]?.role || 'teacher';
       setUserRole(primaryRole);
 
       if (primaryRole === "teacher") {
-        const { data, error } = await supabase
+        // Buscar os IDs dos alunos com acesso
+        const { data: accessData, error: accessError } = await supabase
           .from("student_access")
-          .select("student_id, students(name, id, date_of_birth)")
+          .select("student_id")
           .eq("user_id", profile.id);
 
-        if (error) throw error;
-        const studentsList = data?.map((item) => item.students).filter(Boolean) || [];
-        setStudents(studentsList);
+        if (accessError) throw accessError;
+        
+        if (!accessData || accessData.length === 0) {
+          setStudents([]);
+          return;
+        }
+
+        // Buscar os dados completos dos alunos
+        const studentIds = accessData.map(item => item.student_id);
+        const { data: studentsData, error: studentsError } = await supabase
+          .from("students")
+          .select("id, name, date_of_birth, school_id")
+          .in("id", studentIds)
+          .order("name");
+
+        if (studentsError) throw studentsError;
+        setStudents(studentsData || []);
       } else {
+        // Para outros roles (coordinator, aee_teacher, etc), buscar alunos do tenant
         const { data, error } = await supabase
           .from("students")
           .select("*")
+          .eq("tenant_id", profile.tenant_id)
           .order("name");
 
         if (error) throw error;
@@ -247,17 +282,24 @@ const CreatePEI = () => {
       // Buscar tenant e id do profile
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, role, tenant_id")
+        .select("id, role, tenant_id, school_id")
         .eq("id", user.id)
-        .single<{ id: string; role: string; tenant_id: string }>();
+        .single<{ id: string; role: string; tenant_id: string; school_id: string | null }>();
 
       if (profileError) throw profileError;
 
-
       if (!profile) throw new Error("Perfil não encontrado");
+
+      // Buscar school_id do aluno se não tiver no profile
+      const studentSchoolId = studentData?.school_id || profile.school_id;
+      
+      if (!studentSchoolId) {
+        throw new Error("Não foi possível determinar a escola do aluno");
+      }
 
       const peiData = {
         student_id: selectedStudentId,
+        school_id: studentSchoolId,
         tenant_id: profile.tenant_id,
         created_by: user.id,
         assigned_teacher_id: profile.id,
