@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { z } from "zod";
-import logo from "@/assets/logo.png";
+// Logo está em /public/logo.png
 import { ArrowLeft, Mail, Lock, User, Shield, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -242,7 +242,7 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-2xl relative z-10 border-0 bg-white/95 backdrop-blur-sm">
         <CardHeader className="space-y-4 pb-4">
           <div className="flex justify-center">
-            <img src={logo} alt="PEI Collab" className="h-20 w-auto" />
+            <img src="/logo.png" alt="PEI Collab" className="h-20 w-auto" />
           </div>
           <div className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold text-gray-900">

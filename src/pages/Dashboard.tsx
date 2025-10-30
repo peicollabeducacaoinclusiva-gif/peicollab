@@ -7,7 +7,7 @@ import { supabase, getUserPrimaryRole } from "@/lib/supabaseClient"
 import type { User } from "@supabase/supabase-js"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import logo from "@/assets/logo.png"
+// Logo está em /public/logo.png
 import SuperadminDashboard from "@/components/dashboards/SuperadminDashboard"
 import CoordinatorDashboard from "@/components/dashboards/CoordinatorDashboard"
 import TeacherDashboard from "@/components/dashboards/TeacherDashboard"
@@ -78,7 +78,7 @@ const PendingApprovalScreen = ({
       <Card className="w-full max-w-2xl shadow-2xl relative z-10 border-0 bg-white/95 backdrop-blur-sm">
         <CardHeader className="space-y-6 pb-6 text-center">
           <div className="flex justify-center">
-            <img src={logo || "/placeholder.svg"} alt="PEI Collab" className="h-24 w-auto" />
+            <img src="/logo.png" alt="PEI Collab" className="h-24 w-auto" />
           </div>
 
           <div className="space-y-3">
@@ -470,7 +470,7 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30">
         <div className="text-center">
-          <img src={logo || "/placeholder.svg"} alt="PEI Collab" className="h-20 w-auto mx-auto mb-4 animate-pulse" />
+          <img src="/logo.png" alt="PEI Collab" className="h-20 w-auto mx-auto mb-4 animate-pulse" />
           <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>

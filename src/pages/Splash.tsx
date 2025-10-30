@@ -1,6 +1,5 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Heart, Users, TrendingUp, Shield, Zap, Eye, Ear, MessageCircle, Brain, FileText, Clock, CheckCircle, Award } from "lucide-react";
 
@@ -224,7 +223,7 @@ export default function LandingPage() {
             transition={{ type: "spring", stiffness: 400 }}
           >
             <img
-              src={logo}
+              src="/logo.png"
               alt="PEI Collab"
               className="h-10 w-auto"
             />
@@ -658,7 +657,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <img src={logo} alt="PEI Collab" className="h-10 w-auto" />
+                <img src="/logo.png" alt="PEI Collab" className="h-10 w-auto" />
                 <span className="text-xl font-bold text-white">
                   PEI Collab
                 </span>

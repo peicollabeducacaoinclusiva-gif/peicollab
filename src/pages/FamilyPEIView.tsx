@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import logo from "@/assets/logo.png";
+// Logo está em /public/logo.png
 import { CheckCircle, MessageSquare, Home, BookOpen, Target, Users, Calendar, LogOut } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -193,7 +193,7 @@ const FamilyPEIView = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <img src={logo} alt="PEI Collab" className="h-20 w-auto mx-auto mb-4 animate-pulse" />
+          <img src="/logo.png" alt="PEI Collab" className="h-20 w-auto mx-auto mb-4 animate-pulse" />
           <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>
@@ -211,7 +211,7 @@ const FamilyPEIView = () => {
       <header className="border-b bg-card shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="PEI Collab" className="h-10 w-auto" />
+            <img src="/logo.png" alt="PEI Collab" className="h-10 w-auto" />
             <div>
               <h1 className="font-bold text-lg">Portal da Família</h1>
               <p className="text-xs text-muted-foreground">
