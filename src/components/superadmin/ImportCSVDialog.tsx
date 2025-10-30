@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ImportCSVDialogProps {
-  type: "users" | "tenants" | "students" | "peis";
+  type: "users" | "tenants" | "students" | "peis" | "schools";
   onImportComplete: () => void;
 }
 
@@ -26,9 +26,10 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
   const getTypeLabel = () => {
     const labels = {
       users: "Usuários",
-      tenants: "Escolas",
+      tenants: "Redes",
       students: "Alunos",
       peis: "PEIs",
+      schools: "Escolas",
     };
     return labels[type];
   };
@@ -37,6 +38,7 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
     const templates = {
       users: "full_name,email,role,tenant_id\nJoão Silva,joao@email.com,teacher,uuid-da-escola",
       tenants: "network_name,network_email,network_phone,network_address,network_responsible\n\"Rede Municipal de Ensino\",\"contato@escola.com\",\"(11) 99999-9999\",\"Rua das Flores 123\",\"João Silva\"",
+      schools: "school_name,school_address,school_phone,school_email,tenant_id\n\"Escola Municipal João Silva\",\"Rua das Flores, 123 - Centro\",\"(11) 3456-7890\",\"escola@municipio.gov.br\",\"uuid-da-rede\"",
       students: "name,date_of_birth,father_name,mother_name,tenant_id\nMaria Silva,2010-05-15,José Silva,Ana Silva,uuid-da-escola",
       peis: "student_id,assigned_teacher_id,tenant_id,status\nuuid-do-aluno,uuid-do-professor,uuid-da-escola,draft",
     };
@@ -132,7 +134,9 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
             if (authError) throw authError;
             successCount++;
           } else {
-            const table = type === "tenants" ? "tenants" : type === "students" ? "students" : "peis";
+            const table = type === "tenants" ? "tenants" : type === "schools" ? "schools" : type === "students" ? "students" : "peis";
+            
+            let itemToInsert = item;
             
             // Para tenants, garantir que o campo 'network_name' existe e não está vazio
             if (type === "tenants") {
@@ -141,7 +145,7 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
               }
               
               // Limpar campos vazios e definir valores padrão
-              const cleanItem = {
+              itemToInsert = {
                 network_name: item.network_name.trim(),
                 network_email: item.network_email?.trim() || null,
                 network_phone: item.network_phone?.trim() || null,
@@ -150,12 +154,34 @@ const ImportCSVDialog = ({ type, onImportComplete }: ImportCSVDialogProps) => {
                 is_active: true
               };
               
-              console.log("Dados limpos para inserção:", cleanItem);
-              item = cleanItem;
+              console.log("Dados limpos para inserção:", itemToInsert);
             }
             
-            console.log(`Inserindo no banco - tabela: ${table}, dados:`, item);
-            const { error } = await supabase.from(table).insert(item);
+            // Para schools, garantir que os campos obrigatórios existem
+            if (type === "schools") {
+              if (!item.school_name || item.school_name.trim() === "") {
+                throw new Error("Nome da escola é obrigatório");
+              }
+              
+              if (!item.tenant_id || item.tenant_id.trim() === "") {
+                throw new Error("ID da rede municipal (tenant_id) é obrigatório");
+              }
+              
+              // Limpar campos vazios e definir valores padrão
+              itemToInsert = {
+                school_name: item.school_name.trim(),
+                school_address: item.school_address?.trim() || null,
+                school_phone: item.school_phone?.trim() || null,
+                school_email: item.school_email?.trim() || null,
+                tenant_id: item.tenant_id.trim(),
+                is_active: item.is_active !== undefined ? item.is_active : true
+              };
+              
+              console.log("Dados limpos para inserção:", itemToInsert);
+            }
+            
+            console.log(`Inserindo no banco - tabela: ${table}, dados:`, itemToInsert);
+            const { error } = await supabase.from(table).insert(itemToInsert);
             if (error) {
               console.error("Erro do Supabase:", error);
               throw error;

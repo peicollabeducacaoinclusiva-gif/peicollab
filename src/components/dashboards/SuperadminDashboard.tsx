@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import ImportCSVDialog from "@/components/superadmin/ImportCSVDialog";
 
 // Tipos
 interface NetworkStats {
@@ -3028,29 +3029,35 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
                     Crie e gerencie escolas por rede municipal
                   </CardDescription>
                 </div>
-                <Dialog open={schoolDialogOpen} onOpenChange={setSchoolDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={handleCreateSchool}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nova Escola
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>{editingSchool ? 'Editar Escola' : 'Criar Nova Escola'}</DialogTitle>
-                      <DialogDescription>
-                        Preencha os dados da escola para adicionar à rede municipal
-                      </DialogDescription>
-                    </DialogHeader>
-                    <CreateSchoolForm 
-                      tenants={availableTenants}
-                      onSubmit={handleSubmitCreateSchool}
-                      loading={loadingAction}
-                      onCancel={() => setSchoolDialogOpen(false)}
-                      editingSchool={editingSchool}
-                    />
-                  </DialogContent>
-                </Dialog>
+                <div className="flex gap-2">
+                  <ImportCSVDialog 
+                    type="schools" 
+                    onImportComplete={loadSchools}
+                  />
+                  <Dialog open={schoolDialogOpen} onOpenChange={setSchoolDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button onClick={handleCreateSchool}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nova Escola
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>{editingSchool ? 'Editar Escola' : 'Criar Nova Escola'}</DialogTitle>
+                        <DialogDescription>
+                          Preencha os dados da escola para adicionar à rede municipal
+                        </DialogDescription>
+                      </DialogHeader>
+                      <CreateSchoolForm 
+                        tenants={availableTenants}
+                        onSubmit={handleSubmitCreateSchool}
+                        loading={loadingAction}
+                        onCancel={() => setSchoolDialogOpen(false)}
+                        editingSchool={editingSchool}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
