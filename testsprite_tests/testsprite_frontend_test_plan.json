@@ -1,8 +1,8 @@
 [
   {
     "id": "TC001",
-    "title": "Multi-role Authentication Success",
-    "description": "Verify users can successfully log in with valid credentials for all defined roles and access the correct role-based dashboard.",
+    "title": "User Authentication with Correct Credentials",
+    "description": "Verify that users can authenticate successfully using valid credentials and appropriate role assignment.",
     "category": "functional",
     "priority": "High",
     "steps": [
@@ -12,22 +12,22 @@
       },
       {
         "type": "action",
-        "description": "Input valid username/email and password for each user role (superadmin, coordinator, teacher, family, education secretary, school director, specialist, aee_teacher)."
+        "description": "Input valid username/email and password."
       },
       {
         "type": "action",
-        "description": "Click the login button."
+        "description": "Submit the authentication form."
       },
       {
         "type": "assertion",
-        "description": "Check that login is successful and the dashboard corresponds to the user's role."
+        "description": "Verify user is authenticated and redirected according to their assigned role (e.g., teacher, coordinator, family member)."
       }
     ]
   },
   {
     "id": "TC002",
-    "title": "Multi-role Authentication Failure",
-    "description": "Verify that the system denies access when users enter invalid credentials or attempt unauthorized role access.",
+    "title": "User Authentication with Invalid Credentials",
+    "description": "Verify that the system denies login for invalid credentials and shows appropriate error messages.",
     "category": "error handling",
     "priority": "High",
     "steps": [
@@ -37,355 +37,447 @@
       },
       {
         "type": "action",
-        "description": "Input invalid credentials or select an unauthorized role."
+        "description": "Input invalid or incorrect username/email and/or password."
       },
       {
         "type": "action",
-        "description": "Click the login button."
+        "description": "Submit the authentication form."
       },
       {
         "type": "assertion",
-        "description": "Verify the login fails and appropriate error message is displayed."
+        "description": "Verify authentication is rejected and error message for invalid login is displayed."
       }
     ]
   },
   {
     "id": "TC003",
-    "title": "PEI Creation and Versioning Workflow",
-    "description": "Verify that authorized users can create, edit, submit, and approve PEIs with automatic version control ensuring only one active version per student.",
-    "category": "functional",
+    "title": "Role-Based Access Control Enforcement",
+    "description": "Ensure access to PEIs, students, and dashboards is restricted according to user roles and tenant or network associations via Row Level Security.",
+    "category": "security",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Log in as an authorized user (e.g., coordinator or specialist)."
+        "description": "Login as different user roles (teacher, coordinator, family, superadmin)."
       },
       {
         "type": "action",
-        "description": "Navigate to the PEI creation page."
-      },
-      {
-        "type": "action",
-        "description": "Fill out PEI sections including diagnosis, planning, referrals, goals, specialist orientations, meetings, and evaluations."
-      },
-      {
-        "type": "action",
-        "description": "Submit the PEI for approval."
+        "description": "Attempt to access data for networks, schools, students, and PEIs beyond the user’s assigned roles or tenant boundaries."
       },
       {
         "type": "assertion",
-        "description": "Verify that a new version is created and saved with status as submitted."
-      },
-      {
-        "type": "action",
-        "description": "Log in as an approver role."
-      },
-      {
-        "type": "action",
-        "description": "Approve the submitted PEI version."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the version status changes to approved and that only one active (approved) version exists per student."
+        "description": "Verify that unauthorized access is denied and that users can only access permitted data."
       }
     ]
   },
   {
     "id": "TC004",
-    "title": "PEI Editing and Audit Logging",
-    "description": "Verify all changes to PEIs are logged with user context and timestamp for auditability and traceability.",
-    "category": "security",
+    "title": "Create New PEI and Automatic Versioning",
+    "description": "Verify the creation of a new PEI for a student triggers correct versioning with an active version indicator and locks prior versions.",
+    "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Log in as a user authorized to edit PEIs."
+        "description": "Login as teacher and navigate to PEI creation page for a selected student."
       },
       {
         "type": "action",
-        "description": "Modify existing PEI details and save."
+        "description": "Fill all required sections (diagnosis, planning, referrals, accessibility resources) and submit the form."
       },
       {
         "type": "assertion",
-        "description": "Verify that the audit logs capture the modification event, including the user identifier, changed fields, and timestamp."
+        "description": "Verify the new PEI is saved with version number incremented and marked as active."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify previous versions are locked and no longer editable."
       }
     ]
   },
   {
     "id": "TC005",
-    "title": "Role-based Access Control Enforcement",
-    "description": "Verify users only access data and features permitted by their assigned roles and hierarchical tenant membership with row level security enforced.",
-    "category": "security",
+    "title": "Edit Existing PEI and Version Increment",
+    "description": "Verify that editing a PEI triggers a new version creation, preserving the previous version history accurately.",
+    "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Log in as multiple users in different roles spanning networks, schools, and tenants."
+        "description": "Login as teacher and select an active PEI for editing."
       },
       {
         "type": "action",
-        "description": "Attempt to access PEIs, students, or management functions outside the user's permitted scope."
+        "description": "Modify any section and save changes."
       },
       {
         "type": "assertion",
-        "description": "Verify access is denied or UI elements are hidden, and no unauthorized data leakage occurs at the database level."
+        "description": "Verify a new PEI version is created with updated data and marked as active."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the previous version remains in history and is locked."
       }
     ]
   },
   {
     "id": "TC006",
-    "title": "Family Access Token Generation and Expiry",
-    "description": "Verify family access tokens are issued correctly, allow PEI access, and expire after the set timeframe restricting access as expected.",
+    "title": "Coordinator Approval Workflow for PEIs",
+    "description": "Verify coordinators can review, approve, return with comments, and update PEI statuses in the dashboard, triggering notifications.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Log in as coordinator or authorized user."
+        "description": "Login as coordinator and access PEI queue dashboard."
       },
       {
         "type": "action",
-        "description": "Generate a temporary access token for a family's PEI access."
+        "description": "Select a pending PEI and approve it."
       },
       {
         "type": "assertion",
-        "description": "Verify the token allows the family to view their child's PEI successfully."
+        "description": "Verify PEI status changes to approved and notifications are sent to relevant users."
       },
       {
         "type": "action",
-        "description": "Attempt access with an expired token after the expiration period."
+        "description": "Select another pending PEI and return it with comments."
       },
       {
         "type": "assertion",
-        "description": "Verify access is denied and the family user sees an appropriate expiration message."
+        "description": "Verify PEI status updates accordingly and notifications with comments are delivered."
       }
     ]
   },
   {
     "id": "TC007",
-    "title": "Offline-first Data Access and Synchronization",
-    "description": "Verify the offline-first capability supports data access and editing when offline and that data syncs correctly and without conflicts upon reconnect.",
-    "category": "functional",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Log in and load PEI and student data while online to populate local cache."
-      },
-      {
-        "type": "action",
-        "description": "Simulate offline mode and continue viewing and editing PEIs."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify data modifications are saved locally and accessible."
-      },
-      {
-        "type": "action",
-        "description": "Restore connectivity and wait for automatic synchronization."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify local changes sync to the server without data loss or conflicts."
-      }
-    ]
-  },
-  {
-    "id": "TC008",
-    "title": "Progressive Web App (PWA) Features",
-    "description": "Verify PWA capabilities including install prompt, service worker caching, offline fallback, and push notifications function on supported devices.",
-    "category": "functional",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Access the platform via supported browser on desktop and mobile."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the app prompts for PWA installation."
-      },
-      {
-        "type": "action",
-        "description": "Install the PWA."
-      },
-      {
-        "type": "action",
-        "description": "Simulate offline usage."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify cached content loads with offline fallback."
-      },
-      {
-        "type": "action",
-        "description": "Trigger a push notification via backend simulation."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the push notification is received and displayed correctly on device."
-      }
-    ]
-  },
-  {
-    "id": "TC009",
-    "title": "Responsive Mobile-first UI Rendering",
-    "description": "Verify the user interface renders correctly across various screen sizes, with optimized navigation and layout for mobile devices.",
-    "category": "ui",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Access the platform using devices or emulators with different screen sizes (mobile, tablet, desktop)."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify UI components adapt responsively without layout breakage."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify navigation and interactive elements are usable and optimized on mobile screen sizes."
-      }
-    ]
-  },
-  {
-    "id": "TC010",
-    "title": "CSV Bulk Import and Export Functionality",
-    "description": "Verify CSV import and export features for students and users handle large datasets with validation and provide appropriate error messages on invalid data.",
-    "category": "functional",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Log in as superadmin or authorized user."
-      },
-      {
-        "type": "action",
-        "description": "Attempt to export users and students data to CSV."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the exported CSV contains correctly formatted data."
-      },
-      {
-        "type": "action",
-        "description": "Upload a valid CSV file for import."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify new records are created or updated accordingly."
-      },
-      {
-        "type": "action",
-        "description": "Upload an invalid or malformed CSV."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify validation triggers and meaningful error messages are shown without data corruption."
-      }
-    ]
-  },
-  {
-    "id": "TC011",
-    "title": "Audit and Logging Verification",
-    "description": "Verify that the audit and logging system accurately records all significant user actions and data changes with detailed version and access history.",
+    "title": "Family Member Token Generation and Validation",
+    "description": "Validate that coordinators can generate secure, expiring tokens for family members to view approved PEIs, and tokens enforce expiry and audit access.",
     "category": "security",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Perform various user actions including login, PEI edits, approvals, and accesses."
-      },
-      {
-        "type": "action",
-        "description": "Access the audit logs through the provided UI component."
+        "description": "Login as coordinator and generate a family access token for a student’s PEI."
       },
       {
         "type": "assertion",
-        "description": "Verify logs display accurate user context, action details, timestamps, and versioning information."
+        "description": "Verify token is created with expiry time and logged audit information."
+      },
+      {
+        "type": "action",
+        "description": "Use the token URL to access PEI as a family member before expiry."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify proper PEI data is accessible with view-only permissions."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to use expired token after expiry time."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied and proper error message is shown."
       }
     ]
   },
   {
-    "id": "TC012",
-    "title": "PEI Meetings and Notifications",
-    "description": "Verify the system schedules PEI-related meetings, sends notifications, and allows user participation.",
+    "id": "TC008",
+    "title": "Offline Data Caching and Synchronization",
+    "description": "Verify that the app works fully offline using IndexedDB caching, synchronizes data upon reconnect, and resolves conflicts automatically.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and perform data operations (create/edit PEI, student info) while online."
+      },
+      {
+        "type": "action",
+        "description": "Switch to offline mode and continue data operations."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify data operations succeed without connectivity."
+      },
+      {
+        "type": "action",
+        "description": "Reconnect network and trigger data synchronization."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cached changes synchronize correctly to backend without data loss or duplication."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the app UI indicates offline and sync status appropriately."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "PEI Version History and Comparison Views",
+    "description": "Validate that users can view the history of PEI versions and compare differences accurately between any two versions.",
     "category": "functional",
     "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Create a PEI meeting as a coordinator or authorized user."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify meeting is saved and associated with the correct PEI."
+        "description": "Navigate to a student’s PEI history dialog."
       },
       {
         "type": "action",
-        "description": "Log in as a participant user role."
+        "description": "Select multiple PEI versions to compare."
       },
       {
         "type": "assertion",
-        "description": "Verify notifications about the meeting are received."
+        "description": "Verify the difference view correctly highlights changes between versions."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Teacher Dashboard Real-Time Updates",
+    "description": "Verify that the teacher dashboard displays up-to-date statistics, PEI queues, and student overviews with automatic real-time updates.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as teacher and open dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all statistics and student data reflect current database state."
       },
       {
         "type": "action",
-        "description": "Join the meeting via the platform."
+        "description": "Simulate PEI creation or update by another user."
       },
       {
         "type": "assertion",
-        "description": "Verify successful participation and meeting functionalities."
+        "description": "Verify dashboard data updates automatically without page reload."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "PWA Installation and Offline Fallback Page",
+    "description": "Verify the app prompts for installation as a PWA on supported devices and that offline fallback pages display correctly when offline and navigation fails.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access the app on a supported mobile or desktop browser."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the PWA installation prompt is displayed."
+      },
+      {
+        "type": "action",
+        "description": "Install the app and open it from the installed icon."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify app runs with native-like experience."
+      },
+      {
+        "type": "action",
+        "description": "Disconnect internet and try to access a previously unvisited route."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify offline fallback page is shown and UI indicators reflect offline status."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Push and Contextual Notification Delivery",
+    "description": "Verify notifications are sent and received for PEI lifecycle events such as creation, approval, comments, and reminders, updating notification center consistently.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger PEI lifecycle event (e.g., approval by coordinator)."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify push and contextual notifications are received by stakeholders."
+      },
+      {
+        "type": "action",
+        "description": "Open notification center."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all notification states and details are consistent and accurately recorded."
       }
     ]
   },
   {
     "id": "TC013",
-    "title": "Gamified Student Interface Functionality",
-    "description": "Verify the gamified features display achievements and interactive activities properly for students.",
+    "title": "Student Management CRUD Operations",
+    "description": "Verify full create, read, update, and delete operations for student records function correctly with family linkage and role-based access enforcement.",
     "category": "functional",
-    "priority": "Low",
+    "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Log in as a student."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the gamified dashboard shows achievement progress and available activities."
+        "description": "Login as superadmin or authorized role and navigate to student management page."
       },
       {
         "type": "action",
-        "description": "Participate in a gamified activity."
+        "description": "Create a new student record with all mandatory fields."
       },
       {
         "type": "assertion",
-        "description": "Verify activity completion updates achievements and interface accordingly."
+        "description": "Verify student is created and visible in student list."
+      },
+      {
+        "type": "action",
+        "description": "Edit existing student record."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify changes persist and are visible."
+      },
+      {
+        "type": "action",
+        "description": "Delete a student record."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the record is removed and access rights update accordingly."
       }
     ]
   },
   {
     "id": "TC014",
-    "title": "Tutorial and Onboarding Experience",
-    "description": "Verify that the tutorial system displays onboarding steps to new users and guides them effectively through platform navigation and features.",
+    "title": "Mobile-First UI Responsiveness",
+    "description": "Verify all major UI components render correctly and are fully functional on various screen sizes from mobile phones to desktops.",
     "category": "ui",
-    "priority": "Low",
+    "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Log in as a new user who has not completed onboarding."
+        "description": "Load the app on devices or simulators with different screen sizes."
       },
       {
         "type": "assertion",
-        "description": "Verify tutorial cards appear and guide the user through key features."
+        "description": "Verify layout adapts correctly and all interactive elements remain accessible."
       },
       {
         "type": "action",
-        "description": "Complete tutorial steps."
+        "description": "Navigate through key user flows including PEI creation, dashboards, and family access."
       },
       {
         "type": "assertion",
-        "description": "Verify tutorial completion is recorded and tutorial does not show again upon subsequent logins."
+        "description": "Confirm no UI breakage or loss of functionality at smaller screen widths."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Multi-Tenant Hierarchy and Institution Logo Display",
+    "description": "Verify multi-tenant architecture correctly isolates data and institutions display their respective logos throughout the UI.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as user from different tenants/networks."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user can only access data scoped to their tenant and network."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify institutional logos are displayed correctly on pages related to tenant and school."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Synchronization Conflict Handling",
+    "description": "Validate the system detects and resolves data conflicts during offline synchronization without user data loss or corruption.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate concurrent edits to the same PEI record offline on two devices."
+      },
+      {
+        "type": "action",
+        "description": "Reconnect both devices to trigger synchronization."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automatic or user-notified conflict resolution takes place, maintaining data consistency."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no data is lost and UI reflects the resolved state."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Secure Token Expiry Enforcement on Family Access",
+    "description": "Confirm expired tokens prevent family members from viewing PEI data and generate appropriate audit logs.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Generate family access token with short expiry."
+      },
+      {
+        "type": "action",
+        "description": "Access PEI using token before expiry and verify success."
+      },
+      {
+        "type": "action",
+        "description": "Wait until token expiry time passes."
+      },
+      {
+        "type": "action",
+        "description": "Attempt access again using the expired token."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied and an audit entry is recorded for the attempt."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Hash Token Authentication Security",
+    "description": "Validate that all token-based authentication mechanisms employ hashing and cannot be reverse-engineered or guessed.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Generate tokens via user interface and inspect storage or API responses."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tokens are hashed securely and raw tokens are not exposed in logs or frontend."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to tamper or reuse tokens in unauthorized ways."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access attempts with tampered tokens are rejected."
       }
     ]
   }
