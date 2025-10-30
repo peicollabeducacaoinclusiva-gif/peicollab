@@ -157,7 +157,13 @@ async function createNetworksAndUsers() {
 
         try {
           // Criar usuário no auth
-          const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          let authData = null;
+          let authError = null;
+          
+          // Aguardar 2 segundos entre cada criação de usuário para evitar rate limit
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const authResponse = await supabase.auth.admin.createUser({
             email: userConfig.email,
             password: userConfig.password,
             email_confirm: true,
@@ -166,9 +172,42 @@ async function createNetworksAndUsers() {
               tenant_id: networkConfig.tenantId
             }
           });
+          
+          authData = authResponse.data;
+          authError = authResponse.error;
 
           if (authError) {
-            console.error(`❌ Erro ao criar usuário de autenticação para ${userConfig.email}:`, authError.message);
+            // Se for erro de rate limit, aguardar e tentar novamente
+            if (authError.message.includes('41 seconds') || authError.message.includes('after')) {
+              console.log(`⏳ Rate limit atingido. Aguardando 45 segundos...`);
+              await new Promise(resolve => setTimeout(resolve, 45000));
+              
+              // Tentar novamente
+              const retryAuthResponse = await supabase.auth.admin.createUser({
+                email: userConfig.email,
+                password: userConfig.password,
+                email_confirm: true,
+                user_metadata: {
+                  full_name: userConfig.full_name,
+                  tenant_id: networkConfig.tenantId
+                }
+              });
+              
+              if (retryAuthResponse.error) {
+                console.error(`❌ Erro ao criar usuário de autenticação para ${userConfig.email}:`, retryAuthResponse.error.message);
+                continue;
+              }
+              
+              // Usar dados do retry
+              authData = retryAuthResponse.data;
+            } else {
+              console.error(`❌ Erro ao criar usuário de autenticação para ${userConfig.email}:`, authError.message);
+              continue;
+            }
+          }
+          
+          if (!authData || !authData.user) {
+            console.error(`❌ Dados de autenticação inválidos para ${userConfig.email}`);
             continue;
           }
 
