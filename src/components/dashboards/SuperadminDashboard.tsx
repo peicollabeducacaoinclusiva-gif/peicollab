@@ -587,6 +587,168 @@ const EditUserForm = ({
   );
 };
 
+// Componente de Formulário de Criação de Escola
+const CreateSchoolForm = ({ 
+  tenants, 
+  onSubmit, 
+  loading, 
+  onCancel,
+  editingSchool
+}: {
+  tenants: any[];
+  onSubmit: (data: any) => void;
+  loading: boolean;
+  onCancel: () => void;
+  editingSchool?: any;
+}) => {
+  const [formData, setFormData] = useState({
+    school_name: editingSchool?.school_name || '',
+    tenant_id: editingSchool?.tenant_id || '',
+    school_address: editingSchool?.school_address || '',
+    school_phone: editingSchool?.school_phone || '',
+    school_email: editingSchool?.school_email || '',
+    is_active: editingSchool?.is_active !== undefined ? editingSchool.is_active : true
+  });
+
+  useEffect(() => {
+    if (editingSchool) {
+      setFormData({
+        school_name: editingSchool.school_name || '',
+        tenant_id: editingSchool.tenant_id || '',
+        school_address: editingSchool.school_address || '',
+        school_phone: editingSchool.school_phone || '',
+        school_email: editingSchool.school_email || '',
+        is_active: editingSchool.is_active !== undefined ? editingSchool.is_active : true
+      });
+    }
+  }, [editingSchool]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.school_name && formData.tenant_id) {
+      onSubmit(formData);
+    }
+  };
+
+  const handleChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Nome da Escola */}
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="school_name">Nome da Escola *</Label>
+          <Input
+            id="school_name"
+            placeholder="Digite o nome da escola"
+            value={formData.school_name}
+            onChange={(e) => handleChange('school_name', e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Rede Municipal */}
+        <div className="space-y-2">
+          <Label htmlFor="tenant_id">Rede Municipal *</Label>
+          <Select value={formData.tenant_id} onValueChange={(value) => handleChange('tenant_id', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione a rede" />
+            </SelectTrigger>
+            <SelectContent>
+              {tenants.map((tenant) => (
+                <SelectItem key={tenant.id} value={tenant.id}>
+                  {tenant.network_name || tenant.name || `Rede ${tenant.id.slice(0, 8)}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Endereço */}
+        <div className="space-y-2">
+          <Label htmlFor="school_address">Endereço</Label>
+          <Input
+            id="school_address"
+            placeholder="Rua, número, bairro"
+            value={formData.school_address}
+            onChange={(e) => handleChange('school_address', e.target.value)}
+          />
+        </div>
+
+        {/* Telefone */}
+        <div className="space-y-2">
+          <Label htmlFor="school_phone">Telefone</Label>
+          <Input
+            id="school_phone"
+            type="tel"
+            placeholder="(00) 0000-0000"
+            value={formData.school_phone}
+            onChange={(e) => handleChange('school_phone', e.target.value)}
+          />
+        </div>
+
+        {/* E-mail */}
+        <div className="space-y-2">
+          <Label htmlFor="school_email">E-mail</Label>
+          <Input
+            id="school_email"
+            type="email"
+            placeholder="escola@exemplo.com"
+            value={formData.school_email}
+            onChange={(e) => handleChange('school_email', e.target.value)}
+          />
+        </div>
+
+        {/* Status Ativo */}
+        <div className="space-y-2 md:col-span-2">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="is_active"
+              checked={formData.is_active}
+              onChange={(e) => handleChange('is_active', e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="is_active" className="font-normal">
+              Escola ativa
+            </Label>
+          </div>
+        </div>
+      </div>
+
+      {/* Botões */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={loading}
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          disabled={loading || !formData.school_name || !formData.tenant_id}
+        >
+          {loading ? (
+            <>
+              <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+              {editingSchool ? 'Salvando...' : 'Criando...'}
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4 mr-2" />
+              {editingSchool ? 'Salvar Escola' : 'Criar Escola'}
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
 const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
   const [networkStats, setNetworkStats] = useState<NetworkStats[]>([]);
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
@@ -616,10 +778,20 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<any>(null);
   const [availableSchoolsForEdit, setAvailableSchoolsForEdit] = useState<any[]>([]);
   const [loadingSchoolsForEdit, setLoadingSchoolsForEdit] = useState(false);
+  
+  // School management states
+  const [allSchools, setAllSchools] = useState<any[]>([]);
+  const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string>("all");
+  const [schoolSearchTerm, setSchoolSearchTerm] = useState("");
+  const [schoolDialogOpen, setSchoolDialogOpen] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(false);
+  const [editingSchool, setEditingSchool] = useState<any>(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
     loadAllData();
+    loadSchools();
     
     // Auto-refresh a cada 5 minutos
     const interval = setInterval(loadAllData, 5 * 60 * 1000);
@@ -758,6 +930,9 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
 
       console.log("📈 Dados das redes carregados:", networkStatsData);
       setNetworkStats(networkStatsData);
+      
+      // Também salvar tenants para uso em outros componentes
+      setAvailableTenants(tenants || []);
     } catch (error: any) {
       console.error("❌ Erro ao carregar dados das redes:", error);
       toast({
@@ -2261,6 +2436,113 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
     link.click();
   };
 
+  // School management handlers
+  const loadSchools = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("schools")
+        .select("*")
+        .order("school_name", { ascending: true });
+      
+      if (error) throw error;
+      setAllSchools(data || []);
+    } catch (error: any) {
+      console.error("Erro ao carregar escolas:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as escolas.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateSchool = () => {
+    setEditingSchool(null);
+    setSchoolDialogOpen(true);
+  };
+
+  const handleEditSchool = (school: any) => {
+    setEditingSchool(school);
+    setSchoolDialogOpen(true);
+  };
+
+  const handleSubmitCreateSchool = async (data: any) => {
+    setLoadingAction(true);
+    try {
+      if (editingSchool) {
+        // Update school
+        const { error } = await supabase
+          .from("schools")
+          .update(data)
+          .eq("id", editingSchool.id);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: "Escola atualizada com sucesso!",
+        });
+      } else {
+        // Create school
+        const { error } = await supabase
+          .from("schools")
+          .insert(data);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: "Escola criada com sucesso!",
+        });
+      }
+      
+      await loadSchools();
+      setSchoolDialogOpen(false);
+      setEditingSchool(null);
+    } catch (error: any) {
+      console.error("Erro ao salvar escola:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível salvar a escola.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const handleDeleteSchool = async (schoolId: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta escola? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+    
+    setLoadingAction(true);
+    try {
+      const { error } = await supabase
+        .from("schools")
+        .delete()
+        .eq("id", schoolId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: "Escola excluída com sucesso!",
+      });
+      
+      await loadSchools();
+    } catch (error: any) {
+      console.error("Erro ao excluir escola:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível excluir a escola.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
   const filteredNetworks = networkStats.filter(net =>
     net.network_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -2412,7 +2694,7 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
       {/* Tabs de Navegação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950 rounded-xl p-1">
-          <TabsList className="grid w-full grid-cols-5 bg-transparent gap-1">
+          <TabsList className="grid w-full grid-cols-6 bg-transparent gap-1">
             <TabsTrigger 
               value="overview" 
               className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300"
@@ -2426,6 +2708,13 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
             >
               <Network className="h-4 w-4" />
               <span className="hidden sm:inline">Redes</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="schools" 
+              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300"
+            >
+              <School className="h-4 w-4" />
+              <span className="hidden sm:inline">Escolas</span>
             </TabsTrigger>
             <TabsTrigger 
               value="analytics" 
@@ -2723,6 +3012,151 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
               </CardContent>
             </Card>
                 </div>
+        </TabsContent>
+
+        {/* Tab: Escolas */}
+        <TabsContent value="schools" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <School className="h-6 w-6" />
+                    Gestão de Escolas
+                  </CardTitle>
+                  <CardDescription>
+                    Crie e gerencie escolas por rede municipal
+                  </CardDescription>
+                </div>
+                <Dialog open={schoolDialogOpen} onOpenChange={setSchoolDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={handleCreateSchool}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nova Escola
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>{editingSchool ? 'Editar Escola' : 'Criar Nova Escola'}</DialogTitle>
+                      <DialogDescription>
+                        Preencha os dados da escola para adicionar à rede municipal
+                      </DialogDescription>
+                    </DialogHeader>
+                    <CreateSchoolForm 
+                      tenants={availableTenants}
+                      onSubmit={handleSubmitCreateSchool}
+                      loading={loadingAction}
+                      onCancel={() => setSchoolDialogOpen(false)}
+                      editingSchool={editingSchool}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Filtros */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="filter-network">Filtrar por Rede</Label>
+                    <Select value={selectedNetworkFilter} onValueChange={setSelectedNetworkFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todas as redes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas as redes</SelectItem>
+                        {availableTenants.map((tenant) => (
+                          <SelectItem key={tenant.id} value={tenant.id}>
+                            {tenant.network_name || tenant.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="search-school">Buscar Escola</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="search-school"
+                        placeholder="Digite o nome da escola..."
+                        value={schoolSearchTerm}
+                        onChange={(e) => setSchoolSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tabela de Escolas */}
+                {allSchools.length === 0 ? (
+                  <div className="text-center py-12">
+                    <School className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhuma escola cadastrada</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Comece criando sua primeira escola
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome da Escola</TableHead>
+                          <TableHead>Rede Municipal</TableHead>
+                          <TableHead>Endereço</TableHead>
+                          <TableHead>Telefone</TableHead>
+                          <TableHead>E-mail</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allSchools.filter((school) => {
+                          const matchesNetwork = selectedNetworkFilter === 'all' || school.tenant_id === selectedNetworkFilter;
+                          const matchesSearch = !schoolSearchTerm || school.school_name?.toLowerCase().includes(schoolSearchTerm.toLowerCase());
+                          return matchesNetwork && matchesSearch;
+                        }).map((school) => (
+                          <TableRow key={school.id}>
+                            <TableCell className="font-medium">{school.school_name}</TableCell>
+                            <TableCell>
+                              {availableTenants.find(t => t.id === school.tenant_id)?.network_name || 'Rede não identificada'}
+                            </TableCell>
+                            <TableCell>{school.school_address || "—"}</TableCell>
+                            <TableCell>{school.school_phone || "—"}</TableCell>
+                            <TableCell>{school.school_email || "—"}</TableCell>
+                            <TableCell>
+                              <Badge variant={school.is_active ? "default" : "secondary"}>
+                                {school.is_active ? "Ativa" : "Inativa"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditSchool(school)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteSchool(school.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Tab: Analytics */}
