@@ -2440,15 +2440,21 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
   // School management handlers
   const loadSchools = async () => {
     try {
+      console.log("🏫 Carregando escolas...");
       const { data, error } = await supabase
         .from("schools")
         .select("*")
         .order("school_name", { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro ao buscar escolas:", error);
+        throw error;
+      }
+      
+      console.log(`✅ ${data?.length || 0} escolas carregadas:`, data);
       setAllSchools(data || []);
     } catch (error: any) {
-      console.error("Erro ao carregar escolas:", error);
+      console.error("❌ Erro ao carregar escolas:", error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar as escolas.",
@@ -3096,6 +3102,7 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
                 </div>
 
                 {/* Tabela de Escolas */}
+                {console.log('🔍 Debug - allSchools:', allSchools.length, 'selectedNetworkFilter:', selectedNetworkFilter, 'schoolSearchTerm:', schoolSearchTerm)}
                 {allSchools.length === 0 ? (
                   <div className="text-center py-12">
                     <School className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
@@ -3122,6 +3129,7 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
                         {allSchools.filter((school) => {
                           const matchesNetwork = selectedNetworkFilter === 'all' || school.tenant_id === selectedNetworkFilter;
                           const matchesSearch = !schoolSearchTerm || school.school_name?.toLowerCase().includes(schoolSearchTerm.toLowerCase());
+                          console.log('🔍 Escola:', school.school_name, 'matchesNetwork:', matchesNetwork, 'matchesSearch:', matchesSearch);
                           return matchesNetwork && matchesSearch;
                         }).map((school) => (
                           <TableRow key={school.id}>
