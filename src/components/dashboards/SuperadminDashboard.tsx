@@ -3102,7 +3102,6 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
                 </div>
 
                 {/* Tabela de Escolas */}
-                {console.log('🔍 Debug - allSchools:', allSchools.length, 'selectedNetworkFilter:', selectedNetworkFilter, 'schoolSearchTerm:', schoolSearchTerm)}
                 {allSchools.length === 0 ? (
                   <div className="text-center py-12">
                     <School className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
@@ -3129,7 +3128,6 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
                         {allSchools.filter((school) => {
                           const matchesNetwork = selectedNetworkFilter === 'all' || school.tenant_id === selectedNetworkFilter;
                           const matchesSearch = !schoolSearchTerm || school.school_name?.toLowerCase().includes(schoolSearchTerm.toLowerCase());
-                          console.log('🔍 Escola:', school.school_name, 'matchesNetwork:', matchesNetwork, 'matchesSearch:', matchesSearch);
                           return matchesNetwork && matchesSearch;
                         }).map((school) => (
                           <TableRow key={school.id}>
