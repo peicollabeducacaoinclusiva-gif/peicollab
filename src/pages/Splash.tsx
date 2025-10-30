@@ -9,37 +9,37 @@ const features = [
     icon: FileText,
     title: "PEIs Personalizados e Inteligentes",
     text: "Crie planos educacionais que respeitam o ritmo e as necessidades de cada aluno, com templates inteligentes e acolhedores.",
-    color: "from-indigo-600 to-purple-600",
+    color: "from-cyan-500 to-violet-500",
   },
   {
     icon: Users,
     title: "Colaboração que Une Pessoas",
     text: "Conecte professores, coordenadores, terapeutas e famílias em tempo real. Porque juntos fazemos mais.",
-    color: "from-purple-600 to-fuchsia-500",
+    color: "from-violet-500 to-purple-500",
   },
   {
     icon: Heart,
     title: "Celebre Cada Conquista",
     text: "Timeline interativa para registrar progressos e conquistas. Cada passo importa na jornada de aprendizado.",
-    color: "from-blue-600 to-indigo-600",
+    color: "from-orange-400 to-pink-400",
   },
   {
     icon: TrendingUp,
     title: "Insights que Orientam",
     text: "Relatórios visuais e claros que ajudam a tomar decisões pedagógicas mais assertivas e humanas.",
-    color: "from-indigo-600 to-blue-600",
+    color: "from-cyan-400 to-blue-500",
   },
   {
     icon: Brain,
     title: "O Aluno no Centro de Tudo",
     text: "Interface pensada com carinho para colocar cada estudante no centro, respeitando suas potencialidades e sonhos únicos.",
-    color: "from-purple-600 to-violet-600",
+    color: "from-violet-600 to-purple-600",
   },
   {
     icon: Shield,
     title: "Trabalhe de Qualquer Lugar",
     text: "Continue seu trabalho mesmo offline. Suas atualizações são sincronizadas automaticamente ao voltar à internet.",
-    color: "from-indigo-600 to-blue-600",
+    color: "from-cyan-500 to-violet-500",
   },
 ];
 
@@ -72,21 +72,21 @@ const testimonials = [
     role: "Coordenadora de Inclusão",
     quote:
       "O PEI Collab trouxe harmonia entre escola e famílias. Agora todos acompanham o desenvolvimento com clareza e empatia.",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop",
+    image: "/fotos/comunidade_escolar.jpg",
   },
   {
     name: "Carlos Silva",
     role: "Professor de Atendimento Educacional Especializado",
     quote:
       "Simplificou todo o processo do PEI e ainda nos aproximou das famílias. Uma ferramenta essencial.",
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop",
+    image: "/fotos/situacoes_escolares_mosaico_1.jpg",
   },
   {
     name: "Mariana Souza",
     role: "Mãe de aluno",
     quote:
       "Pela primeira vez, sinto que faço parte da jornada de aprendizado do meu filho. O PEI Collab é maravilhoso.",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+    image: "/fotos/situacoes_escolares_mosaico_2.jpg",
   },
 ];
 
@@ -95,19 +95,19 @@ const blogPosts = [
   {
     title: "Diagnóstico de Inclusão em São Gonçalo dos Campos",
     description: "Painéis de dados identificaram gargalos e avanços na rede, guiando decisões pedagógicas com clareza e evidências.",
-    image: "https://images.unsplash.com/photo-1529078155058-5d716f45d604?w=800&h=600&fit=crop",
+    image: "/fotos/situacoes_escolares_mosaico_3.jpg",
     category: "Benefício Real",
   },
   {
     title: "PEI com IA: experiência da Profa. Rosângela",
     description: "A criação do PEI ficou mais rápida e humana com sugestões inteligentes, mantendo a autoria pedagógica da professora.",
-    image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=800&h=600&fit=crop",
+    image: "/fotos/alunos_no_computador.jpg",
     category: "Sala de Aula",
   },
   {
     title: "Modelo de Qualidade para Coordenadores e Gestores",
     description: "Um referencial consistente que atende às demandas da gestão municipal diante dos desafios do cotidiano.",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=600&fit=crop",
+    image: "/fotos/situacoes_escolares_mosaico_4.jpg",
     category: "Gestão",
   },
 ];
@@ -338,7 +338,7 @@ export default function LandingPage() {
             >
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                 <img
-                  src="https://plus.unsplash.com/premium_photo-1663100127786-36bd82b8b482?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=960"
+                  src="/fotos/alunos_no_computador_2.jpg"
                   alt="Professora trabalhando com aluno em ambiente inclusivo"
                   className="w-full h-auto"
                 />
@@ -427,7 +427,7 @@ export default function LandingPage() {
             >
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                 <img
-                  src="https://plus.unsplash.com/premium_photo-1661661677668-eff432a2080f?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=870"
+                  src="/fotos/comunidade_escolar.jpg"
                   alt="Ambiente educacional inclusivo e acessível"
                   className="w-full h-auto"
                 />
@@ -563,7 +563,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-4 mb-6">
               <img
-                src="/logo.png"
+                src="https://doem.org.br/uploads/a51a753ea5d60a606bc2f74321fe01e3.png"
                 alt="Logo Prefeitura Municipal de São Gonçalo dos Campos"
                 className="w-16 h-16 rounded-full object-cover shadow-md"
               />
@@ -625,7 +625,7 @@ export default function LandingPage() {
       <section className="py-20 bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-700 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <img
-            src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=1200&h=400&fit=crop"
+            src="/fotos/situacoes_escolares_mosaico_1.jpg"
             alt=""
             className="w-full h-full object-cover"
           />
