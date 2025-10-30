@@ -9,7 +9,7 @@ import {
   TrendingUp, AlertCircle, BookOpen, GraduationCap, Sparkles, Star,
   Award, Zap, Target, Calendar, MessageSquare, Bell, AlertTriangle,
   CheckCircle, ArrowRight, History, Accessibility,
-  Ambulance, BarChart3
+  HeartPulse, BarChart3
 } from "lucide-react";
 import InclusionQuote from "@/components/shared/InclusionQuote";
 import { supabase } from "@/integrations/supabase/client";
@@ -373,7 +373,7 @@ const TeacherDashboard = ({ profile }: TeacherDashboardProps) => {
         description: ref.reason || "Encaminhamento realizado",
         date: parseISO(ref.date),
         priority: 'medium',
-        icon: Ambulance,
+        icon: HeartPulse,
         color: 'text-purple-600',
       });
     });
@@ -1184,7 +1184,7 @@ const TeacherDashboard = ({ profile }: TeacherDashboardProps) => {
                     <CardContent className="p-6">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="h-12 w-12 rounded-xl bg-amber-600 flex items-center justify-center shadow-lg">
-                          <Ambulance className="h-6 w-6 text-white" />
+                          <HeartPulse className="h-6 w-6 text-white" />
                         </div>
                         <h3 className="font-bold text-lg">🏥 Encaminhamentos</h3>
                       </div>
