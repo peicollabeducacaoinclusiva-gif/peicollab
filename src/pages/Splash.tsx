@@ -621,8 +621,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 relative overflow-hidden">
+      {/* Institutional Section */}
+      <section className="py-20 bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-700 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <img
             src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=1200&h=400&fit=crop"
@@ -633,26 +633,20 @@ export default function LandingPage() {
 
         <div className="container mx-auto px-6 text-center relative z-10">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-              Comece Sua Jornada Hoje
+              Compromisso com a Educação Inclusiva
             </h2>
-            <p className="text-xl mb-8 text-white/95 max-w-2xl mx-auto">
-              Junte-se a centenas de educadores que já estão fazendo a diferença na vida de seus alunos.
+            <p className="text-lg md:text-xl text-white/95 max-w-3xl mx-auto leading-relaxed">
+              O PEI Collab é uma iniciativa que apoia redes municipais, escolas e profissionais
+              na construção de planos educacionais com qualidade, participação da família e
+              monitoramento contínuo do desenvolvimento dos estudantes.
             </p>
-
-            <Button
-              onClick={() => navigate("/auth")}
-              className="bg-white text-indigo-700 hover:bg-gray-50 px-10 py-6 text-lg rounded-xl font-bold shadow-xl hover:shadow-2xl transition-all"
-            >
-              Criar Conta Gratuita
-            </Button>
-
             <p className="mt-6 text-white/90 text-sm">
-              ✨ Sem cartão de crédito necessário
+              Inclusão, acessibilidade e colaboração como pilares do nosso trabalho.
             </p>
           </motion.div>
         </div>
