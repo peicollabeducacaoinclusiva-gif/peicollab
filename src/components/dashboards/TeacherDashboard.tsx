@@ -433,7 +433,7 @@ const TeacherDashboard = ({ profile }: TeacherDashboardProps) => {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, any> = {
+    const statusConfig: Record<string, { label: string; color: string }> = {
       draft: { label: "Rascunho", color: "bg-gray-100 text-gray-700 border-gray-300" },
       pending_validation: { label: "Em Análise", color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
       returned: { label: "Retornado", color: "bg-orange-100 text-orange-700 border-orange-300" },
