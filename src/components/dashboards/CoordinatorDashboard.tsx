@@ -932,39 +932,130 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
       const selectedTenant = tenants.find((t) => t.id === selectedTenantId);
       const doc = new jsPDF();
 
-      // Header
+      // Buscar informações completas da escola e rede
+      let schoolInfo = null;
+      let networkInfo = null;
+
+      if (profile.school_id && selectedTenant) {
+        const { data: schoolData } = await supabase
+          .from("schools")
+          .select(`
+            school_name,
+            school_address,
+            school_phone,
+            school_email,
+            tenant_id,
+            tenants(network_name, network_address, network_phone, network_email)
+          `)
+          .eq("id", profile.school_id)
+          .single();
+
+        if (schoolData) {
+          schoolInfo = schoolData;
+          networkInfo = schoolData.tenants;
+        }
+      } else if (profile.tenant_id) {
+        const { data: tenantData } = await supabase
+          .from("tenants")
+          .select("network_name, network_address, network_phone, network_email")
+          .eq("id", profile.tenant_id)
+          .single();
+
+        if (tenantData) {
+          networkInfo = tenantData;
+        }
+      }
+
+      // Header formal com logo e informações institucionais
       doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, 210, 30, 'F');
+      doc.rect(0, 0, 210, 50, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
-      doc.text("PEI Colaborativo", 105, 15, { align: "center" });
-      doc.setFontSize(12);
-      doc.text("Sistema de Gestão de Planos Educacionais Individualizados", 105, 22, { align: "center" });
+      doc.setFontSize(20);
+      doc.setFont(undefined, 'bold');
+      doc.text("PEI COLLAB", 105, 18, { align: "center" });
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text("Plataforma Colaborativa para Planos Educacionais Individualizados", 105, 25, { align: "center" });
+
+      // Informações da Rede de Ensino
+      if (networkInfo) {
+        doc.setFontSize(9);
+        doc.text(networkInfo.network_name || "Rede de Ensino", 15, 35);
+        if (networkInfo.network_address) {
+          doc.text(networkInfo.network_address, 15, 40);
+        }
+        if (networkInfo.network_phone || networkInfo.network_email) {
+          const contactInfo = [networkInfo.network_phone, networkInfo.network_email].filter(Boolean).join(" • ");
+          doc.text(contactInfo, 15, 45);
+        }
+      }
+
+      // Rodapé do cabeçalho
+      doc.setLineWidth(1);
+      doc.setDrawColor(59, 130, 246);
+      doc.line(0, 50, 210, 50);
 
       doc.setTextColor(0, 0, 0);
 
       // Informações do relatório
+      let yPos = 60;
+      
+      // Título do Relatório
       doc.setFontSize(18);
-      doc.text("Relatório de PEIs", 20, 45);
+      doc.setFont(undefined, 'bold');
+      doc.text("RELATÓRIO DE PEIs - PLANOS EDUCACIONAIS INDIVIDUALIZADOS", 105, yPos, { align: "center" });
+      doc.setFont(undefined, 'normal');
+      yPos += 12;
 
-      doc.setFontSize(11);
-      doc.text(`Coordenador(a): ${profile.full_name}`, 20, 55);
-      doc.text(`Rede: ${selectedTenant?.network_name || "N/A"}`, 20, 62);
-      doc.text(`Data de Emissão: ${new Date().toLocaleDateString("pt-BR")}`, 20, 69);
-      doc.text(`Horário: ${new Date().toLocaleTimeString("pt-BR")}`, 20, 76);
+      // Informações da Escola (se aplicável)
+      if (schoolInfo) {
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text("ESCOLA:", 20, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(schoolInfo.school_name, 50, yPos);
+        yPos += 7;
 
+        if (schoolInfo.school_address) {
+          doc.text(`Endereço: ${schoolInfo.school_address}`, 50, yPos);
+          yPos += 6;
+        }
+        if (schoolInfo.school_phone || schoolInfo.school_email) {
+          const schoolContact = [schoolInfo.school_phone, schoolInfo.school_email].filter(Boolean).join(" • ");
+          doc.text(`Contato: ${schoolContact}`, 50, yPos);
+          yPos += 6;
+        }
+      }
+
+      // Informações do Coordenador
+      doc.setFont(undefined, 'bold');
+      doc.text("COORDENADOR(A):", 20, yPos);
+      doc.setFont(undefined, 'normal');
+      doc.text(profile.full_name, 70, yPos);
+      yPos += 7;
+
+      // Data e hora de emissão
+      doc.setFont(undefined, 'bold');
+      doc.text("EMISSÃO:", 20, yPos);
+      doc.setFont(undefined, 'normal');
+      doc.text(`${new Date().toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' })} às ${new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}`, 60, yPos);
+      yPos += 10;
+
+      // Linha separadora
       doc.setLineWidth(0.5);
-      doc.line(20, 80, 190, 80);
+      doc.setDrawColor(200, 200, 200);
+      doc.line(20, yPos, 190, yPos);
+      yPos += 10;
 
       // Estatísticas Gerais
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text("Estatísticas Gerais", 20, 90);
+      doc.text("Estatísticas Gerais", 20, yPos);
       doc.setFont(undefined, 'normal');
+      yPos += 8;
       
       doc.setFontSize(10);
-      let yPos = 98;
       
       const statsData = [
         { label: "Total de Alunos", value: stats.students },
@@ -1514,32 +1605,32 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                     <div className="space-y-4">
                       <div className="flex items-center">
                         <Badge className="mr-2 w-28 justify-center" variant="secondary">Rascunho</Badge>
-                        <Progress value={(stats.peisDraft / stats.total) * 100} />
+                        <Progress value={(stats.peisDraft / stats.total) * 100} className="bg-gray-200 [&>div]:bg-blue-500" />
                         <span className="ml-2 text-sm font-medium">{stats.peisDraft}</span>
                       </div>
                       <div className="flex items-center">
                         <Badge className="mr-2 w-28 justify-center bg-yellow-500/10 text-yellow-700 border-yellow-200" variant="secondary">Pendente</Badge>
-                        <Progress value={(stats.peisPending / stats.total) * 100} />
+                        <Progress value={(stats.peisPending / stats.total) * 100} className="bg-gray-200 [&>div]:bg-blue-500" />
                         <span className="ml-2 text-sm font-medium">{stats.peisPending}</span>
                       </div>
                       <div className="flex items-center">
                         <Badge className="mr-2 w-28 justify-center bg-blue-500/10 text-blue-700 border-blue-200" variant="secondary">Validado</Badge>
-                        <Progress value={(stats.peisValidated / stats.total) * 100} />
+                        <Progress value={(stats.peisValidated / stats.total) * 100} className="bg-gray-200 [&>div]:bg-blue-500" />
                         <span className="ml-2 text-sm font-medium">{stats.peisValidated}</span>
                       </div>
                       <div className="flex items-center">
                         <Badge className="mr-2 w-28 justify-center bg-orange-500/10 text-orange-700 border-orange-200" variant="secondary">Aguard. Família</Badge>
-                        <Progress value={(stats.peisPendingFamily / stats.total) * 100} />
+                        <Progress value={(stats.peisPendingFamily / stats.total) * 100} className="bg-gray-200 [&>div]:bg-blue-500" />
                         <span className="ml-2 text-sm font-medium">{stats.peisPendingFamily}</span>
                       </div>
                       <div className="flex items-center">
                         <Badge className="mr-2 w-28 justify-center bg-green-500/10 text-green-700 border-green-200" variant="secondary">Aprovado</Badge>
-                        <Progress value={(stats.peisApproved / stats.total) * 100} />
+                        <Progress value={(stats.peisApproved / stats.total) * 100} className="bg-gray-200 [&>div]:bg-blue-500" />
                         <span className="ml-2 text-sm font-medium">{stats.peisApproved}</span>
                       </div>
                       <div className="flex items-center">
                         <Badge className="mr-2 w-28 justify-center" variant="destructive">Devolvido</Badge>
-                        <Progress value={(stats.peisReturned / stats.total) * 100} />
+                        <Progress value={(stats.peisReturned / stats.total) * 100} className="bg-gray-200 [&>div]:bg-blue-500" />
                         <span className="ml-2 text-sm font-medium">{stats.peisReturned}</span>
                       </div>
                     </div>
