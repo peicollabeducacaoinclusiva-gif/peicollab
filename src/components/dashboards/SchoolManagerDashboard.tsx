@@ -108,8 +108,8 @@ const SchoolManagerDashboard = ({ profile }: SchoolManagerDashboardProps) => {
           supabase.from("peis").select(`
             *,
             students(name, date_of_birth)
-          `).eq("school_id", activeTenant).order("created_at", { ascending: false }),
-          supabase.from("profiles").select("*, schools(name)").eq("school_id", activeTenant),
+          `).eq("school_id", activeTenant).eq("is_active_version", true).order("created_at", { ascending: false }),
+          supabase.from("profiles").select("*, schools(school_name)").eq("school_id", activeTenant),
         ]);
 
       if (studentsError) {

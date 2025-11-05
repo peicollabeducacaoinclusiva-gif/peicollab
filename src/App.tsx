@@ -10,6 +10,8 @@ import { OfflineIndicator } from "@/components/shared/OfflineIndicator";
 import { PendingChangesIndicator } from "@/components/shared/PendingChangesIndicator";
 import { LoadingFallback } from "@/components/shared/LoadingFallback";
 import { useSyncOnReconnect } from "@/hooks/useSyncOnReconnect";
+import { SpeedInsights } from "@vercel/speed-insights/react";
+import { Analytics } from "@vercel/analytics/react";
 
 // Lazy load components
 const Splash = lazy(() => import("./pages/Splash"));
@@ -59,6 +61,8 @@ function App() {
           <Toaster />
           <Sonner />
           <PWAUpdatePrompt />
+          <SpeedInsights />
+          <Analytics />
           <div className="fixed top-2 right-2 z-50">
             <OfflineIndicator />
           </div>

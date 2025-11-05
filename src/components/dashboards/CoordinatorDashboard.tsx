@@ -20,6 +20,10 @@ import PEIQueueTable from "@/components/coordinator/PEIQueueTable";
 import PEIDetailDialog from "@/components/coordinator/PEIDetailDialog";
 import GenerateFamilyTokenDialog from "@/components/coordinator/GenerateFamilyTokenDialog";
 import { FamilyTokenManager } from "@/components/coordinator/FamilyTokenManager";
+import PEIVersionHistoryDialog from "@/components/pei/PEIVersionHistoryDialog";
+import ClassTeachersSelector from "@/components/coordinator/ClassTeachersSelector";
+import UserAvatar from "@/components/shared/UserAvatar";
+import AppHeader from "@/components/shared/AppHeader";
 import InclusionQuote from "@/components/shared/InclusionQuote";
 import { useNavigate } from "react-router-dom";
 import { useTenant } from "@/hooks/useTenant";
@@ -70,6 +74,8 @@ interface CoordinatorDashboardProps {
     user_roles?: Array<{ role: string }>;
     network_name?: string;
     school_name?: string;
+    avatar_emoji?: string;
+    avatar_color?: string;
   };
 }
 
@@ -396,6 +402,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                 )
               `)
               .eq("school_id", selectedTenantId)
+              .eq("is_active_version", true)
               .order("created_at", { ascending: false })
           : supabase
               .from("peis")
@@ -413,6 +420,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                 )
               `)
               .eq("students.schools.tenant_id", selectedTenantId)
+              .eq("is_active_version", true)
               .order("created_at", { ascending: false }),
 
         supabase
@@ -1204,23 +1212,38 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            Olá, {profile.full_name}!
-          </h2>
-          <p className="text-muted-foreground">
-            Painel de coordenação pedagógica para {selectedTenantName}
-          </p>
+    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+          <UserAvatar
+            emoji={profile.avatar_emoji}
+            color={profile.avatar_color}
+            fallbackName={profile.full_name}
+            size="lg"
+            className="shadow-lg flex-shrink-0"
+          />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
+              Olá, {profile.full_name}!
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground truncate">
+              Painel de coordenação pedagógica para {selectedTenantName}
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <RequestPEIDialog 
             tenantId={tenants.find(t => t.id === selectedTenantId)?.tenant_id || selectedTenantId} 
             schoolId={tenants.find(t => t.id === selectedTenantId)?.school_id}
             coordinatorId={profile.id} 
             onPEICreated={loadTenantData} 
           />
+          {profile.school_id && (
+            <ClassTeachersSelector
+              schoolId={profile.school_id}
+              onTeachersUpdated={loadTenantData}
+            />
+          )}
           <Button
             variant="outline"
             onClick={handleExportReport}
@@ -1265,47 +1288,50 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
       ) : (
         <>
           <Tabs defaultValue="overview" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <TabsList>
-                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                <TabsTrigger value="peis">PEIs</TabsTrigger>
-                <TabsTrigger value="stats">Estatísticas</TabsTrigger>
-                <TabsTrigger value="analytics">Análises</TabsTrigger>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <TabsList className="w-full sm:w-auto overflow-x-auto flex-shrink-0">
+                <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap">Visão Geral</TabsTrigger>
+                <TabsTrigger value="peis" className="text-xs sm:text-sm whitespace-nowrap">PEIs</TabsTrigger>
+                <TabsTrigger value="stats" className="text-xs sm:text-sm whitespace-nowrap">Estatísticas</TabsTrigger>
+                <TabsTrigger value="analytics" className="text-xs sm:text-sm whitespace-nowrap">Análises</TabsTrigger>
               </TabsList>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       id="date"
                       variant="outline"
                       className={cn(
-                        "w-[240px] justify-start text-left font-normal",
+                        "w-full sm:w-[240px] justify-start text-left font-normal text-xs sm:text-sm",
                         !dateRange && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange?.from ? (
-                        dateRange.to ? (
-                          <>
-                            {format(dateRange.from, "LLL dd, y", { locale: ptBR })} - {format(dateRange.to, "LLL dd, y", { locale: ptBR })}
-                          </>
+                      <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">
+                        {dateRange?.from ? (
+                          dateRange.to ? (
+                            <>
+                              {format(dateRange.from, "dd/MM", { locale: ptBR })} - {format(dateRange.to, "dd/MM/yy", { locale: ptBR })}
+                            </>
+                          ) : (
+                            format(dateRange.from, "dd/MM/yy", { locale: ptBR })
+                          )
                         ) : (
-                          format(dateRange.from, "LLL dd, y", { locale: ptBR })
-                        )
-                      ) : (
-                        <span>Selecione uma data</span>
-                      )}
+                          <span className="hidden sm:inline">Selecione uma data</span>
+                        )}
+                      </span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
+                  <PopoverContent className="w-auto p-0 max-w-[95vw]" align="end">
                     <CalendarComponent
                       initialFocus
                       mode="range"
                       defaultMonth={dateRange?.from}
                       selected={dateRange}
                       onSelect={setDateRange}
-                      numberOfMonths={2}
+                      numberOfMonths={typeof window !== 'undefined' && window.innerWidth < 768 ? 1 : 2}
                       locale={ptBR}
+                      className="rounded-md"
                     />
                   </PopoverContent>
                 </Popover>
@@ -1321,7 +1347,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                 </CardHeader>
                 <CardContent>
                   <PEIQueueTable 
-                    peis={peis.filter(p => p.status === 'pending_validation')}
+                    peis={peis.filter(p => p.status === 'pending_validation' || p.status === 'pending')}
                     onViewPEI={handleViewPEIDetails}
                     onApprovePEI={handleApprovePEI}
                     onReturnPEI={handleReturnPEI}

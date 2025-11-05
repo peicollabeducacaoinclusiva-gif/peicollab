@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import NetworkClassTeachersSelector from '@/components/coordinator/NetworkClassTeachersSelector';
+import UserAvatar from '@/components/shared/UserAvatar';
 import { 
   BarChart3, 
   Users, 
@@ -72,6 +74,12 @@ interface InclusionMetrics {
   }[];
 }
 
+interface Profile {
+  full_name: string;
+  avatar_emoji?: string;
+  avatar_color?: string;
+}
+
 export default function EducationSecretaryDashboard() {
   const [stats, setStats] = useState<NetworkStats | null>(null);
   const [schools, setSchools] = useState<SchoolPerformance[]>([]);
@@ -79,6 +87,8 @@ export default function EducationSecretaryDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const { toast } = useToast();
 
   const loadNetworkData = async () => {
@@ -96,6 +106,42 @@ export default function EducationSecretaryDashboard() {
         return;
       }
       
+      // Buscar perfil com avatar
+      let profileData = null;
+      
+      try {
+        const result = await supabase
+          .from('profiles')
+          .select('full_name, avatar_emoji, avatar_color')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        profileData = result.data;
+        
+        if (result.error) {
+          console.warn("⚠️ Erro ao buscar com avatar, tentando sem...", result.error);
+          
+          // Fallback: buscar sem avatar
+          const fallback = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          profileData = fallback.data;
+        }
+      } catch (error) {
+        console.error("Erro ao carregar profile:", error);
+      }
+      
+      if (profileData) {
+        setProfile({
+          full_name: profileData.full_name || 'Usuário',
+          avatar_emoji: (profileData as any).avatar_emoji || undefined,
+          avatar_color: (profileData as any).avatar_color || undefined
+        });
+      }
+      
       // Buscar tenant_id do profile através de user_tenants
       const { data: userTenant } = await (supabase
         .from('user_tenants')
@@ -103,8 +149,8 @@ export default function EducationSecretaryDashboard() {
         .eq('user_id', user.id)
         .single() as any);
         
-      const tenantId = userTenant?.tenant_id;
-      if (!tenantId) {
+      const userTenantId = userTenant?.tenant_id;
+      if (!userTenantId) {
         toast({
           title: "Erro de Configuração",
           description: "Usuário não associado a uma rede",
@@ -112,11 +158,13 @@ export default function EducationSecretaryDashboard() {
         });
         return;
       }
+      
+      setTenantId(userTenantId);
 
       // Buscar estatísticas da rede
-      const schoolsRes = await supabase.from('schools').select('id').eq('tenant_id', tenantId);
-      const studentsRes = await supabase.from('students').select('id').eq('tenant_id', tenantId);
-      const peisRes = await supabase.from('peis').select('id, status, created_at, updated_at').eq('tenant_id', tenantId);
+      const schoolsRes = await supabase.from('schools').select('id').eq('tenant_id', userTenantId);
+      const studentsRes = await supabase.from('students').select('id').eq('tenant_id', userTenantId);
+      const peisRes = await supabase.from('peis').select('id, status, created_at, updated_at').eq('tenant_id', userTenantId);
 
       // Calcular estatísticas
       const totalSchools = (schoolsRes.data as any)?.length || 0;
@@ -336,13 +384,32 @@ export default function EducationSecretaryDashboard() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard Executivo</h1>
-          <p className="text-muted-foreground mt-1">
-            Visão estratégica da Educação Inclusiva da Rede
-          </p>
+        <div className="flex items-center gap-4">
+          {profile && (
+            <UserAvatar
+              emoji={profile.avatar_emoji}
+              color={profile.avatar_color}
+              fallbackName={profile.full_name}
+              size="lg"
+              className="shadow-lg"
+            />
+          )}
+          <div>
+            <h1 className="text-3xl font-bold">
+              {profile ? `Olá, ${profile.full_name.split(' ')[0]}!` : 'Dashboard Executivo'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Visão estratégica da Educação Inclusiva da Rede
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {tenantId && (
+            <NetworkClassTeachersSelector
+              tenantId={tenantId}
+              onTeachersUpdated={handleRefresh}
+            />
+          )}
           <Button
             variant="outline"
             size="sm"

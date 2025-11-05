@@ -25,11 +25,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Eye, CheckCircle, XCircle, Trash2, Edit, Key, Users } from "lucide-react";
+import { MoreVertical, Eye, CheckCircle, XCircle, Trash2, Edit, Key, Users, History } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import PEIVersionHistoryDialog from "@/components/pei/PEIVersionHistoryDialog";
 
 type PEIStatus = 
   | "draft" 
@@ -192,17 +193,24 @@ const PEIQueueTable = ({
                   })}
                 </TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onViewPEI(pei.id)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver Detalhes
-                      </DropdownMenuItem>
+                  <div className="flex items-center justify-end gap-2">
+                    <PEIVersionHistoryDialog
+                      studentId={pei.student_id}
+                      studentName={pei.student_name}
+                      currentPEIId={pei.id}
+                      variant="icon"
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onViewPEI(pei.id)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Ver Detalhes
+                        </DropdownMenuItem>
 
                       {onEditPEI && (
                         <DropdownMenuItem
@@ -263,6 +271,7 @@ const PEIQueueTable = ({
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

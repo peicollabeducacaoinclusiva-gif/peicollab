@@ -46,12 +46,14 @@ export function MobileNavigation({ userRole, className = '' }: MobileNavigationP
       path: '/dashboard',
       roles: ['superadmin', 'education_secretary', 'school_director', 'coordinator', 'teacher', 'aee_teacher', 'specialist', 'school_manager']
     },
+    // ATENÇÃO: /students, /peis e /reports são rotas de ADMINISTRAÇÃO que mostram TODOS os dados
+    // Professores NÃO devem ter acesso a essas rotas - eles usam as tabs do dashboard
     {
       id: 'students',
       label: 'Alunos',
       icon: <Users className="h-5 w-5" />,
       path: '/students',
-      roles: ['superadmin', 'education_secretary', 'school_director', 'coordinator', 'teacher', 'aee_teacher', 'specialist', 'school_manager']
+      roles: ['superadmin'] // APENAS superadmin tem acesso à visão global de todos os alunos
     },
     {
       id: 'peis',
@@ -59,21 +61,21 @@ export function MobileNavigation({ userRole, className = '' }: MobileNavigationP
       icon: <GraduationCap className="h-5 w-5" />,
       path: '/peis',
       badge: pendingChanges,
-      roles: ['superadmin', 'education_secretary', 'school_director', 'coordinator', 'teacher', 'aee_teacher', 'specialist', 'school_manager']
+      roles: ['superadmin'] // APENAS superadmin tem acesso à visão global de todos os PEIs
     },
     {
       id: 'reports',
       label: 'Relatórios',
       icon: <BarChart3 className="h-5 w-5" />,
       path: '/reports',
-      roles: ['superadmin', 'education_secretary', 'school_director', 'coordinator']
+      roles: ['superadmin'] // 🔒 APENAS superadmin - Relatórios multi-rede com dados de todas as redes
     },
     {
       id: 'settings',
       label: 'Configurações',
       icon: <Settings className="h-5 w-5" />,
       path: '/settings',
-      roles: ['superadmin', 'education_secretary', 'school_director', 'coordinator']
+      roles: ['superadmin', 'education_secretary', 'school_director'] // Apenas gestores de alto nível
     }
   ];
 

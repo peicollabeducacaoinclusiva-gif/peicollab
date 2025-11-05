@@ -80,8 +80,10 @@ import ProgressIndicator from "@/components/pei/ProgressIndicator";
 const CreatePEI = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const peiId = searchParams.get("id");
-  const studentIdFromUrl = searchParams.get("studentId");
+  // Aceita tanto 'pei' quanto 'id' para compatibilidade
+  const peiId = searchParams.get("pei") || searchParams.get("id");
+  // Aceita tanto 'student' quanto 'studentId' para compatibilidade
+  const studentIdFromUrl = searchParams.get("student") || searchParams.get("studentId");
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(false);
@@ -90,6 +92,8 @@ const CreatePEI = () => {
   const [studentData, setStudentData] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [tenantName, setTenantName] = useState<string | null>(null);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [schoolId, setSchoolId] = useState<string | null>(null);
 
   const [diagnosisData, setDiagnosisData] = useState<DiagnosisData>({
     interests: "",
@@ -115,32 +119,89 @@ const CreatePEI = () => {
   // Separar useEffect para lidar com studentId da URL após carregar os alunos
   useEffect(() => {
     if (studentIdFromUrl && students.length > 0) {
-      setSelectedStudentId(studentIdFromUrl);
+      console.log('🔍 Tentando selecionar aluno da URL:', {
+        studentIdFromUrl,
+        totalStudents: students.length,
+        studentIds: students.map(s => s.id)
+      });
+      
       const student = students.find((s) => s.id === studentIdFromUrl);
+      
       if (student) {
+        console.log('✅ Aluno encontrado e selecionado:', student.name);
+        setSelectedStudentId(studentIdFromUrl);
         setStudentData(student);
+      } else {
+        console.warn('⚠️ Aluno não encontrado na lista:', studentIdFromUrl);
+        toast({
+          title: "Acesso Negado",
+          description: "Você não tem permissão para criar PEI para este aluno. Solicite atribuição à coordenação.",
+          variant: "destructive",
+        });
+        
+        // Redirecionar para o dashboard após 2 segundos
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
       }
     }
-  }, [studentIdFromUrl, students]);
+  }, [studentIdFromUrl, students, navigate, toast]);
 
   const loadTenantInfo = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("tenant_id")
+        .select("tenant_id, school_id")
         .eq("id", user.id)
         .single();
 
+      if (profileError) {
+        console.error("Error loading profile:", profileError);
+        return;
+      }
+
+      // Armazenar os IDs para passar ao ReportView
       if (profile?.tenant_id) {
-        const { data: tenant } = await supabase
+        setTenantId(profile.tenant_id);
+      }
+      if (profile?.school_id) {
+        setSchoolId(profile.school_id);
+      }
+
+      if (profile?.tenant_id) {
+        const { data: tenant, error: tenantError } = await supabase
           .from("tenants")
-          .select("name")
+          .select("network_name")
           .eq("id", profile.tenant_id)
-          .single();
-        if (tenant) setTenantName(tenant.name);
+          .maybeSingle();
+        
+        if (tenantError) {
+          console.error("Error loading tenant:", tenantError);
+          return;
+        }
+        
+        if (tenant?.network_name) {
+          setTenantName(tenant.network_name);
+        }
+      } else if (profile?.school_id) {
+        // Se não tem tenant_id direto, buscar via escola
+        const { data: school, error: schoolError } = await supabase
+          .from("schools")
+          .select("school_name, tenants(network_name)")
+          .eq("id", profile.school_id)
+          .maybeSingle();
+        
+        if (schoolError) {
+          console.error("Error loading school:", schoolError);
+          return;
+        }
+        
+        if (school) {
+          setTenantName(school.school_name);
+        }
       }
     } catch (error) {
       console.error("Error loading tenant info:", error);
@@ -171,7 +232,9 @@ const CreatePEI = () => {
       const primaryRole = userRoles?.[0]?.role || 'teacher';
       setUserRole(primaryRole);
 
-      if (primaryRole === "teacher") {
+      console.log('📚 Carregando alunos para role:', primaryRole);
+
+      if (primaryRole === "teacher" || primaryRole === "aee_teacher") {
         // Buscar os IDs dos alunos com acesso
         const { data: accessData, error: accessError } = await supabase
           .from("student_access")
@@ -180,30 +243,83 @@ const CreatePEI = () => {
 
         if (accessError) throw accessError;
         
+        console.log('👥 Alunos com acesso (student_access):', accessData?.length || 0);
+        
+        let studentIds: string[] = [];
+        
         if (!accessData || accessData.length === 0) {
-          setStudents([]);
-          return;
+          console.warn('⚠️ Nenhum aluno em student_access, tentando via pei_teachers...');
+          
+          // FALLBACK: Buscar via pei_teachers
+          const { data: peiTeachersData, error: peiTeachersError } = await supabase
+            .from("pei_teachers")
+            .select(`
+              peis!inner (
+                student_id,
+                is_active_version
+              )
+            `)
+            .eq("teacher_id", profile.id);
+          
+          if (peiTeachersError) throw peiTeachersError;
+          
+          if (peiTeachersData && peiTeachersData.length > 0) {
+            // Extrair IDs únicos de alunos de PEIs ativos
+            const studentIdsSet = new Set<string>();
+            peiTeachersData.forEach((pt: any) => {
+              const pei = pt.peis;
+              if (pei && pei.is_active_version && pei.student_id) {
+                studentIdsSet.add(pei.student_id);
+              }
+            });
+            
+            studentIds = Array.from(studentIdsSet);
+            console.log('✅ Alunos encontrados via pei_teachers:', studentIds.length);
+          }
+          
+          if (studentIds.length === 0) {
+            console.warn('⚠️ Nenhum aluno atribuído ao professor (nem em student_access nem em pei_teachers)');
+            toast({
+              title: "Nenhum aluno atribuído",
+              description: "Você não tem alunos atribuídos. Contate a coordenação.",
+              variant: "destructive",
+            });
+            setStudents([]);
+            return;
+          }
+        } else {
+          studentIds = accessData.map(item => item.student_id);
         }
 
         // Buscar os dados completos dos alunos
-        const studentIds = accessData.map(item => item.student_id);
         const { data: studentsData, error: studentsError } = await supabase
           .from("students")
-          .select("id, name, date_of_birth, school_id")
+          .select("id, name, date_of_birth, school_id, mother_name, father_name, phone, email")
           .in("id", studentIds)
           .order("name");
 
         if (studentsError) throw studentsError;
+        
+        console.log('✅ Alunos carregados:', studentsData?.length || 0, studentsData?.map(s => ({ id: s.id, name: s.name })));
         setStudents(studentsData || []);
       } else {
-        // Para outros roles (coordinator, aee_teacher, etc), buscar alunos do tenant
-        const { data, error } = await supabase
+        // Para outros roles (coordinator, aee_teacher, etc), buscar alunos do tenant/escola
+        const query = supabase
           .from("students")
           .select("*")
-          .eq("tenant_id", profile.tenant_id)
           .order("name");
+        
+        if (profile.school_id) {
+          query.eq("school_id", profile.school_id);
+        } else if (profile.tenant_id) {
+          query.eq("tenant_id", profile.tenant_id);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
+        
+        console.log('✅ Alunos carregados (gestor):', data?.length || 0);
         setStudents(data || []);
       }
     } catch (error) {
@@ -227,23 +343,37 @@ const CreatePEI = () => {
 
       if (error) throw error;
 
+      if (!data) {
+        throw new Error("PEI não encontrado");
+      }
+
       setSelectedStudentId(data.student_id);
       setStudentData(data.students);
-      setDiagnosisData(
-        (data.diagnosis_data as DiagnosisData) || {
-          interests: "",
-          specialNeeds: "",
-          barriers: [],
-          history: "",
-        }
-      );
-      setPlanningData((data.planning_data as PlanningData) || { goals: [], accessibilityResources: [] });
-      setReferralsData(
-        (data.evaluation_data as ReferralsData) || {
-          referrals: [],
-          observations: "",
-        }
-      );
+      
+      // Diagnóstico com validação
+      const diagnosisRaw = data.diagnosis_data as DiagnosisData | null;
+      setDiagnosisData({
+        interests: diagnosisRaw?.interests || "",
+        specialNeeds: diagnosisRaw?.specialNeeds || "",
+        barriers: diagnosisRaw?.barriers || [],
+        history: diagnosisRaw?.history || "",
+        cid10: diagnosisRaw?.cid10,
+        description: diagnosisRaw?.description,
+      });
+      
+      // Planejamento com validação
+      const planningRaw = data.planning_data as PlanningData | null;
+      setPlanningData({
+        goals: planningRaw?.goals || [],
+        accessibilityResources: planningRaw?.accessibilityResources || [],
+      });
+      
+      // Encaminhamentos com validação
+      const referralsRaw = data.evaluation_data as ReferralsData | null;
+      setReferralsData({
+        referrals: referralsRaw?.referrals || [],
+        observations: referralsRaw?.observations || "",
+      });
     } catch (error) {
       console.error("Error loading PEI:", error);
       toast({
@@ -297,17 +427,35 @@ const CreatePEI = () => {
         throw new Error("Não foi possível determinar a escola do aluno");
       }
 
+      // Coordenadores podem criar PEI sem professor atribuído (situações especiais)
+      // Professores sempre são atribuídos a si mesmos
+      const assignedTeacherId = (primaryRole === "coordinator" || primaryRole === "education_secretary") 
+        ? null  // Coordenador pode criar sem atribuir professor
+        : profile.id;  // Professor se auto-atribui
+      
+      console.log('🔧 Dados para salvar PEI:', {
+        primaryRole,
+        assignedTeacherId,
+        studentSchoolId,
+        profileTenantId: profile.tenant_id,
+        userId: user.id,
+        peiId
+      });
+      
       const peiData = {
         student_id: selectedStudentId,
         school_id: studentSchoolId,
         tenant_id: profile.tenant_id,
         created_by: user.id,
-        assigned_teacher_id: profile.id,
+        assigned_teacher_id: assignedTeacherId,
         diagnosis_data: diagnosisData,
         planning_data: planningData,
         evaluation_data: referralsData,
         status: shouldSubmit ? ("pending" as const) : ("draft" as const),
+        is_active_version: true,  // Marcar como versão ativa
       };
+      
+      console.log('📝 PEI Data completo:', peiData);
 
       if (!isOnline && !shouldSubmit) {
         const offlineKey = peiId
@@ -324,14 +472,57 @@ const CreatePEI = () => {
       }
 
       if (peiId) {
+        // Atualizar PEI existente
         const { error } = await supabase
           .from("peis")
           .update(peiData)
           .eq("id", peiId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("peis").insert([peiData]);
+        // ANTES DE CRIAR NOVO, verificar se aluno já tem PEI ativo
+        const { data: existingActivePEI } = await supabase
+          .from("peis")
+          .select("id, status, version_number")
+          .eq("student_id", selectedStudentId)
+          .eq("is_active_version", true)
+          .maybeSingle();
+        
+        if (existingActivePEI) {
+          // Aluno já tem PEI ativo - redirecionar para editar
+          toast({
+            title: "PEI já existe",
+            description: `Este aluno já possui um PEI ativo. Você será redirecionado para editá-lo.`,
+          });
+          
+          setTimeout(() => {
+            navigate(`/pei/edit?id=${existingActivePEI.id}`);
+          }, 1500);
+          return;
+        }
+        
+        // Buscar próximo número de versão
+        const { data: versionData } = await supabase
+          .from("peis")
+          .select("version_number")
+          .eq("student_id", selectedStudentId)
+          .order("version_number", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        const nextVersion = (versionData?.version_number || 0) + 1;
+        
+        // Criar novo PEI com versão correta
+        const { error } = await supabase
+          .from("peis")
+          .insert([{
+            ...peiData,
+            version_number: nextVersion,
+            is_active_version: true
+          }]);
+        
         if (error) throw error;
+        
+        console.log(`✅ PEI v${nextVersion} criado para o aluno`);
       }
 
       toast({
@@ -342,13 +533,19 @@ const CreatePEI = () => {
       });
 
       if (shouldSubmit) navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving PEI:", error);
+      console.error("Error details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       toast({
         title: "Erro",
         description: shouldSubmit
-          ? "Não foi possível enviar o PEI para coordenação."
-          : "Não foi possível salvar o PEI.",
+          ? `Não foi possível enviar o PEI: ${error.message}`
+          : `Não foi possível salvar o PEI: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -373,21 +570,31 @@ const CreatePEI = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-bold">{peiId ? "Editar PEI" : "Novo PEI"}</h1>
-              {tenantName && (
-                <p className="text-xs text-muted-foreground">{tenantName}</p>
-              )}
+              <h1 className="text-xl font-bold">{peiId ? "Editar PEI" : "Criar Novo PEI"}</h1>
+              <div className="flex items-center gap-2">
+                {tenantName && (
+                  <p className="text-xs text-muted-foreground">{tenantName}</p>
+                )}
+                {!peiId && selectedStudentId && studentData && (
+                  <>
+                    {tenantName && <span className="text-xs text-muted-foreground">•</span>}
+                    <p className="text-xs text-primary font-medium">
+                      Para: {studentData.name}
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {peiId && <PEIHistoryDialog peiId={peiId} />}
-            <Button onClick={() => handleSave(false)} disabled={loading} variant="outline">
+            <Button onClick={() => handleSave(false)} disabled={loading || !selectedStudentId} variant="outline" size="sm">
               <Save className="mr-2 h-4 w-4" />
-              Salvar
+              <span className="hidden sm:inline">Salvar</span>
             </Button>
-            <Button onClick={() => handleSave(true)} disabled={loading}>
+            <Button onClick={() => handleSave(true)} disabled={loading || !selectedStudentId} size="sm">
               <Send className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Enviar para Coordenação</span>
+              <span className="hidden sm:inline">Enviar</span>
             </Button>
           </div>
         </div>
@@ -399,15 +606,15 @@ const CreatePEI = () => {
             <ProgressIndicator
               studentSelected={!!selectedStudentId}
               diagnosisFilled={
-                !!(diagnosisData.history ||
-                  diagnosisData.interests ||
-                  diagnosisData.specialNeeds)
+                !!(diagnosisData?.history ||
+                  diagnosisData?.interests ||
+                  diagnosisData?.specialNeeds)
               }
-              planningFilled={planningData.goals.length > 0}
+              planningFilled={!!(planningData?.goals?.length > 0)}
               referralsFilled={
                 !!(
-                  referralsData.referrals?.length > 0 ||
-                  referralsData.observations
+                  referralsData?.referrals?.length > 0 ||
+                  referralsData?.observations
                 )
               }
             />
@@ -445,6 +652,7 @@ const CreatePEI = () => {
                 selectedStudentId={selectedStudentId}
                 studentData={studentData}
                 onStudentChange={handleStudentChange}
+                isEditMode={!!peiId}
                 onTemplateSelect={(template: { diagnosisData: DiagnosisData; planningData: { goals: Goal[] }; referralsData: ReferralsData }) => {
                   setDiagnosisData(template.diagnosisData);
                   setPlanningData({ goals: template.planningData?.goals || [], accessibilityResources: [] });
@@ -483,6 +691,8 @@ const CreatePEI = () => {
                 planningData={planningData}
                 referralsData={referralsData}
                 userRole={userRole}
+                tenantId={tenantId}
+                schoolId={schoolId}
               />
             </TabsContent>
           </Tabs>

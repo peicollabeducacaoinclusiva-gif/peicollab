@@ -2,104 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 210 80% 15%;
+    --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 80% 15%;
+    --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 80% 15%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 210 85% 50%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 270 40% 55%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 210 20% 45%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 16 70% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 210 85% 50%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
 
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 210 80% 15%;
-    --sidebar-primary: 210 85% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 210 80% 15%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 210 85% 50%;
-
-    /* Custom gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(210 85% 50%), hsl(270 40% 55%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
-    
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(210 40% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(210 40% 15% / 0.1), 0 2px 4px -2px hsl(210 40% 15% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(210 40% 15% / 0.1), 0 4px 6px -4px hsl(210 40% 15% / 0.1);
-    --shadow-glow: 0 0 20px hsl(210 85% 50% / 0.3);
-    
-    /* Animation */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 0.5rem;
   }
 
   .dark {
-    --background: 210 85% 8%;
-    --foreground: 0 0% 98%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
 
-    --card: 210 80% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 210 80% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 210 85% 60%;
-    --primary-foreground: 210 85% 8%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 270 40% 65%;
-    --secondary-foreground: 210 85% 8%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 60% 15%;
-    --muted-foreground: 210 20% 70%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 16 70% 60%;
-    --accent-foreground: 210 85% 8%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 84% 65%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 210 60% 15%;
-    --input: 210 60% 15%;
-    --ring: 210 85% 60%;
-
-    --sidebar-background: 210 80% 10%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 210 85% 60%;
-    --sidebar-primary-foreground: 210 85% 8%;
-    --sidebar-accent: 210 60% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 210 60% 15%;
-    --sidebar-ring: 210 85% 60%;
-
-    --shadow-glow: 0 0 20px hsl(210 85% 60% / 0.4);
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
 
@@ -107,50 +70,77 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
   }
 }
 
-/* Estilos de impressão otimizados */
-@media print {
-  /* Remove margens e padding da página */
-  @page {
-    margin: 1cm;
+/* 🔧 OTIMIZAÇÕES DE PERFORMANCE - Animações */
+
+/* Reduzir duração de animações para melhor performance */
+@layer utilities {
+  .animate-pulse {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
-  /* Oculta elementos desnecessários */
-  body {
-    @apply bg-white text-black;
+  .animate-spin {
+    animation: spin 0.8s linear infinite;
   }
   
-  /* Remove backgrounds e sombras em cards */
-  .print\:shadow-none {
-    box-shadow: none !important;
+  .animate-bounce {
+    animation: bounce 0.8s infinite;
   }
-  
-  .print\:border-0 {
-    border: 0 !important;
+}
+
+/* Otimizar transições globais */
+* {
+  transition-duration: 150ms !important;
+}
+
+/* Preferir transformações 2D ao invés de 3D quando possível */
+.transform {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Reduzir motion para usuários que preferem */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  
-  /* Força quebras de página adequadas */
-  .print\:page-break-before-always {
-    page-break-before: always !important;
+}
+
+/* Performance: usar GPU para animações */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
   }
-  
-  .print\:page-break-after-avoid {
-    page-break-after: avoid !important;
+  50% {
+    opacity: .7;
   }
-  
-  /* Ajusta margens e padding */
-  .print\:px-0 {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-  
-  .print\:py-0 {
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(-10%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
   }
 }

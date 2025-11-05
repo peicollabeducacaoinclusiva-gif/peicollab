@@ -154,14 +154,20 @@ export class OfflineDatabase extends Dexie {
     pei_goals: OfflinePEIGoal[];
     pei_barriers: OfflinePEIBarrier[];
   }> {
-    const [students, peis, pei_goals, pei_barriers] = await Promise.all([
-      this.students.where('is_synced').equals(false).toArray(),
-      this.peis.where('is_synced').equals(false).toArray(),
-      this.pei_goals.where('is_synced').equals(false).toArray(),
-      this.pei_barriers.where('is_synced').equals(false).toArray()
-    ]);
+    try {
+      // 🔧 FIX: Usar filter ao invés de where/equals para campos não indexados
+      const [students, peis, pei_goals, pei_barriers] = await Promise.all([
+        this.students.toArray().then(arr => arr.filter(s => s.is_synced === false)).catch(() => []),
+        this.peis.toArray().then(arr => arr.filter(p => p.is_synced === false)).catch(() => []),
+        this.pei_goals.toArray().then(arr => arr.filter(g => g.is_synced === false)).catch(() => []),
+        this.pei_barriers.toArray().then(arr => arr.filter(b => b.is_synced === false)).catch(() => [])
+      ]);
 
-    return { students, peis, pei_goals, pei_barriers };
+      return { students, peis, pei_goals, pei_barriers };
+    } catch (error) {
+      console.warn("⚠️ Erro ao buscar registros não sincronizados:", error);
+      return { students: [], peis: [], pei_goals: [], pei_barriers: [] };
+    }
   }
 
   async markAsSynced(tableName: string, recordId: string): Promise<void> {
@@ -190,8 +196,15 @@ export class OfflineDatabase extends Dexie {
   }
 
   async getSetting(key: string): Promise<any> {
-    const setting = await this.settings.where('key').equals(key).first();
-    return setting?.value;
+    try {
+      // 🔧 FIX: Usar filter ao invés de where para evitar IDBKeyRange error
+      const allSettings = await this.settings.toArray();
+      const setting = allSettings.find(s => s.key === key);
+      return setting?.value;
+    } catch (error) {
+      console.warn(`⚠️ Erro ao buscar setting '${key}':`, error);
+      return null;
+    }
   }
 
   async setSetting(key: string, value: any): Promise<void> {
@@ -207,14 +220,27 @@ export class OfflineDatabase extends Dexie {
   async cleanupOldData(daysToKeep: number = 30): Promise<void> {
     const cutoffDate = Date.now() - (daysToKeep * 24 * 60 * 60 * 1000);
     
-    // Limpar registros antigos que já foram sincronizados
-    await this.students.where('is_synced').equals(true)
-      .and(student => student.last_modified < cutoffDate)
-      .delete();
-    
-    await this.peis.where('is_synced').equals(true)
-      .and(pei => pei.last_modified < cutoffDate)
-      .delete();
+    try {
+      // 🔧 FIX: Usar filter para evitar erro de IDBKeyRange
+      const oldStudents = await this.students.toArray()
+        .then(arr => arr.filter(s => s.is_synced === true && s.last_modified < cutoffDate));
+      
+      const oldPEIs = await this.peis.toArray()
+        .then(arr => arr.filter(p => p.is_synced === true && p.last_modified < cutoffDate));
+      
+      // Deletar em lote
+      if (oldStudents.length > 0) {
+        await this.students.bulkDelete(oldStudents.map(s => s.id));
+      }
+      
+      if (oldPEIs.length > 0) {
+        await this.peis.bulkDelete(oldPEIs.map(p => p.id));
+      }
+      
+      console.log(`✓ Limpeza concluída: ${oldStudents.length} students, ${oldPEIs.length} PEIs removidos`);
+    } catch (error) {
+      console.warn("⚠️ Erro na limpeza de dados antigos:", error);
+    }
   }
 }
 

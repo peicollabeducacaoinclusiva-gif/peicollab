@@ -951,7 +951,7 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
         supabase.from("tenants").select("*"),
         supabase.from("profiles").select("id, is_active"),
         supabase.from("students").select("id"),
-        supabase.from("peis").select("status, created_at, student_id")
+        supabase.from("peis").select("status, created_at, student_id").eq("is_active_version", true)
       ]);
 
       const totalNetworks = tenantsRes.data?.length || 0;

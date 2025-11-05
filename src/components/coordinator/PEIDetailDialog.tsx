@@ -21,9 +21,11 @@ import {
   Copy,
   Check,
   Loader2,
+  Edit,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface PEIDetailDialogProps {
   peiId: string | null;
@@ -72,6 +74,7 @@ const PEIDetailDialog = ({
   const [sending, setSending] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open && peiId) {
@@ -493,6 +496,34 @@ const PEIDetailDialog = ({
               >
                 <XCircle className="mr-2 h-4 w-4" />
                 Devolver para Revisão
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onClose();
+                  navigate(`/pei/edit?pei=${peiId}&student=${peiData.student_id}`);
+                }}
+                className="flex-1"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Editar PEI
+              </Button>
+            </div>
+          )}
+          
+          {/* Botão Editar sempre visível */}
+          {peiData.status !== "pending_validation" && (
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onClose();
+                  navigate(`/pei/edit?pei=${peiId}&student=${peiData.student_id}`);
+                }}
+                className="flex-1"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Editar PEI
               </Button>
             </div>
           )}

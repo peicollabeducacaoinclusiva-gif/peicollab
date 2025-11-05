@@ -20,6 +20,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import CreateStudentDialog from '@/components/superadmin/CreateStudentDialog';
 import CSVUploadDialog from '@/components/superadmin/CSVUploadDialog';
+import ClassTeachersSelector from '@/components/coordinator/ClassTeachersSelector';
+import UserAvatar from '@/components/shared/UserAvatar';
 
 interface SchoolStats {
   totalTeachers: number;
@@ -54,10 +56,17 @@ interface StudentData {
   lastUpdate: string;
 }
 
+interface Profile {
+  full_name: string;
+  avatar_emoji?: string;
+  avatar_color?: string;
+}
+
 export function SchoolDirectorDashboard() {
   const [stats, setStats] = useState<SchoolStats | null>(null);
   const [teachers, setTeachers] = useState<TeacherData[]>([]);
   const [students, setStudents] = useState<StudentData[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,14 +79,42 @@ export function SchoolDirectorDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
-      // Buscar school_id do profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('school_id')
-        .eq('id', user.id)
-        .single();
+      // Buscar school_id e avatar do profile
+      let profileData = null;
+      
+      try {
+        const result = await supabase
+          .from('profiles')
+          .select('school_id, full_name, avatar_emoji, avatar_color')
+          .eq('id', user.id)
+          .maybeSingle();
         
-      const userSchoolId = profile?.school_id;
+        profileData = result.data;
+        
+        if (result.error) {
+          console.warn("⚠️ Erro ao buscar com avatar, tentando sem...", result.error);
+          
+          // Fallback: buscar sem avatar
+          const fallback = await supabase
+            .from('profiles')
+            .select('school_id, full_name')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          profileData = fallback.data;
+        }
+      } catch (error) {
+        console.error("Erro ao carregar profile:", error);
+      }
+        
+      const userSchoolId = profileData?.school_id;
+      if (profileData) {
+        setProfile({
+          full_name: profileData.full_name || 'Usuário',
+          avatar_emoji: profileData.avatar_emoji || undefined,
+          avatar_color: profileData.avatar_color || undefined
+        });
+      }
       if (!userSchoolId) return;
       
       setSchoolId(userSchoolId);
@@ -235,14 +272,33 @@ export function SchoolDirectorDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard Escolar</h1>
-          <p className="text-muted-foreground">
-            Gestão operacional da unidade escolar
-          </p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          {profile && (
+            <UserAvatar
+              emoji={profile.avatar_emoji}
+              color={profile.avatar_color}
+              fallbackName={profile.full_name}
+              size="lg"
+              className="shadow-lg"
+            />
+          )}
+          <div>
+            <h1 className="text-3xl font-bold">
+              {profile ? `Olá, ${profile.full_name.split(' ')[0]}!` : 'Dashboard Escolar'}
+            </h1>
+            <p className="text-muted-foreground">
+              Gestão operacional da unidade escolar
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {schoolId && (
+            <ClassTeachersSelector
+              schoolId={schoolId}
+              onTeachersUpdated={handleRefresh}
+            />
+          )}
           <Button
             variant="outline"
             size="sm"

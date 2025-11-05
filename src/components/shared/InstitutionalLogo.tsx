@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Upload, Trash2, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import defaultLogo from "@/assets/logo.png";
 
 interface InstitutionalLogoProps {
   tenantId: string | null;
@@ -17,7 +16,7 @@ const InstitutionalLogo = ({ tenantId, userRole }: InstitutionalLogoProps) => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  const canEdit = userRole === "coordinator" || userRole === "superadmin";
+  const canEdit = userRole === "education_secretary" || userRole === "superadmin";
 
   useEffect(() => {
     if (tenantId) {
@@ -136,15 +135,24 @@ const InstitutionalLogo = ({ tenantId, userRole }: InstitutionalLogoProps) => {
   };
 
   if (!canEdit && !logoUrl) {
-    return <img src={defaultLogo} alt="PEI Collab" className="h-10 w-auto" />;
+    // Sem logo personalizada - mostra ícone padrão
+    return (
+      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/10 to-purple-600/10 dark:from-primary/20 dark:to-purple-600/20 flex items-center justify-center border-2 border-primary/20 dark:border-primary/30">
+        <svg className="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      </div>
+    );
   }
 
   const LogoImage = () => (
-    <img 
-      src={logoUrl || defaultLogo} 
-      alt="Logo Institucional" 
-      className="h-10 w-auto object-contain cursor-pointer hover:opacity-80 transition-opacity"
-    />
+    <div className="h-12 w-12 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center border-2 border-primary/20 dark:border-primary/30 shadow-sm overflow-hidden">
+      <img 
+        src={logoUrl || "/logo.png"} 
+        alt="Logo Institucional" 
+        className="h-10 w-10 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+      />
+    </div>
   );
 
   if (!canEdit) {

@@ -39,6 +39,9 @@ interface Profile {
   // Novos campos para multi-tenant
   network_name?: string
   school_name?: string
+  // Avatar
+  avatar_emoji?: string
+  avatar_color?: string
 }
 
 // Helper para obter o role principal
@@ -237,19 +240,50 @@ const Dashboard = () => {
       // 1. Evitar operações que dependem do cache do PostgREST
 
       // 2. Buscar dados básicos do profile (sem user_roles por enquanto)
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select(`
-          id, 
-          full_name, 
-          tenant_id,
-          school_id, 
-          is_active,
-          tenants(id, network_name),
-          schools(id, school_name, tenant_id)
-        `)
-        .eq("id", userId)
-        .maybeSingle()
+      // Tentar com avatar primeiro, se falhar, buscar sem
+      let profileData = null;
+      let profileError = null;
+      
+      try {
+        const result = await supabase
+          .from("profiles")
+          .select(`
+            id, 
+            full_name, 
+            tenant_id,
+            school_id, 
+            is_active,
+            avatar_emoji,
+            avatar_color,
+            tenants(id, network_name),
+            schools(id, school_name, tenant_id)
+          `)
+          .eq("id", userId)
+          .maybeSingle();
+        
+        profileData = result.data;
+        profileError = result.error;
+      } catch (error) {
+        console.warn("⚠️ Erro ao buscar profile com avatar, tentando sem...", error);
+        
+        // Fallback: buscar sem avatar_emoji e avatar_color
+        const fallbackResult = await supabase
+          .from("profiles")
+          .select(`
+            id, 
+            full_name, 
+            tenant_id,
+            school_id, 
+            is_active,
+            tenants(id, network_name),
+            schools(id, school_name, tenant_id)
+          `)
+          .eq("id", userId)
+          .maybeSingle();
+        
+        profileData = fallbackResult.data;
+        profileError = fallbackResult.error;
+      }
 
       // 2b. Buscar user_roles separadamente (com fallback)
       let userRolesData = null
@@ -410,6 +444,8 @@ const Dashboard = () => {
           is_active: false,
           network_name: networkName,
           school_name: schoolName,
+          avatar_emoji: null,
+          avatar_color: null,
         }
         
         setProfile(newProfile)
@@ -425,6 +461,8 @@ const Dashboard = () => {
           is_active: profileData.is_active ?? false,
           network_name: networkName,
           school_name: schoolName,
+          avatar_emoji: profileData.avatar_emoji || null,
+          avatar_color: profileData.avatar_color || null,
         }
         
         setProfile(existingProfile)
@@ -483,17 +521,23 @@ const Dashboard = () => {
   console.log("🔍 is_active:", profile?.is_active)
   console.log("🔍 role:", profile ? getPrimaryRole(profile) : "N/A")
   
-  // Superadmin sempre tem acesso, independente de is_active
-  if (profile && !profile.is_active && getPrimaryRole(profile) !== "superadmin") {
+  // 🔧 FIX: Superadmin e Education Secretary não precisam de school_id
+  const userRole = profile ? getPrimaryRole(profile) : null;
+  const rolesWithoutSchoolReq = ["superadmin", "education_secretary"];
+  
+  // Verificar se usuário está inativo (mas permitir roles especiais)
+  if (profile && !profile.is_active && !rolesWithoutSchoolReq.includes(userRole as string)) {
     console.log("⚠️ Usuário não aprovado, mostrando tela de aprovação")
     return <PendingApprovalScreen userName={profile.full_name} userEmail={user?.email || ""} onLogout={handleLogout} />
   }
   
-  console.log("✅ Usuário aprovado ou é superadmin, continuando...")
+  console.log("✅ Usuário aprovado ou tem role especial, continuando...")
 
   const renderDashboard = () => {
     if (!profile) {
       console.log("⚠️ Nenhum perfil disponível para renderizar")
+      // 🔧 FIX: Apenas mostrar tela de aprovação se realmente for problema de perfil
+      // Se usuário está autenticado mas sem profile, pode ser erro de carregamento
       return (
         <PendingApprovalScreen
           userName={user?.user_metadata?.full_name || user?.email || "Usuário"}
@@ -533,35 +577,45 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {profile && <InstitutionalLogo tenantId={profile.tenant_id} userRole={getPrimaryRole(profile)} />}
-            <div>
-              <h1 className="font-bold text-lg">PEI Collab</h1>
-              {profile && (
-                <p className="text-xs text-muted-foreground">
-                  {profile.full_name} • {getPrimaryRole(profile)}
-                </p>
-              )}
-              {tenantName && getPrimaryRole(profile) !== "superadmin" && (
-                <div className="text-sm font-medium text-primary mt-1">
-                  {profile.network_name && (
-                    <p>🌐 {profile.network_name}</p>
-                  )}
-                  {profile.school_name && (
-                    <p>🏫 {profile.school_name}</p>
+        <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4">
+          <div className="grid grid-cols-3 items-center gap-2 sm:gap-4">
+            {/* Esquerda: Logo da Rede */}
+            <div className="flex items-center justify-start">
+              {profile && <InstitutionalLogo tenantId={profile.tenant_id} userRole={getPrimaryRole(profile)} />}
+            </div>
+
+            {/* Centro: Logo PEI Collab */}
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <img src="/logo.png" alt="PEI Collab" className="h-6 sm:h-8 w-auto" />
+                <h1 className="font-bold text-base sm:text-xl text-primary">PEI Collab</h1>
+              </div>
+              {profile && tenantName && getPrimaryRole(profile) !== "superadmin" && (
+                <div className="text-[10px] sm:text-xs font-medium text-muted-foreground mt-0.5 sm:mt-1 hidden md:block truncate max-w-full">
+                  {profile.network_name && profile.school_name ? (
+                    <span className="truncate">{profile.network_name} • {profile.school_name}</span>
+                  ) : (
+                    <span className="truncate">{profile.network_name || profile.school_name}</span>
                   )}
                 </div>
               )}
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <MobileNavigation userRole={getPrimaryRole(profile || { user_roles: [] })} />
-            {getPrimaryRole(profile || { user_roles: [] }) !== "superadmin" && <NotificationBell />}
-            <ThemeToggle />
-            <Button variant="outline" onClick={handleLogout} className="hidden lg:flex">
-              Sair
-            </Button>
+
+            {/* Direita: Usuário + Ações */}
+            <div className="flex items-center justify-end gap-1 sm:gap-2">
+              {profile && (
+                <div className="text-right hidden lg:block mr-2">
+                  <p className="text-sm font-medium truncate max-w-[150px]">{profile.full_name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{getPrimaryRole(profile)}</p>
+                </div>
+              )}
+              <MobileNavigation userRole={getPrimaryRole(profile || { user_roles: [] })} />
+              {getPrimaryRole(profile || { user_roles: [] }) !== "superadmin" && <NotificationBell />}
+              <ThemeToggle />
+              <Button variant="outline" size="sm" onClick={handleLogout} className="hidden lg:flex">
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>

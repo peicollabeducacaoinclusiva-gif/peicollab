@@ -33,7 +33,8 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
         .select(`
           *,
           students(name, date_of_birth),
-          tenants(name)
+          tenants(name),
+          schools(school_name)
         `)
         .eq("id", peiId)
         .single();
@@ -221,23 +222,26 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
           `}</style>
 
           <div className="print-only-content">
-            {/* Cabeçalho */}
-            <div className="flex items-start justify-between mb-6 pb-3 border-b-2 border-black">
+            {/* Cabeçalho Institucional */}
+            <div className="flex items-start gap-4 mb-6 pb-4 border-b-2 border-black">
+              {logoUrl && (
+                <div className="flex-shrink-0">
+                  <img src={logoUrl} alt="Logo" className="h-20 w-20 object-contain border border-gray-300 rounded" />
+                </div>
+              )}
               <div className="flex-1">
-                <h1 className="text-2xl font-bold mb-1">
-                  Plano Educacional Individualizado
-                </h1>
-                <p className="text-lg font-semibold">{pei.tenants?.name}</p>
-                <p className="text-sm mt-1">
+                <h2 className="text-xl font-bold mb-0.5">{pei.tenants?.name || "Nome da Rede"}</h2>
+                <p className="text-base font-medium text-gray-700 mb-2">{pei.schools?.school_name || "Nome da Escola"}</p>
+                <p className="text-xs text-gray-600">
                   Data de Emissão: {format(new Date(), "dd/MM/yyyy", { locale: ptBR })}
                 </p>
               </div>
-              {logoUrl && (
-                <div className="ml-4">
-                  <img src={logoUrl} alt="Logo da escola" className="h-16 w-16 object-contain" />
-                </div>
-              )}
             </div>
+            
+            {/* Título do Documento */}
+            <h1 className="text-2xl font-bold text-center mb-6">
+              Plano Educacional Individualizado
+            </h1>
 
             {/* Identificação do Aluno */}
             <div className="mb-5">

@@ -36,20 +36,21 @@ export const useTenant = () => {
       }
 
       // Buscar informações do usuário com tenant e school
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError} = await supabase
         .from('profiles')
-        .select(`
-          id,
-          tenant_id,
-          school_id,
-          user_roles(role)
-        `)
+        .select('id, tenant_id, school_id')
         .eq('id', user.id)
         .single();
 
       if (profileError) throw profileError;
 
-      const primaryRole = profile.user_roles?.[0]?.role || 'teacher';
+      // Buscar role separadamente
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      const primaryRole = userRoles?.[0]?.role || 'teacher';
 
       // Determinar tipo de tenant baseado no role
       if (primaryRole === 'education_secretary' || primaryRole === 'superadmin') {

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   GraduationCap, 
@@ -59,6 +60,7 @@ interface Tenant {
 export default function PEIs() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { primaryRole } = usePermissions();
   
   const [peis, setPeis] = useState<PEI[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -73,6 +75,18 @@ export default function PEIs() {
   // Estados para modal de detalhes
   const [selectedPEI, setSelectedPEI] = useState<PEI | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  
+  // PROTEÇÃO: Apenas superadmin pode acessar esta página
+  useEffect(() => {
+    if (primaryRole && primaryRole !== 'superadmin') {
+      toast({
+        title: "Acesso Negado",
+        description: "Você não tem permissão para acessar esta página.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
+  }, [primaryRole, navigate, toast]);
 
   useEffect(() => {
     loadData();
@@ -468,7 +482,7 @@ export default function PEIs() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/pei/edit?peiId=${pei.id}`)}
+                            onClick={() => navigate(`/pei/edit?id=${pei.id}`)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -543,7 +557,7 @@ export default function PEIs() {
                   </Button>
                   <Button onClick={() => {
                     setIsDetailsModalOpen(false);
-                    navigate(`/pei/edit?peiId=${selectedPEI.id}`);
+                    navigate(`/pei/edit?id=${selectedPEI.id}`);
                   }}>
                     <Edit className="h-4 w-4 mr-2" />
                     Editar PEI

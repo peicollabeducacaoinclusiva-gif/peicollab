@@ -21,6 +21,7 @@ interface StudentIdentificationSectionProps {
   studentData: Student | null;
   onStudentChange: (studentId: string) => void;
   onTemplateSelect?: (template: any) => void;
+  isEditMode?: boolean;
 }
 
 const StudentIdentificationSection = ({
@@ -29,40 +30,80 @@ const StudentIdentificationSection = ({
   studentData,
   onStudentChange,
   onTemplateSelect,
+  isEditMode = false,
 }: StudentIdentificationSectionProps) => {
   return (
     <div className="space-y-6">
       <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
         <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         <AlertDescription className="text-sm text-blue-800 dark:text-blue-300">
-          <strong>Bem-vindo ao Plano Educacional Individualizado!</strong><br />
-          Siga as abas acima para preencher todas as seções. Use as dicas 💡 ao longo do formulário para orientação.
+          <strong>{isEditMode ? 'Editando Plano Educacional Individualizado' : 'Bem-vindo ao Plano Educacional Individualizado!'}</strong><br />
+          {isEditMode 
+            ? 'Você está editando um PEI existente. Revise e atualize as informações conforme necessário.'
+            : 'Siga as abas acima para preencher todas as seções. Use as dicas 💡 ao longo do formulário para orientação.'
+          }
         </AlertDescription>
       </Alert>
 
       <div>
         <h3 className="text-lg font-semibold mb-4">Identificação do Aluno</h3>
         <div className="space-y-4">
+          <div>
+            <Label htmlFor="student">
+              {isEditMode ? 'Aluno do PEI' : 'Selecione o Aluno *'}
+            </Label>
+            <Select 
+              value={selectedStudentId} 
+              onValueChange={onStudentChange}
+              disabled={isEditMode}
+            >
+              <SelectTrigger id="student" disabled={isEditMode}>
+                <SelectValue placeholder={
+                  students.length === 0 
+                    ? "Nenhum aluno disponível" 
+                    : "Selecione um aluno"
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                {students.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Nenhum aluno atribuído.<br/>
+                    Contate a coordenação.
+                  </div>
+                ) : (
+                  students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            {isEditMode ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                O aluno não pode ser alterado durante a edição do PEI
+              </p>
+            ) : students.length === 0 ? (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                ⚠️ Você não tem alunos atribuídos. Entre em contato com a coordenação.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Apenas alunos atribuídos a você aparecem na lista
+              </p>
+            )}
+          </div>
+          
           {onTemplateSelect && (
             <div>
               <PEITemplateSelector onTemplateSelect={onTemplateSelect} />
+              {isEditMode && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  ⚠️ Usar um modelo irá substituir os dados atuais do PEI
+                </p>
+              )}
             </div>
           )}
-          <div>
-            <Label htmlFor="student">Selecione o Aluno *</Label>
-            <Select value={selectedStudentId} onValueChange={onStudentChange}>
-              <SelectTrigger id="student">
-                <SelectValue placeholder="Selecione um aluno" />
-              </SelectTrigger>
-              <SelectContent>
-                {students.map((student) => (
-                  <SelectItem key={student.id} value={student.id}>
-                    {student.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           {studentData && (
             <Card>

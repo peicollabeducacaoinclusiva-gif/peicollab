@@ -82,6 +82,7 @@ const SpecialistDashboard = ({ profile }: SpecialistDashboardProps) => {
         `,
         )
         .in("id", peiIds)
+        .eq("is_active_version", true)
         .order("created_at", { ascending: false })
 
       if (peisError) throw peisError

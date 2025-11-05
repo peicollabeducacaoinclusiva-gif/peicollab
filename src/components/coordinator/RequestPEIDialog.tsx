@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,9 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 interface RequestPEIDialogProps {
   tenantId: string;
@@ -52,7 +56,9 @@ const RequestPEIDialog = ({
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [createDirectly, setCreateDirectly] = useState(false); // Novo: Coordenador preenche ele mesmo
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open && (tenantId || schoolId)) {
@@ -146,6 +152,26 @@ const RequestPEIDialog = ({
   };
 
   const handleSubmit = async () => {
+    // Se criar diretamente, apenas redirecionar para a página de criação
+    if (createDirectly) {
+      if (!selectedStudentId) {
+        toast({
+          title: "Campo obrigatório",
+          description: "Selecione um aluno",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Redirecionar para página de criar PEI com o aluno selecionado
+      navigate(`/pei/new?student=${selectedStudentId}`);
+      setOpen(false);
+      setSelectedStudentId("");
+      setSelectedTeacherId("");
+      setCreateDirectly(false);
+      return;
+    }
+    
     if (!selectedStudentId || !selectedTeacherId) {
       toast({
         title: "Campos obrigatórios",
@@ -167,7 +193,62 @@ const RequestPEIDialog = ({
 
       if (studentError) throw studentError;
 
-      // Criar PEI
+      // Verificar se aluno já tem PEI ativo
+      const { data: existingPEI } = await supabase
+        .from("peis")
+        .select("id, status, assigned_teacher_id, version_number")
+        .eq("student_id", selectedStudentId)
+        .eq("is_active_version", true)
+        .maybeSingle();
+
+      if (existingPEI) {
+        // Já existe PEI ativo - atualizar professor atribuído se necessário
+        if (existingPEI.assigned_teacher_id !== selectedTeacherId) {
+          const { error: updateError } = await supabase
+            .from("peis")
+            .update({ assigned_teacher_id: selectedTeacherId })
+            .eq("id", existingPEI.id);
+          
+          if (updateError) throw updateError;
+          
+          console.log("✅ Professor reatribuído ao PEI existente");
+        }
+        
+        // Criar student_access
+        await supabase
+          .from("student_access")
+          .upsert({
+            user_id: selectedTeacherId,
+            student_id: selectedStudentId
+          }, {
+            onConflict: 'user_id,student_id',
+            ignoreDuplicates: true
+          });
+        
+        toast({
+          title: "PEI já existe!",
+          description: `Este aluno já possui um PEI ativo (${existingPEI.status}). O professor foi atribuído e pode continuar trabalhando nele.`,
+        });
+        
+        setOpen(false);
+        setSelectedStudentId("");
+        setSelectedTeacherId("");
+        onPEICreated();
+        return;
+      }
+
+      // Se não existe, criar novo PEI
+      // Buscar próximo número de versão
+      const { data: versionData } = await supabase
+        .from("peis")
+        .select("version_number")
+        .eq("student_id", selectedStudentId)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      const nextVersion = (versionData?.version_number || 0) + 1;
+      
       const { data: peiData, error: peiError } = await supabase
         .from("peis")
         .insert({
@@ -177,6 +258,8 @@ const RequestPEIDialog = ({
           created_by: coordinatorId,
           assigned_teacher_id: selectedTeacherId,
           status: "draft",
+          version_number: nextVersion,
+          is_active_version: true,  // Marcar como versão ativa
           diagnosis_data: {},
           planning_data: {},
           evaluation_data: {},
@@ -185,6 +268,24 @@ const RequestPEIDialog = ({
         .single();
 
       if (peiError) throw peiError;
+
+      // CRÍTICO: Criar entrada em student_access para que o professor possa ver o aluno
+      const { error: accessError } = await supabase
+        .from("student_access")
+        .upsert({
+          user_id: selectedTeacherId,
+          student_id: selectedStudentId
+        }, {
+          onConflict: 'user_id,student_id',
+          ignoreDuplicates: true
+        });
+
+      if (accessError) {
+        console.error("⚠️ Erro ao criar student_access:", accessError);
+        // Não falhar a operação por causa disso, apenas logar
+      } else {
+        console.log("✅ Acesso ao aluno criado para o professor");
+      }
 
       console.log("✅ PEI criado com sucesso:", {
         peiId: peiData.id,
@@ -197,7 +298,7 @@ const RequestPEIDialog = ({
 
       toast({
         title: "PEI solicitado com sucesso!",
-        description: "O professor foi notificado e pode começar a trabalhar no PEI.",
+        description: "O professor foi notificado e pode acessar o aluno e o PEI.",
       });
 
       setOpen(false);
@@ -224,14 +325,42 @@ const RequestPEIDialog = ({
           Solicitar PEI
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Solicitar Novo PEI</DialogTitle>
+          <DialogTitle>Criar Novo PEI</DialogTitle>
           <DialogDescription>
-            Selecione um aluno e atribua um professor para criar o PEI
+            {createDirectly 
+              ? "Você irá criar e preencher o PEI diretamente"
+              : "Selecione um aluno e atribua um professor para criar o PEI"
+            }
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {/* Opção: Criar Diretamente */}
+          <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-sm text-blue-800 dark:text-blue-300">
+              <div className="flex items-center gap-3 mt-1">
+                <Checkbox
+                  id="createDirectly"
+                  checked={createDirectly}
+                  onCheckedChange={(checked) => {
+                    setCreateDirectly(!!checked);
+                    if (checked) {
+                      setSelectedTeacherId(""); // Limpar seleção de professor
+                    }
+                  }}
+                />
+                <Label 
+                  htmlFor="createDirectly" 
+                  className="text-sm font-medium cursor-pointer text-blue-900 dark:text-blue-200"
+                >
+                  Criar e preencher PEI diretamente (situação especial)
+                </Label>
+              </div>
+            </AlertDescription>
+          </Alert>
+
           <div className="grid gap-2">
             <Label htmlFor="student">Aluno *</Label>
             <Select
@@ -258,48 +387,65 @@ const RequestPEIDialog = ({
             </Select>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="teacher">Professor Responsável *</Label>
-            <Select
-              value={selectedTeacherId}
-              onValueChange={setSelectedTeacherId}
-              disabled={loading}
-            >
-              <SelectTrigger id="teacher">
-                <SelectValue placeholder="Selecione um professor" />
-              </SelectTrigger>
-              <SelectContent>
-                {teachers.length === 0 ? (
-                  <div className="p-2 text-sm text-muted-foreground text-center">
-                    {loading ? "Carregando..." : "Nenhum professor encontrado"}
-                  </div>
-                ) : (
-                  teachers.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>
-                      {teacher.full_name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+          {!createDirectly && (
+            <div className="grid gap-2">
+              <Label htmlFor="teacher">Professor Responsável *</Label>
+              <Select
+                value={selectedTeacherId}
+                onValueChange={setSelectedTeacherId}
+                disabled={loading}
+              >
+                <SelectTrigger id="teacher">
+                  <SelectValue placeholder="Selecione um professor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teachers.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      {loading ? "Carregando..." : "Nenhum professor encontrado"}
+                    </div>
+                  ) : (
+                    teachers.map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.id}>
+                        {teacher.full_name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-          {teachers.length === 0 && !loading && (
+          {!createDirectly && teachers.length === 0 && !loading && (
             <p className="text-sm text-muted-foreground bg-yellow-50 p-3 rounded border border-yellow-200">
               Nenhum professor encontrado nesta escola. Verifique se há professores cadastrados e vinculados.
             </p>
+          )}
+          
+          {createDirectly && (
+            <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-sm text-amber-800 dark:text-amber-300">
+                <strong>Situação Especial:</strong> Você será redirecionado para preencher todo o PEI. 
+                Esta opção deve ser usada apenas quando não houver professor disponível ou em casos urgentes.
+              </AlertDescription>
+            </Alert>
           )}
         </div>
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              setCreateDirectly(false);
+              setSelectedStudentId("");
+              setSelectedTeacherId("");
+            }}
             disabled={loading}
           >
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Criando..." : "Solicitar PEI"}
+            {loading ? "Criando..." : (createDirectly ? "Criar e Preencher" : "Solicitar PEI")}
           </Button>
         </DialogFooter>
       </DialogContent>

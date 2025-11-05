@@ -46,6 +46,7 @@ const AEETeacherDashboard = ({ profile }: AEETeacherDashboardProps) => {
           students (name, date_of_birth)
         `)
         .eq("school_id", profile.school_id)
+        .eq("is_active_version", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

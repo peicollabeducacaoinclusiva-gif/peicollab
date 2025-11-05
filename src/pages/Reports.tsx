@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, 
@@ -21,7 +23,9 @@ import {
   Filter,
   RefreshCw,
   Eye,
-  Printer
+  Printer,
+  ArrowLeft,
+  AlertTriangle
 } from 'lucide-react';
 
 interface ReportData {
@@ -65,7 +69,9 @@ interface GlobalStats {
 }
 
 export default function Reports() {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { primaryRole } = usePermissions();
   
   const [reports, setReports] = useState<ReportData[]>([]);
   const [networkStats, setNetworkStats] = useState<NetworkStats[]>([]);
@@ -83,6 +89,19 @@ export default function Reports() {
   const [reportName, setReportName] = useState('');
   const [reportType, setReportType] = useState<string>('general');
   const [reportDescription, setReportDescription] = useState('');
+  
+  // 🔒 PROTEÇÃO CRÍTICA: Apenas SUPERADMIN pode acessar relatórios globais
+  // Esta página acessa dados de TODAS as redes do sistema
+  useEffect(() => {
+    if (primaryRole && primaryRole !== 'superadmin') {
+      toast({
+        title: "Acesso Negado",
+        description: "Esta página é exclusiva para superadministradores. Apenas eles podem visualizar dados de todas as redes.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
+  }, [primaryRole, navigate, toast]);
 
   useEffect(() => {
     loadData();
@@ -362,33 +381,69 @@ export default function Reports() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-8 w-8" />
-            Relatórios e Analytics
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Visualize e gere relatórios detalhados do sistema PEI Collab
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={loadData}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
-          <Button onClick={() => setIsGenerateModalOpen(true)}>
-            <FileText className="h-4 w-4 mr-2" />
-            Novo Relatório
-          </Button>
+    <div className="min-h-screen bg-background">
+      {/* Header com Navegação */}
+      <div className="sticky top-0 z-10 bg-card border-b shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Voltar</span>
+              </Button>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                  <BarChart3 className="h-6 w-6 sm:h-7 sm:w-7" />
+                  <span className="hidden sm:inline">Relatórios e Analytics</span>
+                  <span className="sm:hidden">Relatórios</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden md:block">
+                  Visualização global de todas as redes (Superadmin)
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={loadData}>
+                <RefreshCw className="h-4 w-4 mr-0 sm:mr-2" />
+                <span className="hidden sm:inline">Atualizar</span>
+              </Button>
+              <Button size="sm" onClick={() => setIsGenerateModalOpen(true)}>
+                <FileText className="h-4 w-4 mr-0 sm:mr-2" />
+                <span className="hidden sm:inline">Novo</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Estatísticas Globais */}
-      {globalStats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Alerta de Segurança */}
+      <div className="container mx-auto px-4 sm:px-6 pt-6">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-amber-900 dark:text-amber-100 text-sm sm:text-base">
+                Acesso Superadmin - Dados Multi-Rede
+              </h3>
+              <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 mt-1">
+                Esta página contém dados de <strong>todas as redes de ensino</strong> do sistema. 
+                Acesso restrito exclusivamente a superadministradores.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 sm:px-6 pb-6 space-y-6">
+
+        {/* Estatísticas Globais */}
+        {globalStats && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Redes</CardTitle>
@@ -428,11 +483,11 @@ export default function Reports() {
               <div className="text-2xl font-bold">{globalStats.approvalRate.toFixed(1)}%</div>
             </CardContent>
           </Card>
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Estatísticas por Rede */}
-      <Card>
+        {/* Estatísticas por Rede */}
+        <Card>
         <CardHeader>
           <CardTitle>Estatísticas por Rede de Ensino</CardTitle>
           <CardDescription>
@@ -440,8 +495,9 @@ export default function Reports() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="min-w-[800px]">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Rede</TableHead>
@@ -492,13 +548,14 @@ export default function Reports() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
           </div>
         </CardContent>
-      </Card>
+        </Card>
 
-      {/* Relatórios Gerados */}
-      <Card>
+        {/* Relatórios Gerados */}
+        <Card>
         <CardHeader>
           <CardTitle>Relatórios Gerados</CardTitle>
           <CardDescription>
@@ -554,7 +611,8 @@ export default function Reports() {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       {/* Modal de Geração de Relatório */}
       <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>

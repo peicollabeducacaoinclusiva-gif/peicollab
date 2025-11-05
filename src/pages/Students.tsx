@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Users, 
@@ -53,6 +54,7 @@ interface Tenant {
 export default function Students() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { primaryRole } = usePermissions();
   
   const [students, setStudents] = useState<Student[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
@@ -62,6 +64,18 @@ export default function Students() {
   const [selectedTenant, setSelectedTenant] = useState<string>('all');
   const [selectedSchool, setSelectedSchool] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  
+  // PROTEÇÃO: Apenas superadmin pode acessar esta página
+  useEffect(() => {
+    if (primaryRole && primaryRole !== 'superadmin') {
+      toast({
+        title: "Acesso Negado",
+        description: "Você não tem permissão para acessar esta página.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
+  }, [primaryRole, navigate, toast]);
   
   // Estados para modal de criação/edição
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

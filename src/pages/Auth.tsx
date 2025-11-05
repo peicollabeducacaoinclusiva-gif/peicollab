@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { z } from "zod";
 // Logo está em /public/logo.png
 import { ArrowLeft, Mail, Lock, User, Shield, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { createLoginRateLimiter, createPasswordResetRateLimiter } from "@/lib/rateLimit";
 
 // Password validation schema - LGPD and security compliant
 const passwordSchema = z.string()
@@ -31,6 +32,11 @@ const Auth = () => {
   const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // 🔧 FIX: Usar refs para garantir captura de valores (soluciona bug de preenchimento automático)
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const fullNameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Detect recovery mode from URL (query or hash)
@@ -75,9 +81,43 @@ const Auth = () => {
     setPasswordError("");
 
     try {
+      // 🔒 RATE LIMITING: Verificar se está bloqueado antes de tentar
+      if (isLogin && email) {
+        const rateLimiter = createLoginRateLimiter(email);
+        const blockCheck = rateLimiter.isBlocked();
+        
+        if (blockCheck.blocked) {
+          toast({
+            title: "Muitas tentativas",
+            description: blockCheck.message,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      } else if (isForgotPassword && email) {
+        const rateLimiter = createPasswordResetRateLimiter(email);
+        const blockCheck = rateLimiter.isBlocked();
+        
+        if (blockCheck.blocked) {
+          toast({
+            title: "Muitas tentativas",
+            description: blockCheck.message,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // 🔧 FIX: Obter valores dos refs (soluciona bug de captura)
+      const emailValue = emailRef.current?.value || email;
+      const passwordValue = passwordRef.current?.value || password;
+      const fullNameValue = fullNameRef.current?.value || fullName;
+      
       if (isResetPassword) {
         // Validate password strength
-        const validation = passwordSchema.safeParse(password);
+        const validation = passwordSchema.safeParse(passwordValue);
         if (!validation.success) {
           setPasswordError(validation.error.issues[0].message);
           setLoading(false);
@@ -96,7 +136,7 @@ const Auth = () => {
         }
 
         const { error } = await supabase.auth.updateUser({
-          password: password,
+          password: passwordValue,
         });
 
         if (error) throw error;
@@ -109,7 +149,7 @@ const Auth = () => {
         setIsLogin(true);
         navigate("/dashboard");
       } else if (isForgotPassword) {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error} = await supabase.auth.resetPasswordForEmail(emailValue, {
           redirectTo: `${window.location.origin}/auth`,
         });
 
@@ -123,8 +163,8 @@ const Auth = () => {
         setIsLogin(true);
       } else if (isLogin) {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: emailValue,
+          password: passwordValue,
         });
 
         if (error) {
@@ -151,8 +191,19 @@ const Auth = () => {
             throw new Error("Sua conta está inativa. Entre em contato com o administrador.");
           }
 
-          // Check if user has school assigned
-          if (!profile?.school_id) {
+          // Buscar role do usuário
+          const { data: userRoles, error: roleError } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", data.user.id)
+            .single();
+
+          // Roles que NÃO precisam de school_id
+          const rolesWithoutSchoolReq = ["superadmin", "education_secretary"];
+          const userRole = userRoles?.role;
+
+          // Check if user has school assigned (apenas se não for role especial)
+          if (!profile?.school_id && !rolesWithoutSchoolReq.includes(userRole)) {
             await supabase.auth.signOut();
             throw new Error("Sua conta ainda não foi vinculada a uma escola. Entre em contato com o administrador.");
           }
@@ -285,11 +336,14 @@ const Auth = () => {
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
                   <Input
+                    ref={fullNameRef}
                     id="fullName"
+                    name="fullName"
                     type="text"
                     placeholder="Digite seu nome completo"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    autoComplete="name"
                     className="pl-11 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                     required={!isLogin}
                   />
@@ -305,11 +359,14 @@ const Auth = () => {
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
                   <Input
+                    ref={emailRef}
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
                     className="pl-11 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                     required
                   />
@@ -325,7 +382,9 @@ const Auth = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
                   <Input
+                    ref={passwordRef}
                     id="password"
+                    name="password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
@@ -333,6 +392,7 @@ const Auth = () => {
                       setPassword(e.target.value);
                       setPasswordError("");
                     }}
+                    autoComplete={isLogin ? "current-password" : "new-password"}
                     className={`pl-11 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 ${passwordError ? "border-red-500" : ""}`}
                     required
                     minLength={8}

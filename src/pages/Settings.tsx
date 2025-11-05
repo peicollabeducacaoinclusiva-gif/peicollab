@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { 
   Settings as SettingsIcon, 
   User, 
@@ -18,7 +20,22 @@ import {
 } from 'lucide-react';
 
 export default function Settings() {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { primaryRole } = usePermissions();
+  
+  // PROTEÇÃO: Apenas gestores de alto nível podem acessar configurações
+  const allowedRoles = ['superadmin', 'education_secretary', 'school_director'];
+  useEffect(() => {
+    if (primaryRole && !allowedRoles.includes(primaryRole)) {
+      toast({
+        title: "Acesso Negado",
+        description: "Você não tem permissão para acessar configurações do sistema.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
+  }, [primaryRole, navigate, toast]);
   
   const [settings, setSettings] = useState({
     // Configurações de perfil

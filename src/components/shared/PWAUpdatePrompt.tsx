@@ -9,6 +9,11 @@ interface PWAUpdatePromptProps {
 }
 
 export function PWAUpdatePrompt({ className = '' }: PWAUpdatePromptProps) {
+  // 🔧 Desabilitar prompt em desenvolvimento
+  if (import.meta.env.DEV) {
+    return null;
+  }
+
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);

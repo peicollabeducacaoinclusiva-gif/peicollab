@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Upload } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 // Tipos baseados no schema do banco de dados e em CreatePEI.tsx
 interface Barrier {
@@ -78,6 +79,8 @@ interface ReportViewProps {
   planningData: PlanningData;
   referralsData: ReferralsData;
   userRole?: string | null;
+  tenantId?: string | null;
+  schoolId?: string | null;
 }
 
 interface ReportIdentification {
@@ -92,12 +95,75 @@ const ReportView = ({
   planningData,
   referralsData,
   userRole,
+  tenantId,
+  schoolId,
 }: ReportViewProps) => {
   const [identification, setIdentification] = useState<ReportIdentification>({
     networkName: "",
     schoolName: "",
     logoUrl: ""
   });
+  const [loadingInstitution, setLoadingInstitution] = useState(true);
+
+  // Buscar dados da instituição automaticamente
+  useEffect(() => {
+    const loadInstitutionData = async () => {
+      try {
+        setLoadingInstitution(true);
+        
+        // Buscar dados da rede (tenant)
+        if (tenantId) {
+          const { data: tenant, error: tenantError } = await supabase
+            .from("tenants")
+            .select("network_name")
+            .eq("id", tenantId)
+            .single();
+          
+          if (tenant && !tenantError) {
+            setIdentification(prev => ({ ...prev, networkName: tenant.network_name }));
+          }
+        }
+        
+        // Buscar dados da escola
+        if (schoolId) {
+          const { data: school, error: schoolError } = await supabase
+            .from("schools")
+            .select("school_name")
+            .eq("id", schoolId)
+            .single();
+          
+          if (school && !schoolError) {
+            setIdentification(prev => ({ ...prev, schoolName: school.school_name }));
+          }
+        }
+        
+        // Buscar logo da escola
+        if (tenantId) {
+          const { data: files } = await supabase.storage
+            .from("school-logos")
+            .list(tenantId);
+
+          if (files && files.length > 0) {
+            const { data: urlData } = supabase.storage
+              .from("school-logos")
+              .getPublicUrl(`${tenantId}/${files[0].name}`);
+            
+            setIdentification(prev => ({ ...prev, logoUrl: urlData.publicUrl }));
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados da instituição:", error);
+      } finally {
+        setLoadingInstitution(false);
+      }
+    };
+
+    if (tenantId || schoolId) {
+      loadInstitutionData();
+    } else {
+      setLoadingInstitution(false);
+    }
+  }, [tenantId, schoolId]);
 
   const handlePrint = () => {
     window.print();
@@ -154,49 +220,93 @@ const ReportView = ({
 
       {/* Card de identificação institucional - oculto na impressão */}
       <Card className="print:hidden">
-        <CardHeader className="print:pb-6">
-          <CardTitle>Identificação Institucional</CardTitle>
+        <CardHeader>
+          <CardTitle>Cabeçalho do Documento</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Configure como aparecerá no cabeçalho impresso
+          </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="networkName">Nome da Rede</Label>
-              <Input
-                id="networkName"
-                placeholder="Ex: Rede Municipal de Ensino"
-                value={identification.networkName}
-                onChange={(e) => setIdentification({ ...identification, networkName: e.target.value })}
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="schoolName">Nome da Escola</Label>
-              <Input
-                id="schoolName"
-                placeholder="Ex: Escola Municipal Dom Pedro II"
-                value={identification.schoolName}
-                onChange={(e) => setIdentification({ ...identification, schoolName: e.target.value })}
-                className="mt-2"
-              />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="logo">Logo da Instituição</Label>
-            <div className="mt-2 flex items-center gap-4">
+        <CardContent>
+          <div className="flex items-start gap-6">
+            {/* Preview da Logo */}
+            <div className="flex-shrink-0">
+              <Label htmlFor="logo" className="cursor-pointer">
+                <div className="relative h-24 w-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center hover:border-primary transition-colors overflow-hidden group bg-gray-50 dark:bg-gray-800">
+                  {identification.logoUrl ? (
+                    <>
+                      <img 
+                        src={identification.logoUrl} 
+                        alt="Logo" 
+                        className="h-full w-full object-contain p-1"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">Alterar</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center p-2">
+                      <div className="text-gray-400 mb-1">📷</div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Clique para adicionar logo</span>
+                    </div>
+                  )}
+                </div>
+              </Label>
               <Input
                 id="logo"
                 type="file"
                 accept="image/*"
                 onChange={handleLogoUpload}
-                className="flex-1"
+                className="hidden"
               />
-              {identification.logoUrl && (
-                <img src={identification.logoUrl} alt="Logo" className="h-16 w-16 object-contain border rounded" />
-              )}
+            </div>
+
+            {/* Campos de Texto */}
+            <div className="flex-1 space-y-4">
+              <div>
+                <Label htmlFor="networkName">Nome da Rede</Label>
+                <Input
+                  id="networkName"
+                  value={identification.networkName || "Carregando..."}
+                  readOnly
+                  className="mt-1.5 font-medium bg-gray-50 dark:bg-gray-900"
+                />
+              </div>
+              <div>
+                <Label htmlFor="schoolName">Nome da Escola</Label>
+                <Input
+                  id="schoolName"
+                  value={identification.schoolName || "Carregando..."}
+                  readOnly
+                  className="mt-1.5 bg-gray-50 dark:bg-gray-900"
+                />
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Cabeçalho Institucional - Visível apenas na impressão */}
+      <div className="hidden print:block mb-6">
+        <div className="flex items-start gap-4 pb-4 border-b-2 border-black">
+          {identification.logoUrl && (
+            <div className="flex-shrink-0">
+              <img src={identification.logoUrl} alt="Logo" className="h-20 w-20 object-contain border border-gray-300 rounded" />
+            </div>
+          )}
+          <div className="flex-1">
+            <h2 className="text-xl font-bold mb-0.5">{identification.networkName || "Nome da Rede"}</h2>
+            <p className="text-base font-medium text-gray-700 mb-2">{identification.schoolName || "Nome da Escola"}</p>
+            <p className="text-xs text-gray-600">
+              Data de Emissão: {format(new Date(), "dd/MM/yyyy", { locale: ptBR })}
+            </p>
+          </div>
+        </div>
+        
+        {/* Título do Documento */}
+        <h1 className="text-2xl font-bold text-center my-6">
+          Plano Educacional Individualizado
+        </h1>
+      </div>
 
       {/* Seção de Identificação do Aluno */}
       <Card className="print:border print:border-gray-300">
