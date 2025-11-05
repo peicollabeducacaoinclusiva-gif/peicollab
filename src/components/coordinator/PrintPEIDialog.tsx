@@ -192,7 +192,7 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
             @media print {
               @page {
                 size: A4;
-                margin: 1.5cm 2cm;
+                margin: 1cm 1.5cm;
               }
               * {
                 -webkit-print-color-adjust: exact !important;
@@ -212,6 +212,30 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
                 width: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                font-size: 9pt !important;
+                line-height: 1.3 !important;
+              }
+              .print-only-content h1 {
+                font-size: 16pt !important;
+                margin: 8px 0 !important;
+              }
+              .print-only-content h2 {
+                font-size: 11pt !important;
+                margin: 6px 0 3px 0 !important;
+                padding-bottom: 2px !important;
+              }
+              .print-only-content h3 {
+                font-size: 10pt !important;
+                margin: 4px 0 2px 0 !important;
+              }
+              .print-only-content p {
+                margin: 2px 0 !important;
+              }
+              .print-only-content .mb-5 {
+                margin-bottom: 8px !important;
+              }
+              .print-only-content .mb-6 {
+                margin-bottom: 10px !important;
               }
             }
             @media screen {
@@ -223,213 +247,189 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
 
           <div className="print-only-content">
             {/* Cabeçalho Institucional */}
-            <div className="flex items-start gap-4 mb-6 pb-4 border-b-2 border-black">
+            <div className="flex items-start gap-3 mb-3 pb-2 border-b-2 border-black">
               {logoUrl && (
                 <div className="flex-shrink-0">
-                  <img src={logoUrl} alt="Logo" className="h-20 w-20 object-contain border border-gray-300 rounded" />
+                  <img src={logoUrl} alt="Logo" className="h-16 w-16 object-contain border border-gray-300 rounded" />
                 </div>
               )}
               <div className="flex-1">
-                <h2 className="text-xl font-bold mb-0.5">{pei.tenants?.name || "Nome da Rede"}</h2>
-                <p className="text-base font-medium text-gray-700 mb-2">{pei.schools?.school_name || "Nome da Escola"}</p>
-                <p className="text-xs text-gray-600">
-                  Data de Emissão: {format(new Date(), "dd/MM/yyyy", { locale: ptBR })}
+                <h2 className="text-base font-bold mb-0.5 leading-tight">{pei.tenants?.name || "Nome da Rede"}</h2>
+                <p className="text-sm font-medium text-gray-700 mb-1 leading-tight">{pei.schools?.school_name || "Nome da Escola"}</p>
+                <p className="text-[8pt] text-gray-600">
+                  Emissão: {format(new Date(), "dd/MM/yyyy", { locale: ptBR })}
                 </p>
               </div>
             </div>
             
             {/* Título do Documento */}
-            <h1 className="text-2xl font-bold text-center mb-6">
-              Plano Educacional Individualizado
+            <h1 className="text-lg font-bold text-center mb-3">
+              PLANO EDUCACIONAL INDIVIDUALIZADO
             </h1>
 
             {/* Identificação do Aluno */}
-            <div className="mb-5">
-              <h2 className="text-lg font-bold mb-3 pb-1 border-b border-black">
-                Identificação do Aluno
+            <div className="mb-3">
+              <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">
+                1. Identificação do Aluno
               </h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs font-semibold mb-1">Nome:</p>
-                  <p className="text-sm">{pei.students?.name}</p>
-                </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[8pt]">
+                <p><strong>Nome:</strong> {pei.students?.name}</p>
                 {pei.students?.date_of_birth && (
-                  <div>
-                    <p className="text-xs font-semibold mb-1">Data de Nascimento:</p>
-                    <p className="text-sm">
-                      {format(new Date(pei.students.date_of_birth), "dd/MM/yyyy", { locale: ptBR })}
-                    </p>
-                  </div>
+                  <p><strong>Nascimento:</strong> {format(new Date(pei.students.date_of_birth), "dd/MM/yyyy", { locale: ptBR })}</p>
                 )}
-                <div>
-                  <p className="text-xs font-semibold mb-1">Professor Responsável:</p>
-                  <p className="text-sm">{pei.profiles?.full_name}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold mb-1">Data de Criação:</p>
-                  <p className="text-sm">
-                    {format(new Date(pei.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                  </p>
-                </div>
+                <p><strong>Professor:</strong> {pei.profiles?.full_name || "Não atribuído"}</p>
+                <p><strong>Criação:</strong> {format(new Date(pei.created_at), "dd/MM/yyyy", { locale: ptBR })}</p>
               </div>
             </div>
 
             {/* Diagnóstico */}
-            <div className="mb-5">
-              <h2 className="text-lg font-bold mb-3 pb-1 border-b border-black">Diagnóstico</h2>
+            <div className="mb-3">
+              <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">2. Diagnóstico</h2>
               
-              {pei.diagnosis_data?.history && (
-                <div className="mb-3">
-                  <p className="text-xs font-semibold mb-1">Histórico do Estudante:</p>
-                  <p className="text-xs whitespace-pre-wrap leading-relaxed">{pei.diagnosis_data.history}</p>
-                </div>
-              )}
-
-              {pei.diagnosis_data?.interests && (
-                <div className="mb-3">
-                  <p className="text-xs font-semibold mb-1">Interesses do Aluno:</p>
-                  <p className="text-xs leading-relaxed">{pei.diagnosis_data.interests}</p>
-                </div>
-              )}
-
-              {pei.diagnosis_data?.specialNeeds && (
-                <div className="mb-3">
-                  <p className="text-xs font-semibold mb-1">Necessidades Educacionais Especiais:</p>
-                  <p className="text-xs whitespace-pre-wrap leading-relaxed">{pei.diagnosis_data.specialNeeds}</p>
-                </div>
-              )}
-
-              {pei.diagnosis_data?.barriers && (
-                <div className="mb-3">
-                  <p className="text-xs font-semibold mb-1">Barreiras Identificadas:</p>
-                  <div className="space-y-1">
-                    {Object.entries(pei.diagnosis_data.barriers).map(([category, items]: [string, any]) => {
-                      if (!Array.isArray(items) || items.length === 0) return null;
-                      return (
-                        <div key={category} className="ml-1">
-                          <p className="font-semibold text-xs">{barrierCategoryLabels[category]}</p>
-                          <ul className="list-disc list-inside ml-3 text-xs leading-relaxed">
-                            {items.map((item: string) => (
-                              <li key={item}>{barrierItemLabels[category]?.[item] || item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                    {pei.diagnosis_data.otherBarrier && (
-                      <div className="ml-1">
-                        <p className="font-semibold text-xs">Outras:</p>
-                        <p className="ml-3 text-xs leading-relaxed">{pei.diagnosis_data.otherBarrier}</p>
-                      </div>
-                    )}
+              <div className="space-y-1 text-[8pt]">
+                {pei.diagnosis_data?.history && (
+                  <div>
+                    <p className="font-semibold">Histórico:</p>
+                    <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.diagnosis_data.history}</p>
                   </div>
-                </div>
-              )}
+                )}
+
+                {pei.diagnosis_data?.interests && (
+                  <div>
+                    <p className="font-semibold">Interesses:</p>
+                    <p className="leading-tight text-gray-700">{pei.diagnosis_data.interests}</p>
+                  </div>
+                )}
+
+                {pei.diagnosis_data?.specialNeeds && (
+                  <div>
+                    <p className="font-semibold">Necessidades Especiais:</p>
+                    <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.diagnosis_data.specialNeeds}</p>
+                  </div>
+                )}
+
+                {pei.diagnosis_data?.barriers && (
+                  <div>
+                    <p className="font-semibold">Barreiras:</p>
+                    <div className="ml-2 space-y-0.5 text-[7.5pt]">
+                      {Object.entries(pei.diagnosis_data.barriers).map(([category, items]: [string, any]) => {
+                        if (!Array.isArray(items) || items.length === 0) return null;
+                        return (
+                          <p key={category} className="leading-tight">
+                            <strong>{barrierCategoryLabels[category]}:</strong>{' '}
+                            {items.map((item: string) => barrierItemLabels[category]?.[item] || item).join(', ')}
+                          </p>
+                        );
+                      })}
+                      {pei.diagnosis_data.otherBarrier && (
+                        <p className="leading-tight">
+                          <strong>Outras:</strong> {pei.diagnosis_data.otherBarrier}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Planejamento */}
             {pei.planning_data?.goals && pei.planning_data.goals.length > 0 && (
-              <div className="mb-5">
-                <h2 className="text-lg font-bold mb-3 pb-1 border-b border-black">
+              <div className="mb-3">
+                <h2 className="text-base font-bold mb-2 pb-1 border-b border-black">
                   Planejamento Pedagógico
                 </h2>
-                {pei.planning_data.goals.map((goal: any, index: number) => (
-                  <div key={index} className="mb-3 p-2 border border-gray-400 rounded">
-                    <h3 className="font-bold text-sm mb-2">Meta {index + 1}</h3>
-                    
-                    {goal.description && (
-                      <div className="mb-2">
-                        <p className="text-xs font-semibold mb-1">Descrição:</p>
-                        <p className="text-xs leading-relaxed">{goal.description}</p>
+                <div className="space-y-1.5">
+                  {pei.planning_data.goals.map((goal: any, index: number) => (
+                    <div key={index} className="border-l-2 border-gray-700 pl-2 py-0.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[9pt] font-semibold flex-1 leading-tight">
+                          {index + 1}. {goal.description}
+                        </p>
+                        {goal.category && (
+                          <span className="text-[7pt] px-1.5 py-0.5 border border-gray-400 rounded whitespace-nowrap">
+                            {goal.category === 'academic' ? '📚 Acadêmica' : '🛠️ Funcional'}
+                          </span>
+                        )}
                       </div>
-                    )}
-                    
-                    {goal.strategies && Array.isArray(goal.strategies) && goal.strategies.length > 0 && goal.strategies[0] && (
-                      <div className="mb-2">
-                        <p className="text-xs font-semibold mb-1">Estratégias:</p>
-                        <ul className="list-disc list-inside ml-2 text-xs leading-relaxed">
-                          {goal.strategies.map((strategy: string, idx: number) => (
-                            strategy && <li key={idx}>{strategy}</li>
-                          ))}
-                        </ul>
+                      
+                      <div className="grid grid-cols-2 gap-x-2 text-[8pt] text-gray-700 mt-0.5">
+                        {goal.target_date && (
+                          <p><strong>Prazo:</strong> {format(new Date(goal.target_date), "dd/MM/yyyy", { locale: ptBR })}</p>
+                        )}
+                        {goal.progress_level && (
+                          <p><strong>Status:</strong> {goal.progress_level}</p>
+                        )}
                       </div>
-                    )}
-                    
-                    {goal.evaluationCriteria && (
-                      <div className="mb-2">
-                        <p className="text-xs font-semibold mb-1">Critérios de Avaliação:</p>
-                        <p className="text-xs leading-relaxed">{goal.evaluationCriteria}</p>
-                      </div>
-                    )}
-                    
-                    {goal.resources && (
-                      <div className="mb-2">
-                        <p className="text-xs font-semibold mb-1">Recursos:</p>
-                        <p className="text-xs leading-relaxed">{goal.resources}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      
+                      {goal.strategies && Array.isArray(goal.strategies) && goal.strategies.length > 0 && goal.strategies.filter(Boolean).length > 0 && (
+                        <p className="text-[8pt] text-gray-700 mt-0.5 leading-tight">
+                          <strong>Estratégias:</strong> {goal.strategies.filter(Boolean).join('; ')}
+                        </p>
+                      )}
+                      
+                      {goal.notes && (
+                        <p className="text-[8pt] text-gray-700 mt-0.5 leading-tight">
+                          <strong>Obs:</strong> {goal.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Encaminhamentos */}
-            <div className="mb-5">
-              <h2 className="text-lg font-bold mb-3 pb-1 border-b border-black">
-                Encaminhamentos e Observações
+            <div className="mb-3">
+              <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">
+                4. Encaminhamentos e Observações
               </h2>
               
-              {pei.evaluation_data?.referrals && Array.isArray(pei.evaluation_data.referrals) && pei.evaluation_data.referrals.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs font-semibold mb-1">Encaminhamentos Profissionais:</p>
-                  <ul className="list-disc list-inside ml-2 text-xs leading-relaxed">
-                    {pei.evaluation_data.referrals.map((referral: string) => (
-                      <li key={referral}>{referralLabels[referral] || referral}</li>
-                    ))}
-                  </ul>
-                  {pei.evaluation_data.otherReferral && (
-                    <div className="mt-2 ml-1">
-                      <p className="text-xs font-semibold mb-1">Outros:</p>
-                      <p className="text-xs leading-relaxed">{pei.evaluation_data.otherReferral}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="space-y-1 text-[8pt]">
+                {pei.evaluation_data?.referrals && Array.isArray(pei.evaluation_data.referrals) && pei.evaluation_data.referrals.length > 0 && (
+                  <div>
+                    <p className="font-semibold">Encaminhamentos:</p>
+                    <p className="text-[7.5pt] leading-tight text-gray-700">
+                      {pei.evaluation_data.referrals.map((ref: string) => referralLabels[ref] || ref).join(', ')}
+                      {pei.evaluation_data.otherReferral && `, ${pei.evaluation_data.otherReferral}`}
+                    </p>
+                  </div>
+                )}
 
-              {pei.evaluation_data?.observations && (
-                <div className="mb-3">
-                  <p className="text-xs font-semibold mb-1">Observações Gerais:</p>
-                  <p className="text-xs whitespace-pre-wrap leading-relaxed">{pei.evaluation_data.observations}</p>
-                </div>
-              )}
+                {pei.evaluation_data?.observations && (
+                  <div>
+                    <p className="font-semibold">Observações:</p>
+                    <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.evaluation_data.observations}</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Assinaturas */}
-            <div className="mt-8">
-              <h2 className="text-lg font-bold mb-4 pb-1 border-b border-black">Assinaturas</h2>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <div className="border-t-2 border-black pt-1 mt-12">
-                    <p className="text-center text-xs font-medium">Professor(a) Responsável</p>
+            <div className="mt-4">
+              <h2 className="text-sm font-bold mb-2 pb-0.5 border-b border-black">Assinaturas</h2>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[8pt]">
+                <div className="text-center">
+                  <div className="border-t border-gray-700 pt-1 mt-6">
+                    <p className="font-medium">Professor(a) Responsável</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="border-t-2 border-black pt-1 mt-12">
-                    <p className="text-center text-xs font-medium">Coordenador(a) Pedagógico(a)</p>
+                <div className="text-center">
+                  <div className="border-t border-gray-700 pt-1 mt-6">
+                    <p className="font-medium">Coordenador(a) Pedagógico(a)</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="border-t-2 border-black pt-1 mt-12">
-                    <p className="text-center text-xs font-medium">Diretor(a) Escolar</p>
+                <div className="text-center">
+                  <div className="border-t border-gray-700 pt-1 mt-6">
+                    <p className="font-medium">Diretor(a) Escolar</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="border-t-2 border-black pt-1 mt-12">
-                    <p className="text-center text-xs font-medium">Responsável Legal / Família</p>
+                <div className="text-center">
+                  <div className="border-t border-gray-700 pt-1 mt-6">
+                    <p className="font-medium">Responsável Legal / Família</p>
                   </div>
                 </div>
               </div>
-              <div className="text-center text-xs mt-6">
+              <div className="text-center text-[8pt] mt-3">
                 <p>Data: _____/_____/__________</p>
               </div>
             </div>

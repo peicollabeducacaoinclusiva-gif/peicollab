@@ -20,6 +20,8 @@ interface Barrier {
 
 interface PEIGoal {
   id?: string;
+  barrier_id?: string;
+  category?: 'academic' | 'functional';
   description: string;
   target_date?: string;
   progress_level?: 'não iniciada' | 'em andamento' | 'parcialmente alcançada' | 'alcançada';
@@ -380,20 +382,38 @@ const ReportView = ({
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div>
-            <p className="font-semibold mb-1">Metas Educacionais:</p>
+            <p className="font-semibold mb-2">Metas Educacionais:</p>
             {planningData.goals && planningData.goals.length > 0 ? (
-              <ul className="list-decimal pl-5 space-y-2">
+              <div className="space-y-3">
                 {planningData.goals.map((goal, index) => (
-                  <li key={index}>
-                    <p className="font-medium">{goal.description}</p>
-                    {goal.target_date && <p className="text-xs text-muted-foreground">Data Alvo: {format(new Date(goal.target_date), "dd/MM/yyyy", { locale: ptBR })}</p>}
-                    {goal.notes && <p className="text-xs text-muted-foreground whitespace-pre-wrap">Observações/Estratégias: {goal.notes}</p>}
-                    {goal.progress_level && <p className="text-xs text-muted-foreground">Progresso: {goal.progress_level} ({goal.progress_score || 0}%)</p>}
-                  </li>
+                  <div key={index} className="border-l-4 border-l-primary pl-3 py-1">
+                    <div className="flex items-start justify-between mb-1">
+                      <p className="font-medium text-sm flex-1">{index + 1}. {goal.description}</p>
+                      {goal.category && (
+                        <Badge variant="outline" className="ml-2 text-xs print:bg-white">
+                          {goal.category === 'academic' ? '📚 Acadêmica' : '🛠️ Funcional'}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
+                      {goal.target_date && (
+                        <p><strong>Prazo:</strong> {format(new Date(goal.target_date), "dd/MM/yyyy", { locale: ptBR })}</p>
+                      )}
+                      {goal.progress_level && (
+                        <p><strong>Progresso:</strong> {goal.progress_level} ({goal.progress_score || 0}%)</p>
+                      )}
+                    </div>
+                    {goal.strategies && goal.strategies.length > 0 && (
+                      <p className="text-xs mt-1"><strong>Estratégias:</strong> {goal.strategies.join('; ')}</p>
+                    )}
+                    {goal.notes && (
+                      <p className="text-xs mt-1 whitespace-pre-wrap"><strong>Observações:</strong> {goal.notes}</p>
+                    )}
+                  </div>
                 ))}
-              </ul>
+              </div>
             ) : (
-              <p>Nenhuma meta de planejamento definida.</p>
+              <p className="text-sm text-muted-foreground">Nenhuma meta definida.</p>
             )}
           </div>
           <div>
