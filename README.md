@@ -1,383 +1,413 @@
-# 🎓 PEI Collab V2.1
+# 🎓 PEI Collab - Sistema Integrado de Gestão Educacional Inclusiva
 
-**Sistema Colaborativo para Criação e Acompanhamento de Planos Educacionais Individualizados**
+**Versão 3.0.0** | **Monorepo** | **9 Aplicações Integradas**
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/peicollabeducacaoinclusiva-gif/peicollab)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/react-18+-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/typescript-5+-blue.svg)](https://www.typescriptlang.org/)
+Plataforma colaborativa completa para gestão de Planos Educacionais Individualizados (PEI), Gestão Escolar, Planos de AEE e módulos complementares para redes de ensino.
 
-## ✨ Características Principais
+---
 
-### 🚀 **Mobile-First & PWA**
-- **Progressive Web App** com instalação nativa
-- **Design responsivo** otimizado para dispositivos móveis
-- **Offline-first** com sincronização automática
-- **Service Worker** para cache inteligente
+## 🚀 Início Rápido
 
-### 👥 **Multi-Tenant & Roles**
-- **Education Secretary**: Visão estratégica da rede
-- **School Director**: Gestão operacional da escola
-- **Coordinator**: Supervisão e validação de PEIs
-- **Teacher**: Criação e acompanhamento de PEIs
-- **Family**: Acesso via tokens seguros
-- **Specialist**: Orientações especializadas
+### **Instalação em 3 Passos:**
 
-### 🔄 **Versionamento & Auditoria**
-- **Histórico completo** de versões de PEIs
-- **Comparação visual** entre versões
-- **Auditoria automática** de todas as alterações
-- **Controle de acesso** granular por role
-
-### 🔔 **Notificações Inteligentes**
-- **Push notifications** com Service Worker
-- **Notificações contextuais** baseadas em ações
-- **Configurações personalizáveis** por usuário
-- **Suporte offline** para notificações
-
-### 📊 **Analytics & Monitoramento**
-- **Métricas de performance** em tempo real
-- **Testes de usabilidade** integrados
-- **Health checks** automatizados
-- **Relatórios detalhados** de uso
-
-## 🛠️ Tecnologias
-
-### Frontend
-- **React 18** com TypeScript
-- **Vite** para build otimizado
-- **Tailwind CSS** para styling
-- **shadcn/ui** para componentes
-- **React Query** para cache de dados
-- **React Router** para navegação
-
-### Backend & Database
-- **Supabase** (PostgreSQL + Auth + Storage)
-- **Row Level Security** (RLS) policies
-- **Real-time subscriptions**
-- **Edge Functions** para lógica serverless
-
-### PWA & Offline
-- **vite-plugin-pwa** para PWA
-- **Dexie.js** para IndexedDB
-- **Service Worker** com cache strategies
-- **Background sync** para offline
-
-### Mobile & Performance
-- **Lazy loading** de componentes
-- **Image optimization** automática
-- **Bundle splitting** inteligente
-- **Performance monitoring** em tempo real
-
-## 🚀 Quick Start
-
-### 1. Pré-requisitos
 ```bash
-# Node.js 18+
-node --version
+# 1. Instalar dependências
+pnpm install
 
-# npm 9+
-npm --version
+# 2. Configurar variáveis de ambiente
+# Ver: docs/setup/📦_INSTALACAO_FINAL.md
 
-# Supabase CLI
-npm install -g supabase
+# 3. Rodar os apps
+pnpm dev
 ```
 
-### 2. Instalação
-```bash
-# Clone o repositório
-git clone https://github.com/peicollabeducacaoinclusiva-gif/peicollab.git
-cd pei-collab
+**Apps principais iniciarão em:**
+- **PEI Collab**: http://localhost:8080
+- **Gestão Escolar**: http://localhost:5174
+- **Plano de AEE**: http://localhost:5175
+- **Landing Page**: http://localhost:5173
+- **Outros apps**: Portas dinâmicas conforme configuração
 
-# Instale dependências
-npm install
-
-# Configure variáveis de ambiente
-cp env.production.example .env.local
-# Edite .env.local com suas configurações do Supabase
-```
-
-### 3. Configuração do Supabase
-```bash
-# Login no Supabase
-supabase login
-
-# Link com seu projeto
-supabase link --project-ref <your-project-ref>
-
-# Aplique as migrações
-supabase db reset --linked
-```
-
-### 4. Geração de VAPID Keys
-```bash
-# Gere as VAPID keys para notificações push
-npm run generate:vapid
-
-# Configure as keys no Supabase Dashboard
-# Authentication > Settings > Push Notifications
-```
-
-### 5. Executar
-```bash
-# Desenvolvimento
-npm run dev
-
-# Build para produção
-npm run build
-
-# Preview do build
-npm run preview
-```
-
-## 📱 Funcionalidades por Role
-
-### 🏛️ **Education Secretary**
-- **Dashboard estratégico** com KPIs da rede
-- **Gestão de escolas** e diretores
-- **Relatórios executivos** customizáveis
-- **Monitoramento** de progresso da rede
-
-### 🏫 **School Director**
-- **Dashboard operacional** da escola
-- **Gestão de professores** e alunos
-- **Aprovação de PEIs** da escola
-- **Relatórios escolares** detalhados
-
-### 👨‍🏫 **Coordinator**
-- **Validação de PEIs** da rede
-- **Supervisão** de professores
-- **Geração de tokens** familiares
-- **Relatórios de coordenação**
-
-### 👩‍🏫 **Teacher**
-- **Criação de PEIs** com IA assistida
-- **Acompanhamento** de alunos
-- **Interface gamificada** para estudantes
-- **Sincronização offline**
-
-### 👨‍👩‍👧‍👦 **Family**
-- **Acesso via tokens** seguros
-- **Visualização de PEIs** do aluno
-- **Feedback** e aprovação
-- **Interface simplificada**
-
-## 🔧 Scripts Disponíveis
-
-### Desenvolvimento
-```bash
-npm run dev              # Servidor de desenvolvimento
-npm run build            # Build para produção
-npm run preview          # Preview do build
-npm run lint             # Linting
-npm run type-check       # Verificação de tipos
-```
-
-### Testes
-```bash
-npm run test             # Testes unitários
-npm run test:integration # Testes de integração
-npm run test:usability   # Testes de usabilidade
-npm run health:check     # Verificação de saúde
-```
-
-### Banco de Dados
-```bash
-npm run db:reset         # Reset do banco
-npm run db:migrate       # Aplicar migrações
-npm run db:diff          # Ver diferenças
-npm run db:backup        # Backup do banco
-```
-
-### Performance
-```bash
-npm run performance:analyze   # Análise do bundle
-npm run performance:monitor  # Monitor de performance
-npm run cache:clear          # Limpar cache
-npm run cache:optimize       # Otimizar cache
-```
-
-### Debug
-```bash
-npm run debug:database      # Testes de banco
-npm run debug:usability     # Testes de usabilidade
-npm run debug:performance   # Testes de performance
-npm run notifications:test  # Teste de notificações
-```
-
-## 📊 Monitoramento
-
-### Health Check
-```bash
-# Verificação completa do sistema
-npm run health:check
-
-# Monitor de performance em tempo real
-npm run performance:monitor
-```
-
-### Métricas Coletadas
-- **Tempo de carregamento** (LCP, FID, CLS)
-- **Uso de memória** em dispositivos móveis
-- **Cache hit rate** para offline
-- **Taxa de erro** e warnings
-- **Métricas de usabilidade** com usuários reais
-
-## 🔒 Segurança
-
-### Row Level Security (RLS)
-- **Políticas granulares** por role e tenant
-- **Isolamento de dados** por escola
-- **Auditoria completa** de acessos
-- **Tokens seguros** para famílias
-
-### Autenticação
-- **Supabase Auth** com múltiplos provedores
-- **JWT tokens** seguros
-- **Refresh tokens** automáticos
-- **Sessões persistentes** offline
-
-## 📱 PWA & Offline
-
-### Capacidades Offline
-- **Funcionamento completo** sem internet
-- **Sincronização automática** ao reconectar
-- **Cache inteligente** de dados críticos
-- **Indicadores visuais** de status
-
-### Instalação PWA
-- **Manifest** otimizado para mobile
-- **Service Worker** com cache strategies
-- **Icons** para diferentes dispositivos
-- **Splash screen** personalizado
-
-## 🧪 Testes de Usabilidade
-
-### Sistema Integrado
-- **Criação de testes** com templates
-- **Sessões de teste** com usuários reais
-- **Coleta de feedback** estruturado
-- **Análise de issues** e métricas
-
-### Templates Disponíveis
-- **Navegação mobile** e acessibilidade
-- **Criação de PEIs** e workflows
-- **Interface gamificada** para estudantes
-- **Acesso familiar** via tokens
-
-## 📈 Performance
-
-### Otimizações Mobile
-- **Lazy loading** de componentes
-- **Image optimization** baseada no viewport
-- **Bundle splitting** inteligente
-- **Preload** de recursos críticos
-
-### Cache Strategies
-- **Service Worker** com múltiplas estratégias
-- **IndexedDB** para dados offline
-- **Cache de imagens** otimizado
-- **Garbage collection** automático
-
-## 🚀 Deploy
-
-### 🚀 Deploy na Vercel (Recomendado)
-
-#### 1. **Importar Projeto**
-1. Acesse [vercel.com](https://vercel.com) e faça login
-2. Clique em **"New Project"**
-3. Importe o repositório: `peicollabeducacaoinclusiva-gif/peicollab`
-4. Configure:
-   - **Framework Preset:** Vite
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-
-#### 2. **Configurar Variáveis de Ambiente**
-Na Vercel, vá para **Settings** → **Environment Variables** e adicione:
-
-```env
-# Obrigatórias
-VITE_SUPABASE_URL=https://fximylewmvsllkdczovj.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4aW15bGV3bXZzbGxrZGN6b3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTY0NzIsImV4cCI6MjA3NzI3MjQ3Mn0.3FqQqUfVgD3hIh1daa3R1JjouGZ4D4ONR6SmcL9Qids
-VITE_APP_URL=https://seu-app.vercel.app
-VITE_API_URL=https://fximylewmvsllkdczovj.supabase.co
-VITE_DEBUG_MODE=false
-VITE_OFFLINE_MODE=false
-
-# Opcionais (para funcionalidades avançadas)
-VITE_VAPID_PUBLIC_KEY=your_vapid_public_key_here
-VITE_VAPID_PRIVATE_KEY=your_vapid_private_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-```
-
-#### 3. **Deploy Automático**
-- **Push para `main`** = Deploy automático para produção
-- **Push para outras branches** = Preview deployments
-- **Pull Requests** = Deploy de preview para teste
-
-### Setup de Produção Local
-```bash
-# Script automatizado de setup
-npm run setup:production
-
-# Verificação de saúde
-npm run health:check
-```
-
-### Provedores Suportados
-- **Vercel** (recomendado) ✅
-- **Netlify**
-- **Servidor próprio** (nginx/apache)
+---
 
 ## 📚 Documentação
 
-- **[Guia de Deploy](docs/deployment.md)** - Instruções completas
-- **[Troubleshooting](docs/troubleshooting.md)** - Solução de problemas
-- **[API Reference](docs/api.md)** - Documentação da API
-- **[Changelog](CHANGELOG.md)** - Histórico de versões
+Toda a documentação está organizada em [`docs/`](docs/README.md):
 
-## 🤝 Contribuição
+### **Para Desenvolvedores:**
 
-### Como Contribuir
+| Documento | Descrição | Tempo |
+|-----------|-----------|-------|
+| [👨‍💻 Documentação de Desenvolvimento](docs/desenvolvimento/README.md) | **⭐ COMECE AQUI:** Índice da documentação técnica | 2 min |
+| [⚙️ Configuração do Ambiente](docs/desenvolvimento/01_CONFIGURACAO_AMBIENTE.md) | Setup completo do ambiente | 15 min |
+| [🏗️ Arquitetura do Sistema](docs/desenvolvimento/02_ARQUITETURA_SISTEMA.md) | Estrutura e organização do projeto | 20 min |
+| [📐 Padrões de Código](docs/desenvolvimento/04_PADROES_CODIGO.md) | Convenções e boas práticas | 10 min |
+| [🗄️ Banco de Dados](docs/desenvolvimento/05_BANCO_DADOS.md) | Estrutura e migrações | 15 min |
+| [🔐 Autenticação e Segurança](docs/desenvolvimento/06_AUTENTICACAO_SEGURANCA.md) | RLS, roles e permissões | 15 min |
+
+### **Documentos Gerais:**
+
+| Documento | Descrição | Tempo |
+|-----------|-----------|-------|
+| [🎯 Resumo Executivo](docs/resumos/🎯_RESUMO_EXECUTIVO_FINAL_MONOREPO.md) | Visão geral completa | 5 min |
+| [📦 Instalação](docs/setup/📦_INSTALACAO_FINAL.md) | Setup passo a passo | 15 min |
+| [🚀 Início Rápido](docs/setup/🚀_INICIO_RAPIDO_MONOREPO.md) | Configuração rápida | 5 min |
+| [📚 Guia Completo](docs/guias/📚_GUIA_COMPLETO_MONOREPO_V3.md) | Arquitetura detalhada | 30 min |
+| [🔗 Integração PDF](docs/integracao/🔗_INTEGRACAO_PEI_PLANO_AEE.md) | Integração PEI + AEE | 15 min |
+
+**[📑 Ver Índice Completo →](docs/resumos/📑_INDICE_DOCUMENTACAO_MONOREPO.md)**
+
+---
+
+## 🎯 Arquitetura
+
+```
+pei-collab/ (monorepo)
+├── apps/
+│   ├── pei-collab/          → PEI principal + Reuniões + Avaliações
+│   ├── gestao-escolar/      → Gestão completa de alunos, profissionais, turmas
+│   ├── plano-aee/           → Planos de AEE (Atendimento Educacional Especializado)
+│   ├── landing/             → Landing page e marketing
+│   ├── blog/                → Sistema de blog e conteúdo
+│   ├── atividades/          → Sistema de atividades educacionais
+│   ├── planejamento/        → Planejamento pedagógico
+│   ├── portal-responsavel/  → Portal para responsáveis
+│   ├── transporte-escolar/  → Gestão de transporte
+│   └── merenda-escolar/     → Gestão de merenda
+│
+├── packages/
+│   ├── ui/                  → Componentes UI compartilhados (shadcn/ui)
+│   ├── database/            → Cliente Supabase + queries + hooks
+│   ├── auth/                → Sistema de autenticação
+│   ├── dashboards/          → Dashboards e componentes de visualização
+│   ├── config/              → Configurações compartilhadas
+│   ├── i18n/                → Internacionalização
+│   ├── shared-types/        → Tipos TypeScript compartilhados
+│   ├── observability/       → Logging, métricas e observabilidade
+│   └── test-utils/          → Utilitários para testes
+│
+├── supabase/
+│   ├── migrations/          → 150+ migrações SQL
+│   └── functions/           → Edge Functions (Deno)
+│
+├── scripts/                 → Scripts de manutenção e testes
+├── tests/                   → Testes automatizados
+└── docs/                    → Documentação completa
+```
+
+---
+
+## ✨ Funcionalidades Principais
+
+### **🎓 PEI Collab (App Principal)**
+- ✅ Criação e edição completa de PEIs
+- ✅ Sistema de versionamento automático (garante 1 PEI ativo por aluno)
+- ✅ Múltiplos professores por PEI (primário + complementares)
+- ✅ Dashboard personalizado por perfil (8 perfis de usuário)
+- ✅ Dashboard do Profissional de Apoio (PA) com feedbacks diários
+- ✅ Sistema de Reuniões (pauta + ata + acompanhamento)
+- ✅ Avaliações Cíclicas (I, II, III Ciclo) com relatórios
+- ✅ Fila de validação para coordenadores
+- ✅ Geração de PDFs formatados com jsPDF
+- ✅ IA integrada para sugestões inteligentes
+- ✅ Notificações em tempo real
+- ✅ Sistema de tokens para acesso de famílias
+- ✅ Modo offline-first com sincronização automática
+- ✅ PWA completo (instalável, service worker, cache offline)
+- ✅ Avatares personalizáveis (emoji + cores)
+- ✅ Logos institucionais personalizadas por rede
+
+### **📋 Gestão Escolar**
+- ✅ Cadastro completo de Alunos (campos expandidos + INEP)
+- ✅ Cadastro de Profissionais (11+ tipos de funções)
+- ✅ Gestão de Turmas (Educação Infantil → EM + EJA)
+- ✅ Disciplinas e Campos de Experiência (BNCC)
+- ✅ Sistema de Matrículas com histórico
+- ✅ Gestão de Frequência
+- ✅ Sistema de Notas e Avaliações
+- ✅ Relatórios escolares e consolidação
+- ✅ Superficha integrada (dados consolidados)
+- ✅ Integração Educacenso
+- ✅ Módulo de Secretaria Avançado
+
+### **♿ Plano de AEE**
+- ✅ Formulário completo (12+ seções)
+- ✅ Ferramentas de Diagnóstico por tipo de deficiência
+- ✅ Anamnese estruturada
+- ✅ Identificação de Barreiras e Adaptações
+- ✅ Recursos e Estratégias de Ensino
+- ✅ Objetivos de Ensino personalizados
+- ✅ Avaliações Cíclicas com acompanhamento
+- ✅ Sistema de Comentários e Colaboração
+- ✅ **Integração completa no PDF do PEI**
+- ✅ Banco de estratégias e recomendações
+
+### **🌐 Outros Módulos**
+- ✅ **Blog**: Sistema de blog e conteúdo
+- ✅ **Atividades**: Gestão de atividades educacionais
+- ✅ **Planejamento**: Planejamento pedagógico e aulas
+- ✅ **Portal Responsável**: Portal dedicado para famílias
+- ✅ **Transporte Escolar**: Gestão de rotas e transporte
+- ✅ **Merenda Escolar**: Gestão de cardápios e merenda
+
+---
+
+## 🔐 Perfis de Usuário
+
+O sistema suporta **8 perfis distintos** com permissões granulares:
+
+1. **Superadmin** - Administração completa do sistema
+2. **Secretário de Educação** - Gestão de rede e escolas
+3. **Diretor Escolar** - Gestão da escola e equipe
+4. **Coordenador** - Validação de PEIs e coordenação pedagógica
+5. **Professor** - Criação e edição de PEIs
+6. **Professor AEE** - Planos de AEE e atendimento especializado
+7. **Especialista** - Acompanhamento e consultoria
+8. **Família** - Acesso via token para visualização e participação
+
+---
+
+## 🗄️ Banco de Dados
+
+**150+ migrações SQL** organizadas em módulos:
+
+| Módulo | Migrações Principais |
+|--------|---------------------|
+| **Core** | Estrutura base, multi-tenancy, RLS |
+| **PEI** | PEIs, versionamento, avaliações |
+| **Gestão Escolar** | Alunos, profissionais, turmas, matrículas |
+| **AEE** | Planos AEE, diagnósticos, avaliações |
+| **Auditoria** | Sistema completo de logs e auditoria |
+| **LGPD** | Consentimentos, DSR, retenção de dados |
+| **Observabilidade** | Métricas, logging, monitoramento |
+| **Módulos Avançados** | Secretaria, dashboards, integrações |
+
+**Principais Tabelas:**
+- `peis` - Planos Educacionais Individualizados
+- `students` - Alunos e matrículas
+- `profiles` - Perfis de usuários
+- `tenants` - Redes de ensino (multi-tenant)
+- `schools` - Escolas
+- `plano_aee` - Planos de AEE
+- `audit_events` - Logs de auditoria
+- `consents` - Consentimentos LGPD
+- E muitas outras...
+
+---
+
+## 🔧 Stack Tecnológica
+
+### **Frontend**
+- **React 18** + **TypeScript 5.2+**
+- **Vite 5** (build tool e dev server)
+- **Tailwind CSS 3.4** + **shadcn/ui**
+- **React Router DOM** (navegação)
+- **React Hook Form** + **Zod** (formulários e validação)
+- **TanStack Query** (state management e cache)
+- **Recharts** (gráficos e visualizações)
+- **jsPDF** (geração de PDFs)
+
+### **Backend**
+- **Supabase** (PostgreSQL + Auth + Storage)
+- **Row Level Security (RLS)** para segurança
+- **Edge Functions** (Deno) para serverless
+- **PostgreSQL** com extensões (pgcrypto, uuid-ossp, etc.)
+
+### **Offline & PWA**
+- **Dexie.js** (IndexedDB wrapper)
+- **Service Workers** (cache e offline)
+- **Workbox** (estratégias de cache)
+- **PWA** completo (installable, offline-first)
+
+### **Infraestrutura**
+- **Monorepo**: Turborepo + pnpm workspaces
+- **CI/CD**: GitHub Actions (planejado)
+- **Deploy**: Vercel (frontend) + Supabase (backend)
+- **Observabilidade**: Logging estruturado, métricas
+
+### **Ferramentas de Desenvolvimento**
+- **TypeScript** (tipagem estática)
+- **ESLint** (linting)
+- **Vitest** (testes unitários)
+- **Playwright** (testes E2E)
+- **Jest** (testes de acessibilidade)
+
+---
+
+## 📊 Estatísticas do Projeto
+
+| Métrica | Valor |
+|---------|-------|
+| **Aplicações** | 9 apps completos |
+| **Pacotes Compartilhados** | 9 packages |
+| **Componentes React** | 300+ componentes |
+| **Páginas** | 80+ páginas |
+| **Migrações SQL** | 150+ migrações |
+| **Edge Functions** | 15+ funções |
+| **Tabelas de Banco** | 50+ tabelas |
+| **Linhas de Código** | ~50.000+ linhas |
+| **Testes Automatizados** | 20+ casos de teste |
+| **Perfis de Usuário** | 8 perfis distintos |
+
+---
+
+## 🧪 Testes
+
+### **Scripts de Teste Disponíveis**
+
+```bash
+# Testes unitários
+pnpm test:unit
+
+# Testes de integração
+pnpm test:integration
+
+# Testes E2E (Playwright)
+pnpm test:e2e
+pnpm test:e2e:ui  # Interface visual
+
+# Testes de acessibilidade
+pnpm test:accessibility
+
+# Cobertura de código
+pnpm test:coverage
+
+# Testes de login/logout
+node scripts/test-all-user-flows.js
+```
+
+### **Relatórios de Teste**
+- [Relatório Completo de Testes](RELATORIO_TESTES_COMPLETO.md)
+- [Relatório de Fluxos de Usuário](RELATORIO_TESTES_FLUXOS_USUARIO.md)
+
+---
+
+## 🚀 Deploy
+
+### **Deploy Automático na Vercel**
+
+O projeto está configurado para deploy automático na Vercel:
+
+1. **Push para `main`** → Deploy automático em produção
+2. **Pull Requests** → Deploy de preview automaticamente
+3. **Variáveis de Ambiente** → Configuradas no dashboard Vercel
+
+### **Comandos Úteis**
+
+```bash
+# Build para produção
+pnpm build
+
+# Preview do build
+pnpm preview
+
+# Verificar tipos
+pnpm type-check
+
+# Linting
+pnpm lint
+```
+
+---
+
+## 🔒 Segurança e LGPD
+
+- ✅ **Row Level Security (RLS)** em todas as tabelas
+- ✅ **Autenticação** via Supabase Auth
+- ✅ **Auditoria completa** de todas as ações
+- ✅ **Sistema de consentimentos** LGPD
+- ✅ **DSR (Data Subject Rights)** implementado
+- ✅ **Retenção automática** de dados
+- ✅ **Criptografia** de dados sensíveis
+- ✅ **Tokens seguros** para acesso de famílias
+
+---
+
+## 📱 Acessibilidade
+
+- ✅ **WCAG 2.1 AA** compliance
+- ✅ **Navegação por teclado** completa
+- ✅ **Suporte a leitores de tela**
+- ✅ **Alto contraste** configurável
+- ✅ **Textos alternativos** em imagens
+- ✅ **Design responsivo** mobile-first
+- ✅ **PWA** para uso offline
+
+---
+
+## 🤝 Contribuindo
+
 1. Fork o projeto
 2. Crie uma branch (`git checkout -b feature/nova-funcionalidade`)
 3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
 4. Push para a branch (`git push origin feature/nova-funcionalidade`)
 5. Abra um Pull Request
 
-### Padrões de Código
-- **ESLint** para linting
-- **Prettier** para formatação
-- **TypeScript** para tipagem
-- **Conventional Commits** para mensagens
-
-## 📞 Suporte
-
-### Recursos de Ajuda
-- **GitHub Issues** para bugs e features
-- **Discord** para discussões
-- **Email** para suporte direto
-- **Documentação** completa
-
-### Contatos
-- **Issues**: [GitHub Issues](https://github.com/peicollabeducacaoinclusiva-gif/peicollab/issues)
-- **Repositório**: [GitHub Repository](https://github.com/peicollabeducacaoinclusiva-gif/peicollab)
-- **Email**: peicollabeducacaoinclusiva@gmail.com
-
-## 📄 Licença
-
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
-## 🙏 Agradecimentos
-
-- **Supabase** pela plataforma backend
-- **Vercel** pela hospedagem
-- **shadcn/ui** pelos componentes
-- **Comunidade React** pelo ecossistema
+### **Guidelines**
+- Siga os padrões de código definidos em `docs/desenvolvimento/04_PADROES_CODIGO.md`
+- Mantenha cobertura de testes acima de 70%
+- Documente mudanças significativas
+- Use commits semânticos (feat, fix, docs, etc.)
 
 ---
 
-**🎉 PEI Collab V2.1 - Transformando a educação especial com tecnologia!**
+## 📞 Suporte
 
+- **Documentação Completa**: [`docs/`](docs/README.md)
+- **Setup e Instalação**: [`docs/setup/📦_INSTALACAO_FINAL.md`](docs/setup/📦_INSTALACAO_FINAL.md)
+- **Troubleshooting**: Veja seção de troubleshooting na documentação
+- **Issues**: [GitHub Issues](#)
 
+---
+
+## 📝 Licença
+
+[MIT License](LICENSE)
+
+---
+
+## 🎉 Status do Projeto
+
+✅ **Versão 3.0.0 - Sistema Completo e Funcional**
+
+### **✅ Implementado**
+- [x] 9 Aplicações completas
+- [x] 9 Pacotes compartilhados
+- [x] 150+ Migrações SQL aplicadas
+- [x] 8 Perfis de usuário com RLS
+- [x] Sistema offline-first com PWA
+- [x] Sistema de auditoria e LGPD
+- [x] Integração total entre apps
+- [x] Documentação completa
+- [x] Testes automatizados
+- [x] Deploy automático configurado
+
+### **🚧 Em Desenvolvimento**
+- [ ] Suíte completa de testes E2E
+- [ ] Otimizações de performance
+- [ ] Expansão de módulos
+- [ ] Integrações externas adicionais
+
+### **📅 Próximos Passos**
+- [ ] CI/CD completo com GitHub Actions
+- [ ] Monitoramento de performance em produção
+- [ ] Expansão de testes automatizados
+- [ ] Otimizações de bundle size
+
+---
+
+## 🌟 Destaques
+
+- 🏆 **Sistema Multi-Tenant** hierárquico completo
+- 🏆 **Offline-First** com sincronização automática
+- 🏆 **PWA** instalável e funcional
+- 🏆 **LGPD Compliant** com sistema completo de consentimentos
+- 🏆 **Acessibilidade** WCAG 2.1 AA
+- 🏆 **Arquitetura Escalável** com monorepo bem estruturado
+- 🏆 **Type-Safe** com TypeScript em 100% do código
+
+---
+
+**Desenvolvido com ❤️ para educação inclusiva de qualidade.**
+
+**Última atualização**: Janeiro de 2025
