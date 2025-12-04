@@ -1,0 +1,8 @@
+{
+  "buildCommand": "pnpm turbo run build --filter=@pei/pei-collab",
+  "outputDirectory": "apps/pei-collab/dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": null,
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD"
+}
+
