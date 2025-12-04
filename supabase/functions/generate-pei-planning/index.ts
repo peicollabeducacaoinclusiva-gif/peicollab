@@ -299,7 +299,7 @@ REQUISITOS:
 - Gere no mínimo 3 metas e garanta equilíbrio entre acadêmicas (BNCC) e funcionais (AEE).
 - Utilize linguagem profissional, técnica e alinhada às normas brasileiras.
 - Fundamente estratégias em metodologias reconhecidas (DUA, ABA, TEACCH, PECS, etc.) sempre que possível.
-- Não deixe campos obrigatórios vazios; use 'Não informado' quando não houver dados.`;*** End Patch
+- Não deixe campos obrigatórios vazios; use 'Não informado' quando não houver dados.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
