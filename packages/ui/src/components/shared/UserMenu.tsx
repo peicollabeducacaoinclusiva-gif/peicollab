@@ -54,7 +54,7 @@ export function UserMenu({ onLogout, showProfileLink = true, profilePath = '/pro
       .substring(0, 2);
   };
 
-  const getRoleLabel = (role?: string) => {
+  const _getRoleLabel = (role?: string) => {
     const roleLabels: Record<string, string> = {
       superadmin: 'Super Admin',
       education_secretary: 'Secretário de Educação',

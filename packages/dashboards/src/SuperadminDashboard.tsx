@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, useToast } from "@pei/ui";
 import ImportCSVDialog from "./components/ImportCSVDialog";
-import { useSuperadminUsers } from "../../../src/hooks/useSuperadminUsers";
-import { useSuperadminSchools } from "../../../src/hooks/useSuperadminSchools";
+import { useSuperadminUsers } from "../../../apps/pei-collab/src/hooks/useSuperadminUsers";
+import { useSuperadminSchools } from "../../../apps/pei-collab/src/hooks/useSuperadminSchools";
 import { CreateUserForm } from "./components/users/CreateUserForm";
 import { EditUserForm } from "./components/users/EditUserForm";
 import { CreateSchoolForm } from "./components/schools/CreateSchoolForm";

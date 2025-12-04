@@ -56,7 +56,7 @@ export function CreateProfessionalDialog({ tenantId, schoolId, trigger, onCreate
   const [schools, setSchools] = useState<Array<{ id: string; name: string }>>([]);
 
   const loadSchools = async () => {
-    if (schools.length > 0) return;
+    if (schools.length > 0 || !supabase) return;
     const { data, error } = await supabase
       .from('schools')
       .select('id, school_name')

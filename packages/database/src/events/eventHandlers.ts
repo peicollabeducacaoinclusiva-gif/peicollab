@@ -237,10 +237,10 @@ async function handleAEESessionRecorded(payload: EventPayload) {
     if (pei) {
       // Atualizar evaluation_data com informações da sessão AEE
       const currentEvaluation = pei.evaluation_data || {};
-      const updatedEvaluation = {
+      const updatedEvaluation = typeof currentEvaluation === 'object' && currentEvaluation !== null && !Array.isArray(currentEvaluation) ? {
         ...currentEvaluation,
         aee_sessions: [
-          ...(currentEvaluation.aee_sessions || []),
+          ...(Array.isArray((currentEvaluation as any).aee_sessions) ? (currentEvaluation as any).aee_sessions : []),
           {
             aee_id: aeeId,
             session_date: sessionData.date,
@@ -249,6 +249,15 @@ async function handleAEESessionRecorded(payload: EventPayload) {
             created_at: new Date().toISOString(),
           },
         ],
+        last_aee_update: new Date().toISOString(),
+      } : {
+        aee_sessions: [{
+          aee_id: aeeId,
+          session_date: sessionData.date,
+          notes: sessionData.notes,
+          progress: sessionData.progress,
+          created_at: new Date().toISOString(),
+        }],
         last_aee_update: new Date().toISOString(),
       };
 

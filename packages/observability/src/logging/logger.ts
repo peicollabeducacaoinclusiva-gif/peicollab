@@ -45,11 +45,11 @@ export class Logger {
       environment,
       service,
       appName,
-      tenantId: tenantId || null,
+      tenantId: tenantId || '',
     };
 
     this.appName = appName;
-    this.tenantId = tenantId || null;
+    this.tenantId = tenantId || '';
 
     this.logger = pino({
       level,

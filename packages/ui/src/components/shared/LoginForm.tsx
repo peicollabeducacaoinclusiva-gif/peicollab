@@ -12,7 +12,7 @@ import { useLogin } from '../../hooks/useLogin';
 import { Mail, Lock, AlertCircle, LogIn } from 'lucide-react';
 
 // Schema de validação de senha (mesmo do PEI Collab)
-const passwordSchema = z.string()
+const _passwordSchema = z.string()
   .min(8, 'A senha deve ter no mínimo 8 caracteres')
   .regex(/[A-Z]/, 'A senha deve conter pelo menos uma letra maiúscula')
   .regex(/[a-z]/, 'A senha deve conter pelo menos uma letra minúscula')
@@ -74,7 +74,7 @@ export function LoginForm({
         }
       }, 300);
     },
-    onError: (err) => {
+    onError: (_err) => {
       // Error já é tratado no hook
     },
   });

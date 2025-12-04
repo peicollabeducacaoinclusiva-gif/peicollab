@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../tooltip';
-import { Info, Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 
 interface KPITooltipProps {
   kpiName: string;

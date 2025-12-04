@@ -40,7 +40,6 @@ export function ProtectedRoute({
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: restoredSession.access_token,
             refresh_token: restoredSession.refresh_token,
-            expires_at: restoredSession.expires_at,
           });
           
           if (!sessionError) {
@@ -74,7 +73,6 @@ export function ProtectedRoute({
             const { error: sessionError } = await supabase.auth.setSession({
               access_token: data.access_token,
               refresh_token: data.refresh_token,
-              expires_at: data.expires_at,
             });
             
             if (sessionError) {
