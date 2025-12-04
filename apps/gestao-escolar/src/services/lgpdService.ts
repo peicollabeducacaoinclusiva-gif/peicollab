@@ -394,15 +394,8 @@ export const lgpdService = {
     if (error) {
       // Reportar erro crítico de exportação de dados sensíveis
       if (typeof window !== 'undefined') {
-        import('@/lib/errorReporting').then(({ reportSensitiveDataAccessError }) => {
-          const errorObj = error instanceof Error ? error : new Error(error?.message || 'Erro ao exportar dados');
-          reportSensitiveDataAccessError(errorObj, {
-            operation: 'export',
-            entityType: 'student',
-            entityId: studentId,
-            tenantId: student.tenant_id,
-          }).catch(err => console.error('Erro ao reportar erro de exportação:', err));
-        }).catch(err => console.error('Erro ao importar errorReporting:', err));
+        console.error('Erro crítico ao exportar dados sensíveis:', error);
+        // TODO: Implementar reportSensitiveDataAccessError quando disponível
       }
       throw error;
     }
