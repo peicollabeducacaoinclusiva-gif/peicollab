@@ -216,7 +216,7 @@ async function checkPushNotifications() {
   try {
     // Verificar se as VAPID keys estão configuradas
     const publicKey = process.env.VITE_VAPID_PUBLIC_KEY;
-    const privateKey = process.env.SUPABASE_VAPID_PRIVATE_KEY;
+    const privateKey = process.env.VITE_VAPID_PRIVATE_KEY || process.env.SUPABASE_VAPID_PRIVATE_KEY;
     
     if (!publicKey || !privateKey) {
       log('❌ VAPID keys não configuradas', colors.red);

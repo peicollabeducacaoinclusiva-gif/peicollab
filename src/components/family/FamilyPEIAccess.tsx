@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { auditMiddleware } from '@pei/database/audit';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -130,9 +132,46 @@ export function FamilyPEIAccess({ token }: FamilyPEIAccessProps) {
         updated_at: pei.updated_at
       });
 
+      // Gravar auditoria de acesso da família (dados sensíveis)
+      if (pei.id && student?.school_id) {
+        // Obter tenant_id do estudante
+        const { data: studentFull } = await supabase
+          .from('students')
+          .select('tenant_id')
+          .eq('id', tokenData.student_id)
+          .single();
+
+        if (studentFull?.tenant_id) {
+          await auditMiddleware.logRead(
+            studentFull.tenant_id,
+            'pei',
+            pei.id,
+            {
+              source: 'family_access',
+              access_method: 'token',
+              token_id: tokenData.id,
+              student_id: tokenData.student_id,
+              student_name: student.name,
+            }
+          ).catch(err => console.error('Erro ao gravar auditoria de acesso da família:', err));
+        }
+      }
+
     } catch (err) {
       console.error('Erro ao validar token:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      
+      // Reportar erro crítico de acesso de família
+      if (typeof window !== 'undefined') {
+        import('@/lib/errorReporting').then(({ reportSensitiveDataAccessError }) => {
+          const errorObj = err instanceof Error ? err : new Error(String(err));
+          reportSensitiveDataAccessError(errorObj, {
+            operation: 'read',
+            entityType: 'pei',
+            tenantId: undefined, // Será obtido após validar token
+          }).catch(reportErr => console.error('Erro ao reportar erro de acesso de família:', reportErr));
+        }).catch(importErr => console.error('Erro ao importar errorReporting:', importErr));
+      }
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,637 @@
+openapi: 3.0.0
+info:
+  title: Sistema PEI Collab API
+  description: |
+    API completa do Sistema de Gestão Educacional Inclusiva.
+    Inclui PEI Collab, Plano AEE V2.0 e Gestão Escolar.
+  version: 3.0.0
+  contact:
+    name: Suporte PEI Collab
+    email: suporte@peicollab.com
+
+servers:
+  - url: https://{project-id}.supabase.co
+    description: Servidor Supabase
+    variables:
+      project-id:
+        default: seu-projeto-id
+        description: ID do projeto no Supabase
+
+tags:
+  - name: Students
+    description: Gestão de alunos
+  - name: Enrollments
+    description: Matrículas
+  - name: Attendance
+    description: Frequência escolar
+  - name: Grades
+    description: Notas e avaliações
+  - name: PEI
+    description: Planos Educacionais Individualizados
+  - name: AEE Plans
+    description: Planos de AEE
+  - name: Visits
+    description: Visitas escolares
+  - name: Referrals
+    description: Encaminhamentos especializados
+  - name: Notifications
+    description: Notificações do sistema
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Student:
+      type: object
+      required:
+        - name
+        - school_id
+        - tenant_id
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 3
+        nome_social:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        codigo_identificador:
+          type: string
+        cpf:
+          type: string
+          pattern: '^\d{3}\.\d{3}\.\d{3}-\d{2}$'
+        necessidades_especiais:
+          type: boolean
+        tipo_necessidade:
+          type: array
+          items:
+            type: string
+        status_matricula:
+          type: string
+          enum: [Ativo, Inativo, Transferido, Concluído, Evadido]
+
+    Enrollment:
+      type: object
+      required:
+        - student_id
+        - class_id
+        - ano_letivo
+        - data_matricula
+      properties:
+        id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        ano_letivo:
+          type: string
+          pattern: '^\d{4}$'
+        status:
+          type: string
+          enum: [Matriculado, Transferido, Cancelado, Concluido]
+        bolsista:
+          type: boolean
+        percentual_bolsa:
+          type: integer
+          minimum: 0
+          maximum: 100
+
+    Attendance:
+      type: object
+      required:
+        - class_id
+        - student_id
+        - data
+        - presenca
+      properties:
+        id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+          nullable: true
+        data:
+          type: string
+          format: date
+        presenca:
+          type: boolean
+        justificativa:
+          type: string
+        observacao:
+          type: string
+
+    Grade:
+      type: object
+      required:
+        - enrollment_id
+        - subject_id
+        - periodo
+        - tipo_avaliacao
+      properties:
+        id:
+          type: string
+          format: uuid
+        enrollment_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        periodo:
+          type: string
+          enum: ['1', '2', '3', '4', 'final', 'recuperacao']
+        tipo_avaliacao:
+          type: string
+          enum: [prova, trabalho, participacao, projeto, seminario, outro]
+        nota_valor:
+          type: number
+          minimum: 0
+          maximum: 10
+        nota_conceito:
+          type: string
+          enum: [A, B, C, D, E]
+        peso:
+          type: number
+          minimum: 0.5
+          maximum: 5.0
+
+    SchoolVisit:
+      type: object
+      required:
+        - plan_id
+        - student_id
+        - visit_date
+        - visit_type
+        - aee_teacher_id
+      properties:
+        id:
+          type: string
+          format: uuid
+        plan_id:
+          type: string
+          format: uuid
+        visit_date:
+          type: string
+          format: date
+        visit_type:
+          type: string
+          enum: [diagnostica, acompanhamento, orientacao, avaliacao, outra]
+        status:
+          type: string
+          enum: [rascunho, realizada, cancelada]
+        orientations_given:
+          type: array
+          items:
+            type: object
+            properties:
+              categoria:
+                type: string
+              descricao:
+                type: string
+              prioridade:
+                type: string
+                enum: [Alta, Média, Baixa]
+
+    Referral:
+      type: object
+      required:
+        - plan_id
+        - student_id
+        - specialist_type
+        - reason
+        - urgency_level
+      properties:
+        id:
+          type: string
+          format: uuid
+        specialist_type:
+          type: string
+          enum: [Psicólogo, Fonoaudiólogo, Terapeuta Ocupacional, Neurologista, Oftalmologista, Otorrinolaringologista, Psicopedagogo, Outro]
+        urgency_level:
+          type: string
+          enum: [baixa, media, alta, urgente]
+        status:
+          type: string
+          enum: [rascunho, enviado, agendado, em_atendimento, concluido, cancelado, sem_resposta]
+        specialist_feedback:
+          type: string
+        integrated_to_plan:
+          type: boolean
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        notification_type:
+          type: string
+          enum: [cycle_ending, low_attendance, pending_review, referral_no_response, visit_follow_up, goal_deadline, plan_expiring, missing_documentation]
+        priority:
+          type: string
+          enum: [baixa, media, alta, urgente]
+        title:
+          type: string
+        message:
+          type: string
+        is_read:
+          type: boolean
+        metadata:
+          type: object
+
+security:
+  - BearerAuth: []
+
+paths:
+  /rest/v1/students:
+    get:
+      summary: Listar alunos
+      tags: [Students]
+      parameters:
+        - name: school_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: necessidades_especiais
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Lista de alunos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Student'
+
+    post:
+      summary: Criar aluno
+      tags: [Students]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Student'
+      responses:
+        '201':
+          description: Aluno criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+
+  /rest/v1/enrollments:
+    get:
+      summary: Listar matrículas
+      tags: [Enrollments]
+      parameters:
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de matrículas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Enrollment'
+
+    post:
+      summary: Criar matrícula
+      tags: [Enrollments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Enrollment'
+      responses:
+        '201':
+          description: Matrícula criada
+
+  /rest/v1/attendance:
+    get:
+      summary: Listar frequência
+      tags: [Attendance]
+      parameters:
+        - name: class_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: data
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Lista de frequência
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attendance'
+
+    post:
+      summary: Registrar frequência (upsert)
+      tags: [Attendance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Attendance'
+      responses:
+        '201':
+          description: Frequência registrada
+
+  /rest/v1/grades:
+    get:
+      summary: Listar notas
+      tags: [Grades]
+      parameters:
+        - name: enrollment_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: periodo
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de notas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Grade'
+
+    post:
+      summary: Lançar nota
+      tags: [Grades]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Grade'
+      responses:
+        '201':
+          description: Nota lançada
+
+  /rest/v1/aee_school_visits:
+    get:
+      summary: Listar visitas escolares
+      tags: [Visits]
+      parameters:
+        - name: plan_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de visitas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SchoolVisit'
+
+    post:
+      summary: Criar visita
+      tags: [Visits]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchoolVisit'
+      responses:
+        '201':
+          description: Visita criada
+
+  /rest/v1/aee_referrals:
+    get:
+      summary: Listar encaminhamentos
+      tags: [Referrals]
+      parameters:
+        - name: plan_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de encaminhamentos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Referral'
+
+    post:
+      summary: Criar encaminhamento
+      tags: [Referrals]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Referral'
+      responses:
+        '201':
+          description: Encaminhamento criado
+
+  /rest/v1/aee_notifications:
+    get:
+      summary: Listar notificações
+      tags: [Notifications]
+      parameters:
+        - name: is_read
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Lista de notificações
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+
+  /rest/v1/rpc/get_student_academic_context:
+    post:
+      summary: Obter contexto acadêmico do aluno
+      tags: [Students]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                _student_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Contexto acadêmico
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  turma:
+                    type: string
+                  nivel:
+                    type: string
+                  frequencia_percentual:
+                    type: number
+                  media_geral:
+                    type: number
+                  total_faltas:
+                    type: integer
+
+  /rest/v1/rpc/run_notification_checks:
+    post:
+      summary: Executar verificações de notificações
+      tags: [Notifications]
+      description: Função master que executa todas as verificações automáticas
+      responses:
+        '200':
+          description: Verificações executadas
+
+  /rest/v1/rpc/get_plan_visits_stats:
+    post:
+      summary: Obter estatísticas de visitas
+      tags: [Visits]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                _plan_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Estatísticas de visitas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_visitas:
+                    type: integer
+                  realizadas:
+                    type: integer
+                  pendentes:
+                    type: integer
+                  ultima_visita:
+                    type: string
+                    format: date
+                  proxima_visita:
+                    type: string
+                    format: date
+
+  /rest/v1/rpc/get_plan_referrals_stats:
+    post:
+      summary: Obter estatísticas de encaminhamentos
+      tags: [Referrals]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                _plan_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Estatísticas de encaminhamentos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_encaminhamentos:
+                    type: integer
+                  concluidos:
+                    type: integer
+                  em_andamento:
+                    type: integer
+                  com_retorno:
+                    type: integer
+                  integrados_plano:
+                    type: integer
+                  por_especialidade:
+                    type: object
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

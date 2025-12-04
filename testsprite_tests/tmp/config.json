@@ -2,14 +2,5 @@
   "status": "commited",
   "type": "frontend",
   "scope": "codebase",
-  "localEndpoint": "http://localhost:8080",
-  "executionArgs": {
-    "projectName": "pei-collab",
-    "projectPath": "C:\\workspace\\Inclusao\\pei-collab",
-    "testIds": [],
-    "additionalInstruction": "Testar todos os testes do plano frontend gerado",
-    "envs": {
-      "API_KEY": "sk-user-rd10QciPNk8KAXCI--eIQb51S3DgQhZ0Zht-4vmZusSIvpopo4NazUR57JbFThDuhnMUrB1jT2MvwCDyEl10XlAgmrwzMqWDML4XLasWLjUSNuSUinerWXVj04fm8LZoN1s"
-    }
-  }
+  "localEndpoint": "http://localhost:8080"
 }

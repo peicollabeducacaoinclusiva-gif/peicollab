@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Search, Edit, Trash2, Building2, UserPlus, CheckCircle, XCircle } from "lucide-react";
+import { Users, Search, Edit, Trash2, Building2, UserPlus, CheckCircle, XCircle, Lock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -53,6 +53,13 @@ const SuperadminUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordFormData, setPasswordFormData] = useState({
+    password: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
   const [editFormData, setEditFormData] = useState({
     role: "" as UserRole,
     tenant_ids: [] as string[],
@@ -288,6 +295,93 @@ const SuperadminUserManagement = () => {
     }
   };
 
+  const handleOpenPasswordDialog = (user: UserWithDetails) => {
+    setSelectedUser(user);
+    setPasswordFormData({ password: "", confirmPassword: "" });
+    setPasswordError("");
+    setIsPasswordDialogOpen(true);
+  };
+
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) {
+      return "A senha deve ter no mínimo 8 caracteres";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "A senha deve conter pelo menos uma letra maiúscula";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "A senha deve conter pelo menos uma letra minúscula";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "A senha deve conter pelo menos um número";
+    }
+    return null;
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!selectedUser) return;
+
+    setPasswordError("");
+
+    // Validar senha
+    const validationError = validatePassword(passwordFormData.password);
+    if (validationError) {
+      setPasswordError(validationError);
+      return;
+    }
+
+    // Verificar se as senhas coincidem
+    if (passwordFormData.password !== passwordFormData.confirmPassword) {
+      setPasswordError("As senhas não coincidem");
+      return;
+    }
+
+    setUpdatingPassword(true);
+
+    try {
+      // Obter sessão atual para autenticação na Edge Function
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Você precisa estar autenticado para atualizar senhas');
+      }
+
+      // Chamar Edge Function para atualizar senha
+      const { data, error } = await supabase.functions.invoke('update-user-password', {
+        body: {
+          userId: selectedUser.id,
+          password: passwordFormData.password,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao atualizar senha');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Senha atualizada!",
+        description: `A senha de ${selectedUser.full_name} foi atualizada com sucesso.`,
+      });
+
+      setIsPasswordDialogOpen(false);
+      setPasswordFormData({ password: "", confirmPassword: "" });
+    } catch (error: any) {
+      console.error("Erro ao atualizar senha:", error);
+      setPasswordError(error.message || "Erro ao atualizar senha. Tente novamente.");
+      toast({
+        title: "Erro ao atualizar senha",
+        description: error.message || "Não foi possível atualizar a senha.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
   const toggleTenantSelection = (tenantId: string) => {
     setEditFormData(prev => {
       const isSelected = prev.tenant_ids.includes(tenantId);
@@ -475,6 +569,14 @@ const SuperadminUserManagement = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={() => handleOpenPasswordDialog(user)}
+                                title="Definir senha para primeiro acesso"
+                              >
+                                <Lock className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleDeleteUser(user.id, user.full_name)}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -547,13 +649,23 @@ const SuperadminUserManagement = () => {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleEditUser(user)}
+                                title="Editar usuário"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={() => handleOpenPasswordDialog(user)}
+                                title="Definir/alterar senha"
+                              >
+                                <Lock className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleDeleteUser(user.id, user.full_name)}
+                                title="Excluir usuário"
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
@@ -683,6 +795,97 @@ const SuperadminUserManagement = () => {
               disabled={!editFormData.is_active && editFormData.tenant_ids.length === 0}
             >
               {selectedUser?.is_active ? "Salvar Alterações" : "Ativar Usuário"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Definir/Alterar Senha */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Definir Senha do Usuário</DialogTitle>
+            <DialogDescription>
+              {selectedUser && (
+                <>
+                  Defina uma nova senha para <strong>{selectedUser.full_name}</strong>.
+                  {selectedUser.email && (
+                    <> O usuário poderá fazer login com o email <strong>{selectedUser.email}</strong>.</>
+                  )}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Nova Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Digite a nova senha"
+                value={passwordFormData.password}
+                onChange={(e) => {
+                  setPasswordFormData({ ...passwordFormData, password: e.target.value });
+                  setPasswordError("");
+                }}
+                className={passwordError ? "border-red-500" : ""}
+                required
+                minLength={8}
+              />
+              <p className="text-xs text-muted-foreground">
+                Mínimo 8 caracteres, incluindo maiúscula, minúscula e número
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Digite a senha novamente"
+                value={passwordFormData.confirmPassword}
+                onChange={(e) => {
+                  setPasswordFormData({ ...passwordFormData, confirmPassword: e.target.value });
+                  setPasswordError("");
+                }}
+                className={passwordError ? "border-red-500" : ""}
+                required
+                minLength={8}
+              />
+            </div>
+
+            {passwordError && (
+              <Alert variant="destructive">
+                <AlertDescription>{passwordError}</AlertDescription>
+              </Alert>
+            )}
+
+            <Alert>
+              <AlertDescription className="text-sm">
+                <strong>Importante:</strong> Esta senha será definida imediatamente. 
+                O usuário poderá fazer login com esta senha e alterá-la posteriormente se desejar.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsPasswordDialogOpen(false);
+                setPasswordFormData({ password: "", confirmPassword: "" });
+                setPasswordError("");
+              }}
+              disabled={updatingPassword}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdatePassword}
+              disabled={updatingPassword || !passwordFormData.password || !passwordFormData.confirmPassword}
+            >
+              {updatingPassword ? "Atualizando..." : "Definir Senha"}
             </Button>
           </DialogFooter>
         </DialogContent>

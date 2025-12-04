@@ -1,0 +1,122 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password",
+    "resetPassword": "Reset password",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "invalidCredentials": "Invalid credentials",
+    "sessionExpired": "Session expired",
+    "enterEmail": "Enter your email",
+    "enterPassword": "Enter your password",
+    "passwordResetSent": "Password recovery email sent",
+    "passwordResetError": "Error sending recovery email",
+    "loginError": "Error logging in",
+    "passwordResetSuccess": "Password reset successfully",
+    "passwordResetFailed": "Failed to reset password",
+    "acceptTerms": "I accept the terms of use",
+    "passwordRequirements": "Password must be at least 8 characters, including uppercase, lowercase and number"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "pendingActions": "Pending Actions",
+    "quickActions": "Quick Actions",
+    "noData": "No data available",
+    "loading": "Loading dashboard..."
+  },
+  "students": {
+    "title": "Students",
+    "create": "Create Student",
+    "edit": "Edit Student",
+    "name": "Name",
+    "cpf": "CPF",
+    "birthDate": "Birth Date",
+    "enrollment": "Enrollment",
+    "class": "Class",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "pei": {
+    "title": "Individualized Educational Plan",
+    "create": "Create PEI",
+    "edit": "Edit PEI",
+    "goals": "Goals",
+    "strategies": "Strategies",
+    "adaptations": "Adaptations",
+    "evaluation": "Evaluation",
+    "cycle": "Cycle",
+    "student": "Student",
+    "selectStudent": "Select a student",
+    "diagnosis": "Diagnosis",
+    "planning": "Planning",
+    "review": "Review",
+    "saveDraft": "Save Draft",
+    "saveSuccess": "PEI saved successfully",
+    "saveError": "Error saving PEI",
+    "loadError": "Error loading PEI",
+    "status": {
+      "draft": "Draft",
+      "pending": "Pending",
+      "approved": "Approved",
+      "returned": "Returned"
+    }
+  },
+  "aee": {
+    "title": "Specialized Educational Assistance",
+    "create": "Create AEE Plan",
+    "edit": "Edit AEE Plan",
+    "sessions": "Sessions",
+    "objectives": "Objectives",
+    "methodologies": "Methodologies",
+    "assistiveTechnologies": "Assistive Technologies"
+  },
+  "errors": {
+    "generic": "An error occurred. Please try again.",
+    "network": "Connection error. Check your internet.",
+    "unauthorized": "You don't have permission for this action.",
+    "notFound": "Resource not found.",
+    "validation": "Invalid data. Check the fields.",
+    "server": "Server error. Please try again later."
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content",
+    "skipToNavigation": "Skip to navigation",
+    "closeMenu": "Close menu",
+    "openMenu": "Open menu",
+    "loading": "Loading content",
+    "error": "Error loading",
+    "ariaLabel": {
+      "menu": "Main menu",
+      "userMenu": "User menu",
+      "search": "Search",
+      "notifications": "Notifications"
+    }
+  }
+}
+

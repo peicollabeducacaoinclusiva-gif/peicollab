@@ -1,0 +1,32 @@
+// Arquivo placeholder para configuração compartilhada
+export {};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

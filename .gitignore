@@ -37,6 +37,8 @@ jspm_packages
 
 # dotenv environment variables files
 .env
+.env.*
+!.env.example
 .env.test
 .env.production
 .env.local
@@ -44,6 +46,12 @@ jspm_packages
 .envrc  
 .terraform
 .terraform.lock.hcl
+
+# Arquivos com credenciais (nunca commitar)
+*secret*
+*key*
+*credential*
+*password*
 
 # database
 *.sqlite

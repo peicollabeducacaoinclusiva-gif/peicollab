@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, CheckCircle, Clock, Download, School, TrendingUp, AlertCircle, Edit, Key, Eye, MoreHorizontal } from "lucide-react";
+import { Users, CheckCircle, Clock, Download, School, TrendingUp, AlertCircle, Edit, Key, Eye, MoreHorizontal, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import ClassTeachersSelector from "@/components/coordinator/ClassTeachersSelecto
 import UserAvatar from "@/components/shared/UserAvatar";
 import AppHeader from "@/components/shared/AppHeader";
 import InclusionQuote from "@/components/shared/InclusionQuote";
+import BulkPrintPEIDialog from "@/components/coordinator/BulkPrintPEIDialog";
 import { useNavigate } from "react-router-dom";
 import { useTenant } from "@/hooks/useTenant";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -276,7 +277,9 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
-  const { toast } = useToast();
+  const [selectedPEIs, setSelectedPEIs] = useState<string[]>([]);
+  const [bulkPrintOpen, setBulkPrintOpen] = useState(false);
+  const { toast} = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -1292,6 +1295,7 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
               <TabsList className="w-full sm:w-auto overflow-x-auto flex-shrink-0">
                 <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap">Visão Geral</TabsTrigger>
                 <TabsTrigger value="peis" className="text-xs sm:text-sm whitespace-nowrap">PEIs</TabsTrigger>
+                <TabsTrigger value="tokens" className="text-xs sm:text-sm whitespace-nowrap">Tokens</TabsTrigger>
                 <TabsTrigger value="stats" className="text-xs sm:text-sm whitespace-nowrap">Estatísticas</TabsTrigger>
                 <TabsTrigger value="analytics" className="text-xs sm:text-sm whitespace-nowrap">Análises</TabsTrigger>
               </TabsList>
@@ -1346,6 +1350,39 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {selectedPEIs.length > 0 && (
+                    <Card className="border-blue-200 bg-blue-50 mb-4">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Badge variant="secondary" className="mb-2">
+                              {selectedPEIs.length} PEI{selectedPEIs.length > 1 ? 's' : ''} selecionado{selectedPEIs.length > 1 ? 's' : ''}
+                            </Badge>
+                            <p className="text-sm text-gray-600">
+                              Ações disponíveis para os PEIs selecionados
+                            </p>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => setBulkPrintOpen(true)}
+                              variant="default"
+                            >
+                              <Printer className="mr-2 h-4 w-4" />
+                              Imprimir ({selectedPEIs.length})
+                            </Button>
+                            
+                            <Button 
+                              onClick={() => setSelectedPEIs([])}
+                              variant="ghost"
+                            >
+                              Limpar Seleção
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                   <PEIQueueTable 
                     peis={peis.filter(p => p.status === 'pending_validation' || p.status === 'pending')}
                     onViewPEI={handleViewPEIDetails}
@@ -1355,6 +1392,8 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                     onEditPEI={handleEditPEI}
                     onGenerateToken={handleGenerateToken}
                     onManageTokens={handleManageTokens}
+                    selectedPEIs={selectedPEIs}
+                    onSelectionChange={setSelectedPEIs}
                   />
                 </CardContent>
               </Card>
@@ -1529,6 +1568,24 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
                 </CardContent>
               </Card>
             </TabsContent>
+            
+            <TabsContent value="tokens" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="h-5 w-5" />
+                    Tokens de Acesso Familiar
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie e visualize todos os tokens de acesso para famílias
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FamilyTokenManager />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
             <TabsContent value="stats" className="space-y-4">
               {/* Cards de Estatísticas Principais */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -1877,6 +1934,15 @@ const CoordinatorDashboard = ({ profile }: CoordinatorDashboardProps) => {
           studentName={peis.find(p => p.id === selectedPeiId)?.student_name || ''}
         />
       )}
+
+      <BulkPrintPEIDialog
+        peiIds={selectedPEIs}
+        open={bulkPrintOpen}
+        onClose={() => {
+          setBulkPrintOpen(false);
+          setSelectedPEIs([]);
+        }}
+      />
     </div>
   );
 };

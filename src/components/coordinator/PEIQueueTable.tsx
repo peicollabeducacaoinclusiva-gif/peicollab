@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MoreVertical, Eye, CheckCircle, XCircle, Trash2, Edit, Key, Users, History } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +60,8 @@ interface PEIQueueTableProps {
   onEditPEI?: (peiId: string, studentId: string) => void;
   onGenerateToken?: (peiId: string) => void;
   onManageTokens?: (peiId: string) => void;
+  selectedPEIs?: string[];
+  onSelectionChange?: (peiIds: string[]) => void;
 }
 
 const PEIQueueTable = ({
@@ -70,11 +73,33 @@ const PEIQueueTable = ({
   onEditPEI,
   onGenerateToken,
   onManageTokens,
+  selectedPEIs = [],
+  onSelectionChange,
 }: PEIQueueTableProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [peiToDelete, setPeiToDelete] = useState<PEI | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+
+  const handleSelectAll = () => {
+    if (!onSelectionChange) return;
+    
+    if (selectedPEIs.length === peis.length) {
+      onSelectionChange([]);
+    } else {
+      onSelectionChange(peis.map(p => p.id));
+    }
+  };
+
+  const handleSelectPEI = (peiId: string) => {
+    if (!onSelectionChange) return;
+    
+    if (selectedPEIs.includes(peiId)) {
+      onSelectionChange(selectedPEIs.filter(id => id !== peiId));
+    } else {
+      onSelectionChange([...selectedPEIs, peiId]);
+    }
+  };
 
   const getStatusBadge = (status: PEIStatus) => {
     const statusConfig: Record<PEIStatus, { label: string; color: string }> = {
@@ -172,6 +197,15 @@ const PEIQueueTable = ({
         <Table>
           <TableHeader>
             <TableRow>
+              {onSelectionChange && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedPEIs.length === peis.length && peis.length > 0}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Selecionar todos"
+                  />
+                </TableHead>
+              )}
               <TableHead>Aluno</TableHead>
               <TableHead>Professor</TableHead>
               <TableHead>Status</TableHead>
@@ -182,6 +216,15 @@ const PEIQueueTable = ({
           <TableBody>
             {peis.map((pei) => (
               <TableRow key={pei.id} className="hover:bg-accent/50">
+                {onSelectionChange && (
+                  <TableCell className="w-12">
+                    <Checkbox
+                      checked={selectedPEIs.includes(pei.id)}
+                      onCheckedChange={() => handleSelectPEI(pei.id)}
+                      aria-label={`Selecionar PEI de ${pei.student_name}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell className="font-medium">
                   {pei.student_name}
                 </TableCell>

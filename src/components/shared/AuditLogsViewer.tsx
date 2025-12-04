@@ -47,54 +47,52 @@ export function AuditLogsViewer({
     try {
       setLoading(true);
       
-      // Tentar usar a função RPC primeiro
-      let { data, error } = await supabase.rpc("get_audit_logs", {
-        p_tenant_id: tenantId,
-        p_limit: limit,
-        p_offset: 0
-      });
-
-      // Se a função RPC falhar, usar consulta direta
-      if (error) {
-        console.warn("Função RPC não encontrada, usando consulta direta:", error);
-        
-        let query = supabase
-          .from("audit_logs")
-          .select(`
-            id,
-            action,
-            resource_type,
-            resource_id,
-            old_values,
-            new_values,
-            metadata,
-            ip_address,
-            user_agent,
-            tenant_id,
-            created_at,
-            profiles!audit_logs_user_id_fkey(full_name),
-            tenants!audit_logs_tenant_id_fkey(name)
-          `)
-          .order("created_at", { ascending: false })
-          .limit(limit);
-
-        if (tenantId) {
-          query = query.eq("tenant_id", tenantId);
-        }
-
-        const result = await query;
-        data = result.data;
-        error = result.error;
+      if (!tenantId) {
+        console.warn('tenantId não fornecido, não é possível carregar logs');
+        setLogs([]);
+        return;
       }
 
-      if (error) throw error;
-      
-      // Transformar dados se necessário
-      const transformedData = (data || []).map(log => ({
-        ...log,
-        user_name: log.profiles?.full_name || 'Sistema',
-        user_email: null, // Não disponível na consulta direta
-        tenant_name: log.tenants?.name || 'Sistema'
+      // Usar RPC get_audit_trail (usa audit_events - tabela canônica)
+      const { data, error } = await supabase.rpc("get_audit_trail", {
+        p_tenant_id: tenantId,
+        p_entity_type: null,
+        p_entity_id: null,
+        p_action: null,
+        p_actor_id: null,
+        p_start_date: null,
+        p_end_date: null,
+        p_limit: limit,
+      });
+
+      if (error) {
+        console.error("Erro ao carregar logs de auditoria:", error);
+        toast({
+          title: "Erro ao carregar logs",
+          description: error.message,
+          variant: "destructive",
+        });
+        setLogs([]);
+        return;
+      }
+
+      // Mapear dados do audit_trail para formato do componente
+      // O RPC já retorna actor_name e actor_email
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        action: item.action?.toLowerCase() || item.action,
+        resource_type: item.entity_type,
+        resource_id: item.entity_id,
+        old_values: item.metadata?.old_values || null,
+        new_values: item.metadata?.new_values || null,
+        metadata: item.metadata || {},
+        ip_address: item.ip_address,
+        user_agent: item.user_agent,
+        tenant_id: item.tenant_id,
+        created_at: item.created_at,
+        user_name: item.actor_name || 'Sistema',
+        user_email: item.actor_email || null,
+        tenant_name: null, // Pode ser obtido via join se necessário
       }));
       
       setLogs(transformedData);

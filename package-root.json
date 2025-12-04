@@ -1,0 +1,25 @@
+{
+  "name": "pei-collab-monorepo",
+  "version": "3.0.0",
+  "private": true,
+  "description": "PEI Collab - Sistema Integrado de Gestão Educacional Inclusiva",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "dev:pei": "turbo run dev --filter=@pei/pei-collab",
+    "dev:gestao": "turbo run dev --filter=@pei/gestao-escolar",
+    "dev:aee": "turbo run dev --filter=@pei/plano-aee"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.14",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.10.0"
+}

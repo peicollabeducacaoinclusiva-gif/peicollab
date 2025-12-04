@@ -54,6 +54,8 @@ export function FamilyTokenManager({ studentId, peiId, studentName }: FamilyToke
   const loadTokens = async () => {
     try {
       setLoading(true);
+      console.log('🔑 FamilyTokenManager: Carregando tokens...');
+      console.log('📌 Filtros:', { studentId, peiId });
 
       let query = supabase
         .from('family_access_tokens')
@@ -84,17 +86,34 @@ export function FamilyTokenManager({ studentId, peiId, studentName }: FamilyToke
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      console.log('📊 Resultado da query:', { data, error });
 
-      const processedTokens: FamilyToken[] = data?.map(token => ({
-        ...token,
-        student_name: token.students?.name,
-        creator_name: token.profiles?.full_name
-      })) || [];
+      if (error) {
+        console.error('❌ Erro na query:', error);
+        throw error;
+      }
 
+      const processedTokens: FamilyToken[] = data?.map((token) => {
+        const studentRecord = Array.isArray(token.students) ? token.students[0] : token.students;
+        const creatorRecord = Array.isArray(token.profiles) ? token.profiles[0] : token.profiles;
+
+        return {
+          ...token,
+          student_name: studentRecord?.name,
+          creator_name: creatorRecord?.full_name
+        };
+      }) || [];
+
+      console.log('✅ Tokens processados:', processedTokens.length);
       setTokens(processedTokens);
-    } catch (error) {
-      console.error('Erro ao carregar tokens:', error);
+    } catch (error: any) {
+      console.error('💥 Erro ao carregar tokens:', error);
+      console.error('Detalhes:', {
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code
+      });
     } finally {
       setLoading(false);
     }

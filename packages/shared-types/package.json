@@ -1,0 +1,20 @@
+{
+  "name": "@pei/shared-types",
+  "version": "1.0.0",
+  "description": "Tipos TypeScript compartilhados entre apps do monorepo",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
+}
+

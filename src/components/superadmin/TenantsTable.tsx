@@ -13,16 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Power, PowerOff, Trash2 } from "lucide-react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -31,6 +21,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import EditTenantDialog from "./EditTenantDialog";
+import DeleteTenantDialog from "./DeleteTenantDialog";
 
 interface Tenant {
   id: string;
@@ -93,35 +84,10 @@ const TenantsTable = ({ tenants, onTenantUpdated }: TenantsTableProps) => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!tenantToDelete) return;
-
-    setLoadingId(tenantToDelete.id);
-    try {
-      const { error } = await supabase
-        .from("tenants")
-        .delete()
-        .eq("id", tenantToDelete.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Escola excluída",
-        description: "A escola foi removida com sucesso.",
-      });
-
-      onTenantUpdated();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao excluir escola",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingId(null);
-      setDeleteDialogOpen(false);
-      setTenantToDelete(null);
-    }
+  const handleDeleteComplete = () => {
+    setDeleteDialogOpen(false);
+    setTenantToDelete(null);
+    onTenantUpdated();
   };
 
   const totalPages = Math.ceil(tenants.length / itemsPerPage);
@@ -197,8 +163,10 @@ const TenantsTable = ({ tenants, onTenantUpdated }: TenantsTableProps) => {
                       variant="ghost"
                       onClick={() => handleDeleteClick(tenant)}
                       disabled={loadingId === tenant.id}
+                      className="hover:bg-red-50"
+                      title="Excluir rede permanentemente"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-4 w-4 text-red-600 hover:text-red-700" />
                     </Button>
                   </div>
                 </TableCell>
@@ -252,23 +220,15 @@ const TenantsTable = ({ tenants, onTenantUpdated }: TenantsTableProps) => {
         onTenantUpdated={onTenantUpdated}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir a escola <strong>{tenantToDelete?.name}</strong>? 
-              Esta ação removerá todos os dados associados e não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteTenantDialog
+        tenant={tenantToDelete}
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setTenantToDelete(null);
+        }}
+        onDeleted={handleDeleteComplete}
+      />
     </>
   );
 };

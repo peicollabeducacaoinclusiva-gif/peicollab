@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { HelpCircle, Lightbulb, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Tipos baseados no schema do banco
 interface Barrier {
@@ -23,6 +24,42 @@ interface DiagnosisData {
   history: string;
   cid10?: string;
   description?: string;
+  // ✅ Campos Estendidos
+  aversions?: string;
+  abilities?: string;
+  barriersComments?: string;
+  strengths?: string;
+  challenges?: string;
+  familyNeeds?: string;
+  familyExpectations?: string;
+  // 🆕 Relatório Circunstanciado
+  circumstantial_report?: {
+    how_student_learns?: string;
+    learning_barriers?: string;
+    social_interaction?: string;
+    communication?: string;
+    attention?: string;
+    autonomy?: string;
+    behavior?: string;
+    emotional_context?: string;
+    observations?: string;
+  };
+  // 🆕 Nível de Desenvolvimento
+  development_level?: {
+    language?: { autonomous?: string[]; with_help?: string[]; not_yet?: string[] };
+    reading?: { autonomous?: string[]; with_help?: string[]; not_yet?: string[] };
+    writing?: { autonomous?: string[]; with_help?: string[]; not_yet?: string[] };
+    logical_reasoning?: { autonomous?: string[]; with_help?: string[]; not_yet?: string[] };
+    motor_coordination?: { autonomous?: string[]; with_help?: string[]; not_yet?: string[] };
+    social_skills?: { autonomous?: string[]; with_help?: string[]; not_yet?: string[] };
+  };
+  // 🆕 Informações de Saúde
+  health_info?: {
+    condition_impact?: string;
+    curriculum_adaptations?: string[];
+    behavioral_adaptations?: string[];
+    examples?: string;
+  };
 }
 
 interface DiagnosisSectionProps {
@@ -337,6 +374,50 @@ const DiagnosisSection = ({ diagnosisData, onDiagnosisChange }: DiagnosisSection
                   rows={5}
                 />
               </div>
+
+              {/* 🆕 HABILIDADES - O que já consegue fazer */}
+              <div>
+                <div className="flex items-center mb-2">
+                  <Label htmlFor="abilities" className="text-sm">💪 Habilidades - O que já consegue fazer</Label>
+                  <ExampleTooltip
+                    examples={[
+                      "Reconhece letras do alfabeto, escreve o nome com autonomia",
+                      "Interage bem com colegas, segue instruções simples",
+                      "Identifica moedas e números até 50, faz contagem básica"
+                    ]}
+                    tutorial="Liste as habilidades que o aluno já desenvolveu. Isso ajuda a identificar pontos fortes que podem ser usados como base para novas aprendizagens."
+                  />
+                </div>
+                <Textarea
+                  id="abilities"
+                  placeholder="Ex: Reconhece letras, escreve o nome, interage com colegas, segue instruções simples, identifica moedas..."
+                  value={diagnosisData.abilities || diagnosisData.strengths || ""}
+                  onChange={(e) => handleChange("abilities", e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              {/* 🆕 AVERSÕES - Desinteresses */}
+              <div>
+                <div className="flex items-center mb-2">
+                  <Label htmlFor="aversions" className="text-sm">⚠️ Desinteresses / Aversões</Label>
+                  <ExampleTooltip
+                    examples={[
+                      "Sensibilidade a barulhos altos, prefere ambientes tranquilos",
+                      "Não gosta de mudanças bruscas de rotina, causa ansiedade",
+                      "Aversão a determinadas texturas de alimentos ou materiais"
+                    ]}
+                    tutorial="Identifique situações, atividades ou estímulos que causam desconforto, ansiedade ou recusa no aluno. Conhecer essas aversões ajuda a evitar gatilhos e adaptar o ambiente."
+                  />
+                </div>
+                <Textarea
+                  id="aversions"
+                  placeholder="Ex: Barulho alto, mudanças de rotina, contato físico, determinados temas ou matérias..."
+                  value={diagnosisData.aversions || diagnosisData.challenges || ""}
+                  onChange={(e) => handleChange("aversions", e.target.value)}
+                  rows={3}
+                />
+              </div>
             </CardContent>
           )}
         </Card>
@@ -400,6 +481,403 @@ const DiagnosisSection = ({ diagnosisData, onDiagnosisChange }: DiagnosisSection
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+
+              {/* 🆕 COMENTÁRIOS SOBRE BARREIRAS */}
+              <div className="mt-6 pt-6 border-t">
+                <div className="flex items-center mb-2">
+                  <Label htmlFor="barriersComments" className="text-sm">💬 Comentários e Observações sobre as Barreiras</Label>
+                  <ExampleTooltip
+                    examples={[
+                      "Falta de sinalização tátil nos corredores dificulta orientação espacial",
+                      "Ausência de intérprete de Libras limita participação nas aulas",
+                      "Ruídos excessivos durante o recreio causam desregulação sensorial",
+                      "Resistência docente em adaptar metodologias impacta o aprendizado"
+                    ]}
+                    tutorial="Descreva situações concretas e exemplos práticos das barreiras identificadas no ambiente escolar. Seja específico sobre como cada barreira impacta o aluno no dia a dia."
+                  />
+                </div>
+                <Textarea
+                  id="barriersComments"
+                  placeholder="Descreva situações específicas ou exemplos práticos das barreiras no ambiente escolar..."
+                  value={diagnosisData.barriersComments || ""}
+                  onChange={(e) => handleChange("barriersComments", e.target.value)}
+                  rows={4}
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Contextualize as barreiras marcadas acima com exemplos do cotidiano escolar
+                </p>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 🆕 RELATÓRIO CIRCUNSTANCIADO (RC) */}
+        <Card>
+          <CardHeader 
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => toggleSection("circumstantial_report")}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-2xl">📋</span>
+                <span className="font-semibold">Relatório Circunstanciado (RC)</span>
+              </CardTitle>
+              <ChevronDown 
+                className={`h-5 w-5 transition-transform ${
+                  openSections.includes("circumstantial_report") ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+          </CardHeader>
+          {openSections.includes("circumstantial_report") && (
+            <CardContent className="pt-4 space-y-4">
+              <Alert className="bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-sm text-blue-800">
+                  O Relatório Circunstanciado descreve de forma ampla como o aluno aprende, suas barreiras, interação social, comunicação, atenção, autonomia, comportamento e contexto emocional.
+                </AlertDescription>
+              </Alert>
+
+              <div>
+                <Label htmlFor="how_student_learns">Como o Aluno Aprende</Label>
+                <Textarea
+                  id="how_student_learns"
+                  placeholder="Descreva como o aluno processa informações, quais estratégias funcionam melhor, estilos de aprendizagem..."
+                  value={diagnosisData.circumstantial_report?.how_student_learns || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, how_student_learns: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="learning_barriers">Barreiras Encontradas no Aprendizado</Label>
+                <Textarea
+                  id="learning_barriers"
+                  placeholder="Descreva as principais barreiras que impedem ou dificultam o aprendizado..."
+                  value={diagnosisData.circumstantial_report?.learning_barriers || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, learning_barriers: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="social_interaction">Interação Social</Label>
+                <Textarea
+                  id="social_interaction"
+                  placeholder="Como o aluno interage com colegas, professores, família. Habilidades sociais, dificuldades..."
+                  value={diagnosisData.circumstantial_report?.social_interaction || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, social_interaction: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="communication">Comunicação</Label>
+                <Textarea
+                  id="communication"
+                  placeholder="Formas de comunicação, expressão oral, compreensão, uso de gestos, comunicação alternativa..."
+                  value={diagnosisData.circumstantial_report?.communication || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, communication: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="attention">Atenção e Concentração</Label>
+                <Textarea
+                  id="attention"
+                  placeholder="Tempo de atenção, fatores que distraem, estratégias que ajudam a manter o foco..."
+                  value={diagnosisData.circumstantial_report?.attention || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, attention: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="autonomy">Autonomia</Label>
+                <Textarea
+                  id="autonomy"
+                  placeholder="O que o aluno faz sozinho, o que precisa de ajuda, nível de independência..."
+                  value={diagnosisData.circumstantial_report?.autonomy || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, autonomy: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="behavior">Comportamento</Label>
+                <Textarea
+                  id="behavior"
+                  placeholder="Padrões comportamentais, autorregulação, seguimento de regras, adaptação a mudanças..."
+                  value={diagnosisData.circumstantial_report?.behavior || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, behavior: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="emotional_context">Contexto Emocional</Label>
+                <Textarea
+                  id="emotional_context"
+                  placeholder="Estado emocional, expressão de sentimentos, fatores que afetam o bem-estar emocional..."
+                  value={diagnosisData.circumstantial_report?.emotional_context || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, emotional_context: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="rc_observations">Observações Gerais do RC</Label>
+                <Textarea
+                  id="rc_observations"
+                  placeholder="Outras observações relevantes para o Relatório Circunstanciado..."
+                  value={diagnosisData.circumstantial_report?.observations || ''}
+                  onChange={(e) => {
+                    const rc = diagnosisData.circumstantial_report || {}
+                    handleChange('circumstantial_report', { ...rc, observations: e.target.value })
+                  }}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 🆕 NÍVEL DE DESENVOLVIMENTO E DESEMPENHO */}
+        <Card>
+          <CardHeader 
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => toggleSection("development_level")}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-2xl">📊</span>
+                <span className="font-semibold">Nível de Desenvolvimento e Desempenho</span>
+              </CardTitle>
+              <ChevronDown 
+                className={`h-5 w-5 transition-transform ${
+                  openSections.includes("development_level") ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+          </CardHeader>
+          {openSections.includes("development_level") && (
+            <CardContent className="pt-4 space-y-6">
+              <Alert className="bg-purple-50 border-purple-200">
+                <Info className="h-4 w-4 text-purple-600" />
+                <AlertDescription className="text-sm text-purple-800">
+                  Detalhe o que o aluno já faz com autonomia, o que faz com ajuda, e o que ainda não realiza em cada área de desenvolvimento.
+                </AlertDescription>
+              </Alert>
+
+              {['language', 'reading', 'writing', 'logical_reasoning', 'motor_coordination', 'social_skills'].map((area) => {
+                const areaLabels: Record<string, string> = {
+                  language: 'Linguagem',
+                  reading: 'Leitura',
+                  writing: 'Escrita',
+                  logical_reasoning: 'Raciocínio Lógico',
+                  motor_coordination: 'Coordenação Motora',
+                  social_skills: 'Habilidades Sociais',
+                }
+
+                const areaData = diagnosisData.development_level?.[area as keyof typeof diagnosisData.development_level] || {}
+
+                return (
+                  <div key={area} className="space-y-3 p-4 border rounded-lg">
+                    <h4 className="font-semibold text-sm">{areaLabels[area]}</h4>
+                    
+                    <div>
+                      <Label className="text-xs text-green-700">✅ Com Autonomia</Label>
+                      <Textarea
+                        placeholder={`O que o aluno já faz sozinho em ${areaLabels[area].toLowerCase()}...`}
+                        value={(areaData as any)?.autonomous?.join('\n') || ''}
+                        onChange={(e) => {
+                          const dl = diagnosisData.development_level || {}
+                          const currentArea = dl[area as keyof typeof dl] || {}
+                          handleChange('development_level', {
+                            ...dl,
+                            [area]: {
+                              ...currentArea,
+                              autonomous: e.target.value.split('\n').filter(Boolean),
+                            },
+                          })
+                        }}
+                        rows={2}
+                        className="mt-1 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-yellow-700">🟡 Com Ajuda</Label>
+                      <Textarea
+                        placeholder={`O que o aluno faz com apoio em ${areaLabels[area].toLowerCase()}...`}
+                        value={(areaData as any)?.with_help?.join('\n') || ''}
+                        onChange={(e) => {
+                          const dl = diagnosisData.development_level || {}
+                          const currentArea = dl[area as keyof typeof dl] || {}
+                          handleChange('development_level', {
+                            ...dl,
+                            [area]: {
+                              ...currentArea,
+                              with_help: e.target.value.split('\n').filter(Boolean),
+                            },
+                          })
+                        }}
+                        rows={2}
+                        className="mt-1 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-red-700">❌ Ainda Não Realiza</Label>
+                      <Textarea
+                        placeholder={`O que o aluno ainda não consegue fazer em ${areaLabels[area].toLowerCase()}...`}
+                        value={(areaData as any)?.not_yet?.join('\n') || ''}
+                        onChange={(e) => {
+                          const dl = diagnosisData.development_level || {}
+                          const currentArea = dl[area as keyof typeof dl] || {}
+                          handleChange('development_level', {
+                            ...dl,
+                            [area]: {
+                              ...currentArea,
+                              not_yet: e.target.value.split('\n').filter(Boolean),
+                            },
+                          })
+                        }}
+                        rows={2}
+                        className="mt-1 text-sm"
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 🆕 INFORMAÇÕES DE SAÚDE E IMPLICAÇÕES CURRICULARES */}
+        <Card>
+          <CardHeader 
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => toggleSection("health_info")}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-2xl">🏥</span>
+                <span className="font-semibold">Saúde e Implicações Curriculares</span>
+              </CardTitle>
+              <ChevronDown 
+                className={`h-5 w-5 transition-transform ${
+                  openSections.includes("health_info") ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+          </CardHeader>
+          {openSections.includes("health_info") && (
+            <CardContent className="pt-4 space-y-4">
+              <div>
+                <Label htmlFor="condition_impact">Como a Condição Impacta o Aprendizado</Label>
+                <Textarea
+                  id="condition_impact"
+                  placeholder="Descreva como a condição de saúde (TEA, deficiência, etc.) impacta especificamente o processo de aprendizado..."
+                  value={diagnosisData.health_info?.condition_impact || ''}
+                  onChange={(e) => {
+                    const hi = diagnosisData.health_info || {}
+                    handleChange('health_info', { ...hi, condition_impact: e.target.value })
+                  }}
+                  rows={4}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label>Adaptações Curriculares Necessárias</Label>
+                <Textarea
+                  placeholder="Liste as adaptações curriculares necessárias (uma por linha)..."
+                  value={(diagnosisData.health_info?.curriculum_adaptations || []).join('\n')}
+                  onChange={(e) => {
+                    const hi = diagnosisData.health_info || {}
+                    handleChange('health_info', {
+                      ...hi,
+                      curriculum_adaptations: e.target.value.split('\n').filter(Boolean),
+                    })
+                  }}
+                  rows={4}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ex: Flexibilização de objetivos, reorganização da sequência didática, avaliações adaptadas
+                </p>
+              </div>
+
+              <div>
+                <Label>Adaptações Comportamentais Necessárias</Label>
+                <Textarea
+                  placeholder="Liste as adaptações comportamentais necessárias (uma por linha)..."
+                  value={(diagnosisData.health_info?.behavioral_adaptations || []).join('\n')}
+                  onChange={(e) => {
+                    const hi = diagnosisData.health_info || {}
+                    handleChange('health_info', {
+                      ...hi,
+                      behavioral_adaptations: e.target.value.split('\n').filter(Boolean),
+                    })
+                  }}
+                  rows={4}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ex: Rotina visual, apoio para transições, linguagem simples, pausas programadas
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="health_examples">Exemplos Práticos</Label>
+                <Textarea
+                  id="health_examples"
+                  placeholder="Descreva exemplos práticos de como essas adaptações são aplicadas no dia a dia..."
+                  value={diagnosisData.health_info?.examples || ''}
+                  onChange={(e) => {
+                    const hi = diagnosisData.health_info || {}
+                    handleChange('health_info', { ...hi, examples: e.target.value })
+                  }}
+                  rows={4}
+                  className="mt-2"
+                />
               </div>
             </CardContent>
           )}

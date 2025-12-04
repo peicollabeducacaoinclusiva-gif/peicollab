@@ -2,26 +2,42 @@
 
 import { useState } from "react"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sparkles, Plus, Trash2, Lightbulb, Info } from "lucide-react"
+import { Sparkles, Plus, Trash2, Lightbulb, Info, CheckCircle2, TrendingUp } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { GoalEvaluationDialog } from "./GoalEvaluationDialog"
 
 // Tipos baseados no schema do banco
+interface GoalEvaluation {
+  current_status?: string
+  achieved_percentage?: number
+  evaluation_date?: string
+  evaluator?: string
+  evidence?: string
+  next_actions?: string
+}
+
 interface Goal {
   id?: string
   barrier_id?: string
   category?: "academic" | "functional"
   description: string
   target_date?: string
+  timeline?: "short_term" | "medium_term" | "long_term"
   progress_level?: "não iniciada" | "em andamento" | "parcialmente alcançada" | "alcançada"
   progress_score?: number
   notes?: string
+  specific_objectives?: string[]
+  measurement_criteria?: string
+  expected_outcomes?: string
+  evaluation?: GoalEvaluation
 }
 
 interface AccessibilityResource {
@@ -41,6 +57,36 @@ interface AccessibilityResource {
 interface PlanningData {
   goals: Goal[]
   accessibilityResources: AccessibilityResource[]
+  curriculum_adaptations?: {
+    priority_contents?: string[]
+    priority_competencies?: string[]
+    differentiated_methodologies?: string[]
+    adapted_assessments?: string[]
+    content_flexibilization?: string
+    sequence_reorganization?: string
+  }
+  specific_resources?: {
+    pedagogical_games?: string[]
+    communication_boards?: string[]
+    assistive_technologies?: string[]
+    visual_supports?: string[]
+    images?: string[]
+    other_materials?: string[]
+  }
+  support_services?: Array<{
+    service_type: string
+    frequency: string
+    duration?: string
+    provider?: string
+    location?: string
+    observations?: string
+  }>
+  intervention_schedule?: Array<{
+    period: string
+    actions: string[]
+    responsible: string
+    expected_results?: string
+  }>
 }
 
 interface PlanningSectionProps {
@@ -52,6 +98,7 @@ interface PlanningSectionProps {
 
 const PlanningSection = ({ planningData, diagnosisData, barriers = [], onPlanningChange }: PlanningSectionProps) => {
   const [generatingAI, setGeneratingAI] = useState(false)
+  const [evaluatingGoalIndex, setEvaluatingGoalIndex] = useState<number | null>(null)
   const { toast } = useToast()
 
   // Garantir que os arrays existem
@@ -81,11 +128,17 @@ const PlanningSection = ({ planningData, diagnosisData, barriers = [], onPlannin
         title: "Sucesso",
         description: "Planejamento gerado com IA!",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating planning:", error)
+      console.error("Error details:", {
+        message: error?.message,
+        data: error?.data,
+        status: error?.status,
+        details: error?.details
+      })
       toast({
-        title: "Erro",
-        description: "Não foi possível gerar o planejamento. Tente novamente.",
+        title: "Erro ao gerar planejamento",
+        description: error?.message || error?.data?.error || "Não foi possível gerar o planejamento. Verifique o console (F12) para mais detalhes.",
         variant: "destructive",
       })
     } finally {
@@ -141,6 +194,23 @@ const PlanningSection = ({ planningData, diagnosisData, barriers = [], onPlannin
     const newResources = [...(planningData?.accessibilityResources || [])]
     newResources[index] = { ...newResources[index], [field]: value }
     onPlanningChange({ ...planningData, accessibilityResources: newResources })
+  }
+
+  const saveGoalEvaluation = (goalIndex: number, evaluation: GoalEvaluation) => {
+    const newGoals = [...(planningData?.goals || [])]
+    newGoals[goalIndex] = { ...newGoals[goalIndex], evaluation }
+    onPlanningChange({ ...planningData, goals: newGoals })
+    toast({
+      title: "Avaliação salva",
+      description: "A avaliação da meta foi registrada com sucesso.",
+    })
+  }
+
+  const getProgressColor = (percentage: number) => {
+    if (percentage >= 75) return "text-green-600"
+    if (percentage >= 50) return "text-blue-600"
+    if (percentage >= 25) return "text-yellow-600"
+    return "text-red-600"
   }
 
   const ExampleTooltip = ({ title, examples }: { title: string; examples: string[] }) => (
@@ -217,10 +287,33 @@ const PlanningSection = ({ planningData, diagnosisData, barriers = [], onPlannin
           <Card key={goalIndex}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Meta {goalIndex + 1}</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => removeGoal(goalIndex)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <CardTitle className="text-base flex items-center gap-2">
+                  Meta {goalIndex + 1}
+                  {goal.category && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                      {goal.category === "academic" ? "📚 Acadêmica" : "🎯 Funcional"}
+                    </span>
+                  )}
+                  {goal.evaluation?.achieved_percentage !== undefined && (
+                    <span className={`text-xs px-2 py-1 rounded-full ${getProgressColor(goal.evaluation.achieved_percentage)} bg-current/10`}>
+                      <TrendingUp className="inline h-3 w-3 mr-1" />
+                      {goal.evaluation.achieved_percentage}%
+                    </span>
+                  )}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEvaluatingGoalIndex(goalIndex)}
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    {goal.evaluation ? "Ver Avaliação" : "Avaliar Meta"}
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => removeGoal(goalIndex)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -287,12 +380,68 @@ const PlanningSection = ({ planningData, diagnosisData, barriers = [], onPlannin
               )}
 
               <div>
-                <Label>Data Alvo (Opcional)</Label>
+                <Label>Data Alvo *</Label>
                 <input
                   type="date"
                   value={goal.target_date || ""}
                   onChange={(e) => updateGoal(goalIndex, "target_date", e.target.value)}
                   className="mt-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <Label>Prazo da Meta</Label>
+                <Select
+                  value={goal.timeline || ""}
+                  onValueChange={(value) => updateGoal(goalIndex, "timeline", value)}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Selecione o prazo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="short_term">Curto Prazo (1-3 meses)</SelectItem>
+                    <SelectItem value="medium_term">Médio Prazo (4-6 meses)</SelectItem>
+                    <SelectItem value="long_term">Longo Prazo (7-12 meses)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Classifique a meta por prazo de alcance
+                </p>
+              </div>
+
+              <div>
+                <Label>Objetivos Específicos e Mensuráveis</Label>
+                <Textarea
+                  placeholder="Liste objetivos específicos e mensuráveis desta meta (um por linha)..."
+                  value={(goal.specific_objectives || []).join('\n')}
+                  onChange={(e) => updateGoal(goalIndex, "specific_objectives", e.target.value.split('\n').filter(Boolean))}
+                  rows={3}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ex: Reconhecer todas as letras do alfabeto em palavras simples
+                </p>
+              </div>
+
+              <div>
+                <Label>Critérios de Mensuração</Label>
+                <Textarea
+                  placeholder="Como será medido o progresso desta meta? Quais indicadores serão observados?"
+                  value={goal.measurement_criteria || ""}
+                  onChange={(e) => updateGoal(goalIndex, "measurement_criteria", e.target.value)}
+                  rows={2}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label>Resultados Esperados</Label>
+                <Textarea
+                  placeholder="Descreva os resultados esperados ao alcançar esta meta..."
+                  value={goal.expected_outcomes || ""}
+                  onChange={(e) => updateGoal(goalIndex, "expected_outcomes", e.target.value)}
+                  rows={2}
+                  className="mt-2"
                 />
               </div>
 
@@ -306,6 +455,35 @@ const PlanningSection = ({ planningData, diagnosisData, barriers = [], onPlannin
                   className="mt-2"
                 />
               </div>
+
+              {/* Mostrar resumo da avaliação se existir */}
+              {goal.evaluation && (
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg border-l-4 border-primary">
+                  <h5 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Última Avaliação
+                  </h5>
+                  <div className="space-y-2 text-sm">
+                    {goal.evaluation.evaluation_date && (
+                      <p className="text-muted-foreground">
+                        📅 {new Date(goal.evaluation.evaluation_date).toLocaleDateString("pt-BR")}
+                        {goal.evaluation.evaluator && ` • Por: ${goal.evaluation.evaluator}`}
+                      </p>
+                    )}
+                    {goal.evaluation.current_status && (
+                      <p>
+                        <strong>Status:</strong> {goal.evaluation.current_status}
+                      </p>
+                    )}
+                    {goal.evaluation.evidence && (
+                      <p>
+                        <strong>Evidências:</strong> {goal.evaluation.evidence.substring(0, 100)}
+                        {goal.evaluation.evidence.length > 100 && "..."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -400,6 +578,554 @@ const PlanningSection = ({ planningData, diagnosisData, barriers = [], onPlannin
           </div>
         )}
       </div>
+
+      {/* 🆕 ADEQUAÇÕES CURRICULARES DETALHADAS */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">📚 Adequações Curriculares</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Conteúdos Prioritários</Label>
+            <Textarea
+              placeholder="Liste os conteúdos que serão priorizados (um por linha)..."
+              value={(planningData.curriculum_adaptations?.priority_contents || []).join('\n')}
+              onChange={(e) => {
+                const ca = planningData.curriculum_adaptations || {}
+                onPlanningChange({
+                  ...planningData,
+                  curriculum_adaptations: {
+                    ...ca,
+                    priority_contents: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={3}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Competências Prioritárias</Label>
+            <Textarea
+              placeholder="Liste as competências que serão priorizadas (uma por linha)..."
+              value={(planningData.curriculum_adaptations?.priority_competencies || []).join('\n')}
+              onChange={(e) => {
+                const ca = planningData.curriculum_adaptations || {}
+                onPlanningChange({
+                  ...planningData,
+                  curriculum_adaptations: {
+                    ...ca,
+                    priority_competencies: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={3}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Metodologias Diferenciadas</Label>
+            <Textarea
+              placeholder="Liste as metodologias diferenciadas que serão utilizadas (uma por linha)..."
+              value={(planningData.curriculum_adaptations?.differentiated_methodologies || []).join('\n')}
+              onChange={(e) => {
+                const ca = planningData.curriculum_adaptations || {}
+                onPlanningChange({
+                  ...planningData,
+                  curriculum_adaptations: {
+                    ...ca,
+                    differentiated_methodologies: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={3}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Avaliações Adaptadas</Label>
+            <Textarea
+              placeholder="Liste as formas de avaliação adaptadas (uma por linha)..."
+              value={(planningData.curriculum_adaptations?.adapted_assessments || []).join('\n')}
+              onChange={(e) => {
+                const ca = planningData.curriculum_adaptations || {}
+                onPlanningChange({
+                  ...planningData,
+                  curriculum_adaptations: {
+                    ...ca,
+                    adapted_assessments: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={3}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Flexibilização de Conteúdos</Label>
+            <Textarea
+              placeholder="Descreva como os conteúdos serão flexibilizados sem alterar os essenciais..."
+              value={planningData.curriculum_adaptations?.content_flexibilization || ''}
+              onChange={(e) => {
+                const ca = planningData.curriculum_adaptations || {}
+                onPlanningChange({
+                  ...planningData,
+                  curriculum_adaptations: {
+                    ...ca,
+                    content_flexibilization: e.target.value,
+                  },
+                })
+              }}
+              rows={3}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Reorganização da Sequência Didática</Label>
+            <Textarea
+              placeholder="Descreva como a sequência didática será reorganizada..."
+              value={planningData.curriculum_adaptations?.sequence_reorganization || ''}
+              onChange={(e) => {
+                const ca = planningData.curriculum_adaptations || {}
+                onPlanningChange({
+                  ...planningData,
+                  curriculum_adaptations: {
+                    ...ca,
+                    sequence_reorganization: e.target.value,
+                  },
+                })
+              }}
+              rows={3}
+              className="mt-2"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 🆕 RECURSOS E MATERIAIS ESPECÍFICOS */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">🛠️ Recursos e Materiais Específicos</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Jogos Pedagógicos</Label>
+            <Textarea
+              placeholder="Liste os jogos pedagógicos que serão utilizados (um por linha)..."
+              value={(planningData.specific_resources?.pedagogical_games || []).join('\n')}
+              onChange={(e) => {
+                const sr = planningData.specific_resources || {}
+                onPlanningChange({
+                  ...planningData,
+                  specific_resources: {
+                    ...sr,
+                    pedagogical_games: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={2}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Pranchas de Comunicação</Label>
+            <Textarea
+              placeholder="Liste as pranchas de comunicação (CAA) que serão utilizadas..."
+              value={(planningData.specific_resources?.communication_boards || []).join('\n')}
+              onChange={(e) => {
+                const sr = planningData.specific_resources || {}
+                onPlanningChange({
+                  ...planningData,
+                  specific_resources: {
+                    ...sr,
+                    communication_boards: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={2}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Tecnologias Assistivas</Label>
+            <Textarea
+              placeholder="Liste as tecnologias assistivas (softwares, apps, dispositivos)..."
+              value={(planningData.specific_resources?.assistive_technologies || []).join('\n')}
+              onChange={(e) => {
+                const sr = planningData.specific_resources || {}
+                onPlanningChange({
+                  ...planningData,
+                  specific_resources: {
+                    ...sr,
+                    assistive_technologies: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={2}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Apoios Visuais</Label>
+            <Textarea
+              placeholder="Liste os apoios visuais (cartazes, esquemas, imagens)..."
+              value={(planningData.specific_resources?.visual_supports || []).join('\n')}
+              onChange={(e) => {
+                const sr = planningData.specific_resources || {}
+                onPlanningChange({
+                  ...planningData,
+                  specific_resources: {
+                    ...sr,
+                    visual_supports: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={2}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Uso de Imagens</Label>
+            <Textarea
+              placeholder="Descreva como as imagens serão utilizadas..."
+              value={(planningData.specific_resources?.images || []).join('\n')}
+              onChange={(e) => {
+                const sr = planningData.specific_resources || {}
+                onPlanningChange({
+                  ...planningData,
+                  specific_resources: {
+                    ...sr,
+                    images: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={2}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Outros Materiais</Label>
+            <Textarea
+              placeholder="Liste outros materiais específicos necessários..."
+              value={(planningData.specific_resources?.other_materials || []).join('\n')}
+              onChange={(e) => {
+                const sr = planningData.specific_resources || {}
+                onPlanningChange({
+                  ...planningData,
+                  specific_resources: {
+                    ...sr,
+                    other_materials: e.target.value.split('\n').filter(Boolean),
+                  },
+                })
+              }}
+              rows={2}
+              className="mt-2"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 🆕 SERVIÇOS E SUPORTE */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">🏥 Serviços e Suporte</CardTitle>
+            <Button onClick={() => {
+              const services = planningData.support_services || []
+              onPlanningChange({
+                ...planningData,
+                support_services: [...services, { service_type: '', frequency: '' }],
+              })
+            }} variant="outline" size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Serviço
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(planningData.support_services || []).map((service, index) => (
+            <Card key={index}>
+              <CardContent className="pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Serviço {index + 1}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      const services = planningData.support_services || []
+                      onPlanningChange({
+                        ...planningData,
+                        support_services: services.filter((_, i) => i !== index),
+                      })
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label>Tipo de Serviço *</Label>
+                    <Input
+                      placeholder="Ex: AEE, psicológico, fonoaudiológico"
+                      value={service.service_type}
+                      onChange={(e) => {
+                        const services = [...(planningData.support_services || [])]
+                        services[index] = { ...services[index], service_type: e.target.value }
+                        onPlanningChange({ ...planningData, support_services: services })
+                      }}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Frequência *</Label>
+                    <Select
+                      value={service.frequency}
+                      onValueChange={(value) => {
+                        const services = [...(planningData.support_services || [])]
+                        services[index] = { ...services[index], frequency: value }
+                        onPlanningChange({ ...planningData, support_services: services })
+                      }}
+                    >
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="diária">Diária</SelectItem>
+                        <SelectItem value="semanal">Semanal</SelectItem>
+                        <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                        <SelectItem value="mensal">Mensal</SelectItem>
+                        <SelectItem value="quando necessário">Quando necessário</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Duração da Sessão</Label>
+                    <Input
+                      placeholder="Ex: 50 minutos"
+                      value={service.duration || ''}
+                      onChange={(e) => {
+                        const services = [...(planningData.support_services || [])]
+                        services[index] = { ...services[index], duration: e.target.value }
+                        onPlanningChange({ ...planningData, support_services: services })
+                      }}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Prestador do Serviço</Label>
+                    <Input
+                      placeholder="Nome do profissional"
+                      value={service.provider || ''}
+                      onChange={(e) => {
+                        const services = [...(planningData.support_services || [])]
+                        services[index] = { ...services[index], provider: e.target.value }
+                        onPlanningChange({ ...planningData, support_services: services })
+                      }}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Local</Label>
+                    <Input
+                      placeholder="Ex: Escola, clínica"
+                      value={service.location || ''}
+                      onChange={(e) => {
+                        const services = [...(planningData.support_services || [])]
+                        services[index] = { ...services[index], location: e.target.value }
+                        onPlanningChange({ ...planningData, support_services: services })
+                      }}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Observações</Label>
+                  <Textarea
+                    placeholder="Observações sobre este serviço..."
+                    value={service.observations || ''}
+                    onChange={(e) => {
+                      const services = [...(planningData.support_services || [])]
+                      services[index] = { ...services[index], observations: e.target.value }
+                      onPlanningChange({ ...planningData, support_services: services })
+                    }}
+                    rows={2}
+                    className="mt-2"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {(planningData.support_services || []).length === 0 && (
+            <div className="text-center py-8 border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground">Nenhum serviço adicionado ainda</p>
+              <Button
+                onClick={() => {
+                  onPlanningChange({
+                    ...planningData,
+                    support_services: [{ service_type: '', frequency: '' }],
+                  })
+                }}
+                variant="outline"
+                className="mt-4 bg-transparent"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar primeiro serviço
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 🆕 CRONOGRAMA DE INTERVENÇÃO */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">📅 Cronograma de Intervenção</CardTitle>
+            <Button onClick={() => {
+              const schedule = planningData.intervention_schedule || []
+              onPlanningChange({
+                ...planningData,
+                intervention_schedule: [...schedule, { period: '', actions: [], responsible: '' }],
+              })
+            }} variant="outline" size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Período
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(planningData.intervention_schedule || []).map((item, index) => (
+            <Card key={index}>
+              <CardContent className="pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Período {index + 1}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      const schedule = planningData.intervention_schedule || []
+                      onPlanningChange({
+                        ...planningData,
+                        intervention_schedule: schedule.filter((_, i) => i !== index),
+                      })
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div>
+                  <Label>Período *</Label>
+                  <Input
+                    placeholder="Ex: Janeiro-Março 2025"
+                    value={item.period}
+                    onChange={(e) => {
+                      const schedule = [...(planningData.intervention_schedule || [])]
+                      schedule[index] = { ...schedule[index], period: e.target.value }
+                      onPlanningChange({ ...planningData, intervention_schedule: schedule })
+                    }}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label>Ações a Serem Realizadas *</Label>
+                  <Textarea
+                    placeholder="Liste as ações que serão realizadas neste período (uma por linha)..."
+                    value={item.actions.join('\n')}
+                    onChange={(e) => {
+                      const schedule = [...(planningData.intervention_schedule || [])]
+                      schedule[index] = {
+                        ...schedule[index],
+                        actions: e.target.value.split('\n').filter(Boolean),
+                      }
+                      onPlanningChange({ ...planningData, intervention_schedule: schedule })
+                    }}
+                    rows={3}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label>Responsável *</Label>
+                  <Input
+                    placeholder="Ex: Professor regente, AEE, família"
+                    value={item.responsible}
+                    onChange={(e) => {
+                      const schedule = [...(planningData.intervention_schedule || [])]
+                      schedule[index] = { ...schedule[index], responsible: e.target.value }
+                      onPlanningChange({ ...planningData, intervention_schedule: schedule })
+                    }}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label>Resultados Esperados</Label>
+                  <Textarea
+                    placeholder="Descreva os resultados esperados para este período..."
+                    value={item.expected_results || ''}
+                    onChange={(e) => {
+                      const schedule = [...(planningData.intervention_schedule || [])]
+                      schedule[index] = { ...schedule[index], expected_results: e.target.value }
+                      onPlanningChange({ ...planningData, intervention_schedule: schedule })
+                    }}
+                    rows={2}
+                    className="mt-2"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {(planningData.intervention_schedule || []).length === 0 && (
+            <div className="text-center py-8 border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground">Nenhum período adicionado ainda</p>
+              <Button
+                onClick={() => {
+                  onPlanningChange({
+                    ...planningData,
+                    intervention_schedule: [{ period: '', actions: [], responsible: '' }],
+                  })
+                }}
+                variant="outline"
+                className="mt-4 bg-transparent"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar primeiro período
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal de Avaliação */}
+      {evaluatingGoalIndex !== null && safeGoals[evaluatingGoalIndex] && (
+        <GoalEvaluationDialog
+          open={evaluatingGoalIndex !== null}
+          onOpenChange={(open) => !open && setEvaluatingGoalIndex(null)}
+          goal={safeGoals[evaluatingGoalIndex]}
+          goalIndex={evaluatingGoalIndex}
+          onSave={saveGoalEvaluation}
+        />
+      )}
     </div>
   )
 }

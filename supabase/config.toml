@@ -1,15 +1,34 @@
 project_id = "oevwcgemxfoekoemcykx"
 
 [auth]
-site_url = "http://localhost:8081"
+site_url = "http://localhost:8080"
+# URL principal do site
 additional_redirect_urls = [
   "http://127.0.0.1:8080",
   "http://localhost:8080",
   "http://172.31.144.1:8080",
   "http://127.0.0.1:8081",
   "http://localhost:8081",
-  "http://172.31.144.1:8081"
+  "http://172.31.144.1:8081",
+  # Rotas de recuperação de senha
+  "http://127.0.0.1:8080/auth/reset-password",
+  "http://localhost:8080/auth/reset-password",
+  "http://172.31.144.1:8080/auth/reset-password",
+  # URLs de produção Vercel para SSO
+  "https://pei-collab.vercel.app/**",
+  "https://gestao-escolar.vercel.app/**",
+  "https://plano-aee.vercel.app/**",
+  "https://planejamento.vercel.app/**",
+  "https://atividades.vercel.app/**",
+  "https://blog.vercel.app/**",
+  "https://portal-responsavel.vercel.app/**",
+  "https://transporte-escolar.vercel.app/**",
+  "https://merenda-escolar.vercel.app/**"
 ]
+# Configuração de email para recuperação de senha
+enable_signup = true
+# Tempo de expiração do link de recuperação (em segundos) - padrão: 3600 (1 hora)
+# recovery_link_expiry = 3600
 
 [functions.validate-family-access]
 verify_jwt = false

@@ -1,0 +1,322 @@
+{
+  "name": "E-grafite - Mapeamento Completo",
+  "version": "1.0",
+  "description": "Mapeamento completo de campos do E-grafite para o sistema PEI Collab",
+  "students": {
+    "basic": {
+      "Código_Identificador": {
+        "target": "codigo_identificador",
+        "type": "string"
+      },
+      "Matrícula": {
+        "target": "registration_number",
+        "type": "string"
+      },
+      "Nome_Aluno": {
+        "target": "name",
+        "type": "string",
+        "required": true,
+        "transform": "uppercase"
+      },
+      "Nome_Social": {
+        "target": "nome_social",
+        "type": "string"
+      },
+      "Data_Nascimento": {
+        "target": "date_of_birth",
+        "type": "date",
+        "required": true,
+        "transform": "date_br_to_iso"
+      },
+      "CPF_Aluno": {
+        "target": "cpf",
+        "type": "string",
+        "transform": "cpf_format",
+        "validate": "cpf"
+      },
+      "Inep_Aluno": {
+        "target": "student_id",
+        "type": "string"
+      },
+      "NIS_Aluno": {
+        "target": "numero_ficha",
+        "type": "string"
+      }
+    },
+    "personal": {
+      "Sexo": {
+        "target": "sexo",
+        "type": "enum",
+        "values": ["M", "F", "Outro"]
+      },
+      "Identidade_de_Gênero": {
+        "target": "identidade_genero",
+        "type": "string"
+      },
+      "Raça_Cor": {
+        "target": "raca_cor",
+        "type": "enum",
+        "values": ["Branca", "Preta", "Parda", "Amarela", "Indígena"]
+      },
+      "Nacionalidade": {
+        "target": "naturalidade",
+        "type": "string"
+      },
+      "UF_Nascimento": {
+        "target": "uf_nascimento",
+        "type": "string"
+      },
+      "Cartão_SUS": {
+        "target": "cartao_sus",
+        "type": "string"
+      },
+      "Tipo_Sanguíneo": {
+        "target": "tipo_sanguineo",
+        "type": "string"
+      },
+      "Email": {
+        "target": "email",
+        "type": "string",
+        "validate": "email"
+      },
+      "Celular": {
+        "target": "telefone_principal",
+        "type": "string",
+        "transform": "phone_format"
+      }
+    },
+    "documents": {
+      "RG": {
+        "target": "rg",
+        "type": "string"
+      },
+      "RG_Emissão": {
+        "target": "rg_data_emissao",
+        "type": "date"
+      },
+      "UF_RG": {
+        "target": "rg_uf",
+        "type": "string"
+      },
+      "Órgão_Emissor": {
+        "target": "rg_orgao_emissor",
+        "type": "string"
+      }
+    },
+    "address": {
+      "CEP": {
+        "target": "endereco_cep",
+        "type": "string"
+      },
+      "Logradouro": {
+        "target": "endereco_logradouro",
+        "type": "string"
+      },
+      "Número": {
+        "target": "endereco_numero",
+        "type": "string"
+      },
+      "Complemento": {
+        "target": "endereco_complemento",
+        "type": "string"
+      },
+      "Bairro": {
+        "target": "endereco_bairro",
+        "type": "string"
+      },
+      "Município": {
+        "target": "endereco_cidade",
+        "type": "string"
+      },
+      "UF": {
+        "target": "state",
+        "type": "string"
+      }
+    },
+    "guardians": {
+      "Responsável": {
+        "target": "guardian_name",
+        "type": "string"
+      },
+      "Nome_Mãe": {
+        "target": "mae_nome",
+        "type": "string"
+      },
+      "Telefone_Mãe": {
+        "target": "mae_telefone",
+        "type": "string"
+      },
+      "CPF_Mãe": {
+        "target": "mae_cpf",
+        "type": "string"
+      },
+      "Nome_Pai": {
+        "target": "pai_nome",
+        "type": "string"
+      },
+      "Telefone_Pai": {
+        "target": "pai_telefone",
+        "type": "string"
+      },
+      "CPF_Pai": {
+        "target": "pai_cpf",
+        "type": "string"
+      }
+    },
+    "enrollment": {
+      "Turma": {
+        "target": "class_name",
+        "type": "string",
+        "table": "student_enrollments"
+      },
+      "Ano_Real": {
+        "target": "grade",
+        "type": "string",
+        "table": "student_enrollments"
+      },
+      "Ano_da_Matrícula": {
+        "target": "academic_year",
+        "type": "integer",
+        "table": "student_enrollments"
+      },
+      "Data_Matrícula": {
+        "target": "enrollment_date",
+        "type": "date",
+        "table": "student_enrollments"
+      },
+      "Situação_Acadêmica": {
+        "target": "status",
+        "type": "string",
+        "table": "student_enrollments",
+        "mapping": {
+          "Cursando": "active",
+          "Matriculado": "active",
+          "Transferido": "transferred",
+          "Cancelado": "cancelled",
+          "Concluído": "completed"
+        }
+      }
+    },
+    "special_needs": {
+      "Necessidades_Especiais": {
+        "target": "necessidades_especiais",
+        "type": "boolean"
+      },
+      "Tipo_Necessidade": {
+        "target": "tipo_necessidade",
+        "type": "array"
+      },
+      "Cegueira": {
+        "target": "tipo_necessidade",
+        "type": "boolean_array_item",
+        "value": "Cegueira"
+      },
+      "Baixa_Visão": {
+        "target": "tipo_necessidade",
+        "type": "boolean_array_item",
+        "value": "Baixa Visão"
+      },
+      "Surdez": {
+        "target": "tipo_necessidade",
+        "type": "boolean_array_item",
+        "value": "Surdez"
+      },
+      "TEA": {
+        "target": "tipo_necessidade",
+        "type": "boolean_array_item",
+        "value": "TEA"
+      },
+      "Deficiência_Intelectual": {
+        "target": "tipo_necessidade",
+        "type": "boolean_array_item",
+        "value": "Deficiência Intelectual"
+      }
+    },
+    "medical": {
+      "Alérgico": {
+        "target": "allergies",
+        "type": "string",
+        "condition": "if_true_use_next_field"
+      },
+      "Quais_Alergias": {
+        "target": "allergies",
+        "type": "string"
+      },
+      "Possui_Plano_Saúde": {
+        "target": "health_info",
+        "type": "boolean"
+      },
+      "Nome_Plano_Saúde": {
+        "target": "health_info",
+        "type": "string"
+      }
+    },
+    "benefits": {
+      "Recebe_Bolsa_Família": {
+        "target": "recebe_bolsa_familia",
+        "type": "boolean"
+      },
+      "Número_Bolsa_Família": {
+        "target": "numero_bolsa_familia",
+        "type": "string"
+      }
+    }
+  },
+  "professionals": {
+    "basic": {
+      "Código_do_Colaborador": {
+        "target": "registration_number",
+        "type": "string"
+      },
+      "Nome": {
+        "target": "full_name",
+        "type": "string",
+        "required": true
+      },
+      "Função": {
+        "target": "professional_role",
+        "type": "enum",
+        "mapping": {
+          "Professor": "professor",
+          "Professor AEE": "professor_aee",
+          "Coordenador": "coordenador",
+          "Diretor": "diretor",
+          "Porteiro": "outros",
+          "Secretário": "secretario_educacao"
+        }
+      },
+      "Data_de_Admissão": {
+        "target": "hire_date",
+        "type": "date",
+        "transform": "date_br_to_iso"
+      },
+      "Data_de_Demissão": {
+        "target": "termination_date",
+        "type": "date",
+        "transform": "date_br_to_iso"
+      },
+      "CPF": {
+        "target": "cpf",
+        "type": "string",
+        "required": true,
+        "transform": "cpf_format",
+        "validate": "cpf"
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

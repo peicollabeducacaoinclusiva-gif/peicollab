@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { auditMiddleware } from "@pei/database/audit";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,10 +99,38 @@ const FamilyPEIView = () => {
         .update({ last_accessed_at: new Date().toISOString() })
         .eq('token_hash', tokenHash);
 
+      // Gravar auditoria de acesso da família (dados sensíveis)
+      if (peiData.tenant_id) {
+        await auditMiddleware.logRead(
+          peiData.tenant_id,
+          'pei',
+          peiId,
+          {
+            source: 'family_pei_view',
+            access_method: 'token',
+            student_id: tokenData.student_id,
+            student_name: studentData?.name,
+          }
+        ).catch(err => console.error('Erro ao gravar auditoria de acesso da família:', err));
+      }
+
       // Load comments
       loadComments();
     } catch (error: any) {
       console.error('Erro ao carregar PEI:', error);
+      
+      // Reportar erro crítico de acesso de família
+      if (typeof window !== 'undefined') {
+        import('@/lib/errorReporting').then(({ reportSensitiveDataAccessError }) => {
+          const errorObj = error instanceof Error ? error : new Error(error?.message || 'Erro desconhecido');
+          reportSensitiveDataAccessError(errorObj, {
+            operation: 'read',
+            entityType: 'pei',
+            entityId: peiId,
+          }).catch(reportErr => console.error('Erro ao reportar erro de acesso de família:', reportErr));
+        }).catch(importErr => console.error('Erro ao importar errorReporting:', importErr));
+      }
+      
       toast({
         title: "Erro ao carregar PEI",
         description: error.message,
@@ -124,22 +153,26 @@ const FamilyPEIView = () => {
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !pei) return;
+    if (!newComment.trim() || !pei || !token) return;
 
     setSubmitting(true);
     try {
-      // Get student_id from the pei object
-      const studentId = pei.student?.id;
-      if (!studentId) throw new Error("Student ID not found");
+      // Calcular hash do token
+      const tokenHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+      const tokenHash = Array.from(new Uint8Array(tokenHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      const { error } = await supabase.from("pei_comments").insert({
-        pei_id: peiId,
-        student_id: studentId,
-        user_id: null, // Family comments don't have user_id
-        content: `[Família] ${newComment}`,
+      // Usar função RPC para adicionar comentário da família
+      const { data, error } = await supabase.rpc('add_family_comment', {
+        p_token_hash: tokenHash,
+        p_pei_id: peiId,
+        p_comment_text: `[Família] ${newComment.trim()}`
       });
 
       if (error) throw error;
+
+      if (!data || !data[0]?.success) {
+        throw new Error(data?.[0]?.message || 'Erro ao adicionar comentário');
+      }
 
       toast({ title: "Comentário enviado com sucesso!" });
       setNewComment("");

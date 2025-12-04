@@ -1,0 +1,207 @@
+{
+  "name": "PEI Collab Monorepo - Roadmap por App",
+  "labels": [
+    { "name": "PEI Collab", "color": "blue" },
+    { "name": "Gestão Escolar", "color": "green" },
+    { "name": "Plano AEE", "color": "purple" },
+    { "name": "Planejamento", "color": "yellow" },
+    { "name": "Atividades", "color": "orange" },
+    { "name": "Landing", "color": "sky" },
+    { "name": "Blog", "color": "pink" },
+    { "name": "Portal Responsável", "color": "red" },
+    { "name": "Merenda Escolar", "color": "lime" },
+    { "name": "Transporte Escolar", "color": "black" },
+    { "name": "Integração", "color": "blue" },
+    { "name": "SSO", "color": "blue" },
+    { "name": "Segurança", "color": "red" },
+    { "name": "Database", "color": "green" },
+    { "name": "SEO", "color": "yellow" },
+    { "name": "PWA", "color": "lime" }
+  ],
+  "lists": [
+    {
+      "name": "A Fazer (Backlog)",
+      "cards": [
+        {
+          "name": "Atividades — Planejador de Aulas Adaptadas",
+          "desc": "Construir fluxos de criação/edição de atividades com sugestões baseadas no PEI e Plano AEE; exportação PDF e PWA offline.",
+          "labels": ["Atividades", "Integração", "PWA", "SEO"],
+          "refs": [
+            "docs/arquivados/monorepo/ESTRATEGIA_DOMINIOS_MONOREPO.md#exemplo-criar-plano-de-aula-a-partir-do-pei"
+          ]
+        },
+        {
+          "name": "Planejamento — Metas e Plano de Aula",
+          "desc": "Consolidar planejamento pedagógico, metas e vinculação a aulas adaptadas. Integrar com dados do PEI e do AEE.",
+          "labels": ["Planejamento", "Integração", "Database", "PWA"],
+          "refs": [
+            "docs/arquivados/resumos/📑_INDICE_DOCUMENTACAO_MONOREPO.md#apps"
+          ]
+        },
+        {
+          "name": "Gestão Escolar — UI Fases 4–8",
+          "desc": "Finalizar UI de frequência, notas e dashboard gerencial; consolidar gráficos e relatórios por escola e rede.",
+          "labels": ["Gestão Escolar", "UI", "Database"],
+          "refs": [
+            "docs/arquivados/🎊_SESSAO_GESTAO_ESCOLAR_09NOV2025.md#fases-4-8",
+            "docs/arquivados/📊_RESUMO_APPS_MONOREPO.md#gestao-escolar"
+          ]
+        },
+        {
+          "name": "Blog — Conteúdo e Navegação",
+          "desc": "Configurar navegação inter-app (Landing ↔ Blog ↔ PEI Collab), categorias e SEO técnico.",
+          "labels": ["Blog", "Landing", "SEO", "Integração"],
+          "refs": [
+            "docs/arquivados/🔗_LINKS_ENTRE_APPS_CRIADOS.md"
+          ]
+        },
+        {
+          "name": "Portal Responsável — Visualização e Comunicação",
+          "desc": "Disponibilizar visualização segura do PEI e Plano AEE ao responsável com SSO e RLS por tenant.",
+          "labels": ["Portal Responsável", "SSO", "Segurança", "RLS"],
+          "refs": [
+            "docs/arquivados/monorepo/ESTRATEGIA_DOMINIOS_MONOREPO.md#sso-single-sign-on"
+          ]
+        },
+        {
+          "name": "Merenda Escolar — Gestão e Dashboards",
+          "desc": "Modelar a gestão de merenda e relatórios operacionais por escola; integrar com cadastro centralizado.",
+          "labels": ["Merenda Escolar", "Gestão Escolar", "Database"]
+        },
+        {
+          "name": "Transporte Escolar — Rotas e Acompanhamento",
+          "desc": "Planejar rotas e acompanhamento de transporte escolar com foco em alunos com atendimento especializado.",
+          "labels": ["Transporte Escolar", "Gestão Escolar", "Database"]
+        },
+        {
+          "name": "PEI Collab — Avaliação Cíclica + Reuniões V2",
+          "desc": "Ampliar sistema de reuniões (participantes, pauta/ata) e avaliações cíclicas do PEI com relatórios consolidados.",
+          "labels": ["PEI Collab", "Integração", "Database"],
+          "refs": [
+            "docs/arquivados/🎯_RESUMO_EXECUTIVO_FINAL_MONOREPO.md#novas-funcionalidades"
+          ]
+        },
+        {
+          "name": "Plano AEE — V2 Completo + Anexos",
+          "desc": "Completar versão 2 com ferramentas de diagnóstico, anexos e vinculação automática ao PEI.",
+          "labels": ["Plano AEE", "PEI Collab", "Integração"],
+          "refs": [
+            "docs/arquivados/resumos/📑_INDICE_DOCUMENTACAO_MONOREPO.md#apps",
+            "docs/arquivados/📊_RESUMO_APPS_MONOREPO.md#plano-aee"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Em andamento",
+      "cards": [
+        {
+          "name": "PEI Collab — Dashboard PA, Reuniões e Avaliações",
+          "desc": "Dashboard do Profissional de Apoio, reuniões vinculadas ao PEI, avaliações por ciclo.",
+          "labels": ["PEI Collab", "Database", "UI"],
+          "refs": [
+            "docs/arquivados/🎯_RESUMO_EXECUTIVO_FINAL_MONOREPO.md#novas-funcionalidades"
+          ]
+        },
+        {
+          "name": "Gestão Escolar — Cadastros Centralizados",
+          "desc": "Alunos, profissionais, turmas e disciplinas com hooks e queries integradas.",
+          "labels": ["Gestão Escolar", "Database", "UI"],
+          "refs": [
+            "docs/arquivados/🎯_RESUMO_EXECUTIVO_FINAL_MONOREPO.md#3-aplicacoes-completas"
+          ]
+        },
+        {
+          "name": "Plano AEE — Fluxo Completo Integrado ao PEI",
+          "desc": "CRUD completo com comentários e anexos, vinculado ao PEI (campo pei_id).",
+          "labels": ["Plano AEE", "PEI Collab", "Integração"],
+          "refs": [
+            "docs/arquivados/🎯_RESUMO_EXECUTIVO_FINAL_MONOREPO.md#plano-de-aee"
+          ]
+        },
+        {
+          "name": "Landing — AppHub e Links entre Apps",
+          "desc": "AppHub funcional com navegação entre 6 apps e SEO básico.",
+          "labels": ["Landing", "Integração", "SEO"],
+          "refs": [
+            "docs/arquivados/🔗_LINKS_ENTRE_APPS_CRIADOS.md"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Concluído",
+      "cards": [
+        {
+          "name": "Landing — Página Institucional",
+          "desc": "Site institucional com AppHub e links entre apps.",
+          "labels": ["Landing", "Integração"],
+          "refs": [
+            "docs/arquivados/🏁_RESUMO_FINAL_COMPLETO.md#monorepo-turborepo"
+          ]
+        },
+        {
+          "name": "Gestão Escolar — Base de Dados e Hooks",
+          "desc": "Banco e queries integradas; cadastros principais prontos.",
+          "labels": ["Gestão Escolar", "Database"],
+          "refs": [
+            "docs/arquivados/🎯_RESUMO_EXECUTIVO_FINAL_MONOREPO.md#3-aplicacoes-completas"
+          ]
+        },
+        {
+          "name": "Plano AEE — CRUD Base + Integração PEI",
+          "desc": "Plano AEE com vinculação ao PEI e geração de documentos.",
+          "labels": ["Plano AEE", "PEI Collab", "Integração"],
+          "refs": [
+            "docs/arquivados/resumos/📑_INDICE_DOCUMENTACAO_MONOREPO.md#apps"
+          ]
+        },
+        {
+          "name": "PEI Collab — Migração e Expansão",
+          "desc": "PEI Collab expandido no monorepo com novas funcionalidades.",
+          "labels": ["PEI Collab", "Integração"],
+          "refs": [
+            "docs/arquivados/🏁_RESUMO_FINAL_COMPLETO.md#monorepo-turborepo"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bloqueios (impedimentos)",
+      "cards": [
+        {
+          "name": "SSO e Subdomínios — Configuração Completa",
+          "desc": "Finalizar SSO entre subdomínios (pei.*, aee.*, gestao.*, aulas.*) com sessão compartilhada e App Switcher.",
+          "labels": ["SSO", "Integração", "Segurança"],
+          "refs": [
+            "docs/arquivados/monorepo/ESTRATEGIA_DOMINIOS_MONOREPO.md#sso-single-sign-on"
+          ]
+        },
+        {
+          "name": "Dependências e Aliases — Unificação",
+          "desc": "Alinhar versões de UI (Radix/Shadcn), centralizar aliases e evitar conflitos de pré-bundle.",
+          "labels": ["Infra", "Integração"],
+          "refs": [
+            "docs/arquivados/🎉_COMPATIBILIDADE_MONOREPO_COMPLETA.md"
+          ]
+        },
+        {
+          "name": "Observabilidade e LGPD",
+          "desc": "Instrumentar logs e auditoria; erros centralizados; políticas RLS revisadas por app.",
+          "labels": ["Segurança", "Database"],
+          "refs": [
+            "docs/arquivados/📊_RESUMO_APPS_MONOREPO.md#seguranca-multi-app"
+          ]
+        },
+        {
+          "name": "SEO e Performance",
+          "desc": "Definir metas de LCP/INP por app; rotas canônicas e sitemaps.",
+          "labels": ["SEO"],
+          "refs": [
+            "docs/arquivados/monorepo/GUIA_RAPIDO_MONOREPO.md#proximos-passos"
+          ]
+        }
+      ]
+    }
+  ]
+}

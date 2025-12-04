@@ -1,0 +1,101 @@
+# Artillery Load Testing Configuration - PEI Collab
+# Teste de carga para validar performance em produção
+
+config:
+  target: "https://www.peicollab.com.br"
+  phases:
+    # Fase 1: Warm-up (0-30s)
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    
+    # Fase 2: Carga Normal (30s-2min)
+    - duration: 90
+      arrivalRate: 20
+      name: "Normal load"
+    
+    # Fase 3: Pico (2min-3min)
+    - duration: 60
+      arrivalRate: 50
+      name: "Peak load"
+    
+    # Fase 4: Stress Test (3min-4min)
+    - duration: 60
+      arrivalRate: 100
+      name: "Stress test"
+  
+  # Métricas de sucesso
+  ensure:
+    p95: 2000  # 95% das requests < 2s
+    p99: 3000  # 99% das requests < 3s
+    maxErrorRate: 1  # < 1% de erros
+
+scenarios:
+  # Cenário 1: Visitar landing page
+  - name: "Landing Page"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          capture:
+            - json: "$"
+              as: "homepage"
+  
+  # Cenário 2: Login como professor
+  - name: "Teacher Login"
+    weight: 25
+    flow:
+      - get:
+          url: "/auth"
+      - think: 2
+      - post:
+          url: "/auth/v1/token?grant_type=password"
+          json:
+            email: "teacher@test.com"
+            password: "Teacher@123"
+      - think: 1
+      - get:
+          url: "/dashboard"
+  
+  # Cenário 3: Visualizar dashboard
+  - name: "Dashboard View"
+    weight: 20
+    flow:
+      - get:
+          url: "/auth"
+      - post:
+          url: "/auth/v1/token?grant_type=password"
+          json:
+            email: "coordinator@test.com"
+            password: "Coord@123"
+      - get:
+          url: "/dashboard"
+      - think: 5
+      - get:
+          url: "/api/peis"
+  
+  # Cenário 4: Listar PEIs
+  - name: "List PEIs"
+    weight: 15
+    flow:
+      - get:
+          url: "/peis"
+  
+  # Cenário 5: Visualizar perfil
+  - name: "View Profile"
+    weight: 10
+    flow:
+      - get:
+          url: "/profile"
+
+# Plugins
+plugins:
+  expect: {}
+
+# Métricas customizadas
+metrics:
+  - name: "response_time"
+    expression: "latency"
+  - name: "error_rate"
+    expression: "errors / requests * 100"
+

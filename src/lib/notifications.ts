@@ -18,6 +18,17 @@ export interface NotificationAction {
   icon?: string;
 }
 
+type ServiceWorkerNotificationOptions = NotificationOptions & {
+  actions?: NotificationAction[];
+  vibrate?: ReadonlyArray<number>;
+  timestamp?: number;
+};
+
+type NotificationClickEvent = Event & {
+  action?: string;
+  notification: Notification & { data?: Record<string, any> };
+};
+
 export class NotificationService {
   private static instance: NotificationService;
   private permission: NotificationPermission = 'default';
@@ -77,19 +88,20 @@ export class NotificationService {
 
     try {
       if (this.serviceWorkerRegistration) {
-        // Usar Service Worker para notificações mais avançadas
-        await this.serviceWorkerRegistration.showNotification(payload.title, {
+        const options: ServiceWorkerNotificationOptions = {
           body: payload.body,
           icon: payload.icon || '/pwa-192x192.png',
           badge: payload.badge || '/pwa-192x192.png',
           tag: payload.tag,
           data: payload.data,
           actions: payload.actions,
-          requireInteraction: payload.requireInteraction || false,
-          silent: payload.silent || false,
+          requireInteraction: payload.requireInteraction ?? false,
+          silent: payload.silent ?? false,
           vibrate: [200, 100, 200],
           timestamp: Date.now()
-        });
+        };
+
+        await this.serviceWorkerRegistration.showNotification(payload.title, options);
       } else {
         // Fallback para notificação básica
         const notification = new Notification(payload.title, {
@@ -120,7 +132,7 @@ export class NotificationService {
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(
           import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
-        )
+        ).buffer as ArrayBuffer
       });
 
       // Salvar subscription no Supabase
@@ -271,11 +283,12 @@ export class NotificationService {
   // Método para configurar listeners de notificação
   public setupNotificationListeners(): void {
     if (this.serviceWorkerRegistration) {
-      this.serviceWorkerRegistration.addEventListener('notificationclick', (event) => {
-        event.notification.close();
+      this.serviceWorkerRegistration.addEventListener('notificationclick', (event: Event) => {
+        const notificationEvent = event as NotificationClickEvent;
+        notificationEvent.notification.close();
 
-        const data = event.notification.data;
-        const action = event.action;
+        const data = notificationEvent.notification.data || {};
+        const action = notificationEvent.action;
 
         if (action === 'view' && data.peiId) {
           // Abrir PEI específico

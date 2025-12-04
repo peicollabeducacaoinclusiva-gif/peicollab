@@ -1,0 +1,94 @@
+{
+  "school": {
+    "municipio_ibge": "2915000",
+    "dependencia": 1,
+    "name": "Rede Municipal de Exemplo",
+    "inep_code": "1100012",
+    "ano_base": "2025"
+  },
+  "infra": {
+    "num_salas": 10,
+    "num_labs": 1,
+    "internet": true,
+    "acessibilidade": true
+  },
+  "classes": [
+    {
+      "local_id": "ESC1_T1",
+      "description": "TURMA A - 6º ANO",
+      "shift": "M",
+      "serie": 6,
+      "capacity": 25,
+      "modalidade": "ENSINO_FUNDAMENTAL"
+    },
+    {
+      "local_id": "ESC1_T2",
+      "description": "TURMA B - 7º ANO",
+      "shift": "V",
+      "serie": 7,
+      "capacity": 22,
+      "modalidade": "ENSINO_FUNDAMENTAL"
+    }
+  ],
+  "people": [
+    {
+      "local_id": "ESC1_A001",
+      "name": "João da Silva",
+      "birthdate": "10/02/2013",
+      "sex": "M",
+      "cpf": "12345678909"
+    },
+    {
+      "local_id": "ESC1_A002",
+      "name": "Mariana Oliveira",
+      "birthdate": "05/08/2012",
+      "sex": "F",
+      "cpf": "98765432100"
+    },
+    {
+      "local_id": "ESC1_A003",
+      "name": "Pedro Santos",
+      "birthdate": "20/07/2011",
+      "sex": "M"
+    }
+  ],
+  "managers": [
+    {
+      "person_local_id": "ESC1_A010",
+      "name": "Carlos Pereira",
+      "role": "Diretor",
+      "start_date": "01/02/2023"
+    }
+  ],
+  "staff": [
+    {
+      "person_local_id": "ESC1_P001",
+      "role_code": "01",
+      "workload": 20,
+      "admission_date": "01/03/2018"
+    }
+  ],
+  "enrollments": [
+    {
+      "person_local_id": "ESC1_A001",
+      "class_local_id": "ESC1_T1",
+      "serie": 6,
+      "enrollment_date": "15/02/2025",
+      "situation": "MATRICULADO"
+    },
+    {
+      "person_local_id": "ESC1_A002",
+      "class_local_id": "ESC1_T1",
+      "serie": 6,
+      "enrollment_date": "15/02/2025",
+      "situation": "MATRICULADO"
+    },
+    {
+      "person_local_id": "ESC1_A003",
+      "class_local_id": "ESC1_T2",
+      "serie": 7,
+      "enrollment_date": "20/02/2025",
+      "situation": "MATRICULADO"
+    }
+  ]
+}

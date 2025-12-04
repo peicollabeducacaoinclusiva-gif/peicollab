@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -34,11 +35,14 @@ import {
   Activity, CheckCircle2, Clock, AlertCircle, BarChart3,
   Target, Award, BookOpen, Network, Building2, Search,
   RefreshCcw, Database, Shield, Wifi, WifiOff, Server,
-  Eye, Edit, Trash2, Plus, Calendar, MapPin, Phone, Mail
+  Eye, Edit, Trash2, Plus, Calendar, MapPin, Phone, Mail, Lock
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import ImportCSVDialog from "@/components/superadmin/ImportCSVDialog";
+import { useSuperadminUsers } from "@/hooks/useSuperadminUsers";
+import { useSuperadminSchools } from "@/hooks/useSuperadminSchools";
+import { insertAuditLog } from "@pei/database/audit";
 
 // Tipos
 interface NetworkStats {
@@ -366,7 +370,8 @@ const EditUserForm = ({
   onTenantChange,
   onSubmit, 
   loading, 
-  onCancel 
+  onCancel,
+  onOpenPasswordDialog
 }: {
   user: any;
   tenants: any[];
@@ -377,6 +382,7 @@ const EditUserForm = ({
   onSubmit: (data: any) => void;
   loading: boolean;
   onCancel: () => void;
+  onOpenPasswordDialog?: () => void;
 }) => {
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
@@ -558,31 +564,47 @@ const EditUserForm = ({
       </div>
 
       {/* Botões */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
+      <div className="flex justify-between items-center pt-4 border-t">
         <Button
           type="button"
           variant="outline"
-          onClick={onCancel}
-          disabled={loading}
+          onClick={() => {
+            if (onOpenPasswordDialog) {
+              onOpenPasswordDialog();
+            }
+          }}
+          disabled={loading || !user?.id || !onOpenPasswordDialog}
+          className="flex items-center gap-2"
         >
-          Cancelar
+          <Lock className="h-4 w-4" />
+          Definir Senha
         </Button>
-        <Button
-          type="submit"
-          disabled={loading || !formData.full_name || !formData.role || !formData.tenant_id}
-        >
-          {loading ? (
-            <>
-              <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Edit className="h-4 w-4 mr-2" />
-              Salvar Alterações
-            </>
-          )}
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading || !formData.full_name || !formData.role || !formData.tenant_id}
+          >
+            {loading ? (
+              <>
+                <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Edit className="h-4 w-4 mr-2" />
+                Salvar Alterações
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </form>
   );
@@ -771,33 +793,32 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
   const [availableTenants, setAvailableTenants] = useState<any[]>([]);
   const [availableSchools, setAvailableSchools] = useState<any[]>([]);
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [creatingUser, setCreatingUser] = useState(false);
-  const [availableSchoolsForUser, setAvailableSchoolsForUser] = useState<any[]>([]);
-  const [loadingSchools, setLoadingSchools] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<any>(null);
-  const [availableSchoolsForEdit, setAvailableSchoolsForEdit] = useState<any[]>([]);
-  const [loadingSchoolsForEdit, setLoadingSchoolsForEdit] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordFormData, setPasswordFormData] = useState({
+    password: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
   
   // School management states
-  const [allSchools, setAllSchools] = useState<any[]>([]);
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string>("all");
   const [schoolSearchTerm, setSchoolSearchTerm] = useState("");
   const [schoolDialogOpen, setSchoolDialogOpen] = useState(false);
-  const [loadingAction, setLoadingAction] = useState(false);
   const [editingSchool, setEditingSchool] = useState<any>(null);
   
   const { toast } = useToast();
 
   useEffect(() => {
     loadAllData();
-    loadSchools();
+    refreshAllSchools();
     
     // Auto-refresh a cada 5 minutos
     const interval = setInterval(loadAllData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshAllSchools]);
 
   const loadAllData = async () => {
     setLoading(true);
@@ -845,6 +866,19 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
           console.log(`🔍 Processando tenant: ${tenant.network_name} (ID: ${tenant.id})`);
           
           try {
+            // Buscar escolas da rede
+            const schoolsResult = await (supabase as any)
+              .from("schools")
+              .select("id")
+              .eq("tenant_id", tenant.id);
+
+            const schoolCount = schoolsResult.data?.length || 0;
+            if (schoolsResult.error) {
+              console.warn(`⚠️ Erro ao buscar escolas para ${tenant.network_name}:`, schoolsResult.error);
+            } else {
+              console.log(`🏫 Escolas encontradas para ${tenant.network_name}: ${schoolCount}`);
+            }
+
             // Buscar usuários da rede através da tabela user_tenants
             const userResult = await (supabase as any)
               .from("user_tenants")
@@ -898,7 +932,7 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
             const networkData = {
               tenant_id: tenant.id,
               network_name: tenant.network_name,
-              total_schools: 1, // Cada tenant é uma escola
+              total_schools: schoolCount,
               total_students: studentCount || 0,
               total_active_peis: totalPEIs,
               peis_draft: peisByStatus.draft,
@@ -916,7 +950,7 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
             return {
               tenant_id: tenant.id,
               network_name: tenant.network_name,
-              total_schools: 1,
+              total_schools: 0,
               total_students: 0,
               total_active_peis: 0,
               peis_draft: 0,
@@ -1069,16 +1103,6 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
       setBackupSchedules(defaultSchedules);
     } catch (error) {
       console.error("Erro ao carregar agendamentos de backup:", error);
-    }
-  };
-
-  // Função para inserir log de auditoria
-  const insertAuditLog = async (action: string, details?: string, severity: 'info' | 'warning' | 'error' = 'info') => {
-    try {
-      // Simular inserção de log (RPC não implementado)
-      console.log(`[AUDIT] ${action}: ${details} (${severity})`);
-    } catch (error) {
-      console.warn("Erro ao inserir log de auditoria:", error);
     }
   };
 
@@ -1496,11 +1520,24 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
 
       if (tenantError) throw tenantError;
 
+      // Buscar escolas vinculadas à rede
+      const { data: tenantSchools, error: schoolsError } = await supabase
+        .from("schools")
+        .select("id, school_name, school_address, school_phone, school_email, is_active, created_at, updated_at, tenant_id")
+        .eq("tenant_id", tenantId)
+        .order("school_name", { ascending: true });
+
+      if (schoolsError) {
+        console.warn("Erro ao buscar escolas:", schoolsError);
+      } else {
+        console.log(`🏫 Escolas carregadas para a rede ${tenant.network_name}: ${tenantSchools?.length || 0}`);
+      }
+
       // Buscar usuários da rede através da tabela user_tenants
       const { data: userTenants, error: usersError } = await supabase
         .from("user_tenants")
-        .select("user_id")
-        .eq("school_id", tenantId);
+        .select("user_id, tenant_id, school_id")
+        .eq("tenant_id", tenantId);
 
       if (usersError) {
         console.warn("Erro ao buscar usuários:", usersError);
@@ -1521,8 +1558,8 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
       // Buscar estudantes da rede através das escolas
       const { data: students, error: studentsError } = await supabase
         .from("students")
-        .select("id, name, created_at")
-        .in("school_id", [])
+        .select("id, name, student_id, class_name, is_active, created_at, tenant_id, school_id")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       if (studentsError) {
@@ -1532,16 +1569,16 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
       // Buscar PEIs da rede através das escolas
       const { data: peis, error: peisError } = await supabase
         .from("peis")
-        .select("id, status, created_at, updated_at")
-        .in("school_id", [])
+        .select("id, status, created_at, updated_at, version_number, student_id, tenant_id, school_id")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       if (peisError) {
         console.warn("Erro ao buscar PEIs:", peisError);
       }
 
-      // Escolas não estão implementadas no schema atual
-      const schools: any[] = [];
+      const schools = tenantSchools || [];
+      const studentMap = new Map((students || []).map(student => [student.id, student.name]));
 
       const networkDetails: NetworkDetails = {
         tenant_id: tenant.id,
@@ -1563,18 +1600,18 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
         students: (students || []).map(student => ({
           id: student.id,
           name: student.name,
-          student_id: null, // Campo não existe na tabela
-          class_name: null, // Campo não existe na tabela
-          is_active: true, // Valor padrão
+          student_id: student.student_id,
+          class_name: student.class_name,
+          is_active: student.is_active ?? true,
           created_at: student.created_at
         })),
         peis: (peis || []).map(pei => ({
           id: pei.id,
           status: pei.status,
-          version_number: 1, // Valor padrão
+          version_number: pei.version_number || 1,
           created_at: pei.created_at,
           updated_at: pei.updated_at,
-          student_name: 'N/A' // Não temos join com students
+          student_name: studentMap.get(pei.student_id) || 'N/A'
         })),
         schools: schools
       };
@@ -1780,502 +1817,98 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
     });
   };
 
-  // Função para limpar escolas quando modal for fechado
-  const clearSchoolsForUser = () => {
-    setAvailableSchoolsForUser([]);
-    setLoadingSchools(false);
-  };
+  const {
+    availableSchoolsForUser,
+    availableSchoolsForEdit,
+    allSchools,
+    loadingSchools,
+    loadingSchoolsForEdit,
+    loadingAction,
+    loadSchoolsForTenant,
+    loadSchoolsForEdit,
+    refreshAllSchools,
+    saveSchool,
+    deleteSchool,
+    setAvailableSchoolsForUser,
+    setAvailableSchoolsForEdit,
+  } = useSuperadminSchools({ insertAuditLog });
 
-  // Função para limpar escolas quando modal de edição for fechado
-  const clearSchoolsForEdit = () => {
-    setAvailableSchoolsForEdit([]);
-    setLoadingSchoolsForEdit(false);
-  };
-
-  // Função para carregar escolas baseadas na rede selecionada
-  const loadSchoolsForTenant = async (tenantId: string) => {
-    setLoadingSchools(true);
-    try {
-      console.log(`🏫 Carregando escolas para a rede: ${tenantId}`);
-      
-      // Buscar escolas reais do banco de dados
-      const { data: schools, error } = await supabase
-        .from("schools")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .eq("is_active", true)
-        .order("school_name", { ascending: true });
-
-      if (error) {
-        console.error("❌ Erro ao buscar escolas:", error);
-        throw error;
-      }
-
-      const tenant = availableTenants.find(t => t.id === tenantId);
-      const networkName = tenant?.network_name || tenant?.name || 'Rede';
-      
-      console.log(`📊 Encontradas ${schools?.length || 0} escolas para a rede ${networkName}:`, schools);
-      
-      // Usar dados reais do banco
-      const realSchools = schools || [];
-      
-      if (realSchools.length > 0) {
-        console.log(`✅ ${realSchools.length} escolas carregadas para a rede ${networkName}`);
-      } else {
-        console.log(`ℹ️ Nenhuma escola encontrada para a rede ${networkName}`);
-      }
-      
-      setAvailableSchoolsForUser(realSchools);
-    } catch (error) {
-      console.error("❌ Erro ao carregar escolas:", error);
-      setAvailableSchoolsForUser([]);
-      
-      // Mostrar toast de erro
-      toast({
-        title: "Erro ao carregar escolas",
-        description: "Não foi possível carregar as escolas desta rede",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingSchools(false);
-    }
-  };
-
-  // Função para carregar escolas para edição
-  const loadSchoolsForEdit = async (tenantId: string) => {
-    setLoadingSchoolsForEdit(true);
-    try {
-      console.log(`🏫 Carregando escolas para edição da rede: ${tenantId}`);
-      
-      // Buscar escolas reais do banco de dados
-      const { data: schools, error } = await supabase
-        .from("schools")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .eq("is_active", true)
-        .order("school_name", { ascending: true });
-
-      if (error) {
-        console.error("❌ Erro ao buscar escolas:", error);
-        throw error;
-      }
-
-      const tenant = availableTenants.find(t => t.id === tenantId);
-      const networkName = tenant?.network_name || tenant?.name || 'Rede';
-      
-      console.log(`📊 Encontradas ${schools?.length || 0} escolas para edição da rede ${networkName}:`, schools);
-      
-      // Usar dados reais do banco
-      const realSchools = schools || [];
-      
-      if (realSchools.length > 0) {
-        console.log(`✅ ${realSchools.length} escolas carregadas para edição da rede ${networkName}`);
-      } else {
-        console.log(`ℹ️ Nenhuma escola encontrada para edição da rede ${networkName}`);
-      }
-      
-      setAvailableSchoolsForEdit(realSchools);
-    } catch (error) {
-      console.error("❌ Erro ao carregar escolas para edição:", error);
-      setAvailableSchoolsForEdit([]);
-      
-      // Mostrar toast de erro
-      toast({
-        title: "Erro ao carregar escolas",
-        description: "Não foi possível carregar as escolas desta rede",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingSchoolsForEdit(false);
-    }
-  };
-
-  // Função para criar novo usuário
-  const createUser = async (userData: {
-    full_name: string;
-    email: string;
-    role: string;
-    tenant_id: string;
-    school_id?: string;
-  }) => {
-    setCreatingUser(true);
-    try {
-      console.log("👤 Criando novo usuário:", userData);
-      
-      // Validar se tenant_id existe
-      if (userData.tenant_id) {
-        const { data: tenant, error: tenantError } = await supabase
-          .from("tenants")
-          .select("id")
-          .eq("id", userData.tenant_id)
-          .single();
-
-        if (tenantError || !tenant) {
-          throw new Error(`Tenant ID ${userData.tenant_id} não encontrado`);
-        }
-        console.log("✅ Tenant ID validado:", userData.tenant_id);
-      }
-
-      // Validar se school_id existe (se fornecido)
-      if (userData.school_id) {
-        const { data: school, error: schoolError } = await supabase
-          .from("schools")
-          .select("id")
-          .eq("id", userData.school_id)
-          .single();
-
-        if (schoolError || !school) {
-          throw new Error(`School ID ${userData.school_id} não encontrado`);
-        }
-        console.log("✅ School ID validado:", userData.school_id);
-      }
-
-      // Mapear role para o enum correto
-      const roleMapping: { [key: string]: string } = {
-        'superadmin': 'superadmin',
-        'coordinator': 'coordinator', 
-        'school_manager': 'school_manager',
-        'aee_teacher': 'aee_teacher',
-        'teacher': 'teacher',
-        'family': 'family',
-        'specialist': 'specialist'
-      };
-
-      const mappedRole = roleMapping[userData.role] || 'teacher';
-
-      // SOLUÇÃO ALTERNATIVA: Criar usuário diretamente com dados básicos
-      console.log("👤 Criando usuário diretamente no sistema...");
-      
-      // Gerar email temporário se não fornecido
-      const userEmail = userData.email || `${userData.full_name.toLowerCase().replace(/\s+/g, '.')}@temp.com`;
-      
-      // Criar usuário usando signUp normal (sem admin)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userEmail,
-        password: 'TempPassword123!', // Senha temporária
-        options: {
-          data: {
-            full_name: userData.full_name,
-            role: userData.role,
-            tenant_id: userData.tenant_id,
-            school_id: userData.school_id
-          }
-        }
-      });
-
-      if (authError) {
-        console.error("❌ Erro ao criar usuário no Auth:", authError);
-        throw new Error(`Erro ao criar usuário: ${authError.message}`);
-      }
-
-      if (!authData.user) {
-        throw new Error("Usuário não foi criado no Auth");
-      }
-
-      const userId = authData.user.id;
-      console.log("✅ Usuário criado no Auth com ID:", userId);
-
-      // Aguardar um pouco para garantir que o usuário foi criado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Criar perfil do usuário na tabela profiles
-      const { data: newProfile, error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          id: userId,
-          full_name: userData.full_name,
-          is_active: true,
-          school_id: userData.school_id || null,
-          tenant_id: userData.tenant_id || null
-        } as any)
-        .select()
-        .single();
-
-      if (profileError) {
-        console.error("❌ Erro ao criar perfil:", profileError);
-        throw profileError;
-      }
-
-      console.log("✅ Perfil criado com sucesso:", newProfile);
-
-      // Criar role do usuário na tabela user_roles
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: userId,
-          role: mappedRole as any // app_role enum
-        });
-
-      if (roleError) {
-        console.error("❌ Erro ao criar role:", roleError);
-        // Se der erro no role, tentar deletar o perfil
-        await supabase.from("profiles").delete().eq("id", userId);
-        throw roleError;
-      }
-
-      console.log("✅ Role criado com sucesso");
-
-      // Se tenant_id foi fornecido, criar associação na tabela user_tenants
-      if (userData.tenant_id && userData.school_id) {
-        const { error: tenantError } = await supabase
-          .from("user_tenants")
-          .insert({
-            user_id: userId,
-            school_id: userData.school_id
-          });
-
-        if (tenantError) {
-          console.warn("⚠️ Erro ao associar usuário ao tenant:", tenantError);
-          // Não falhar a criação por causa disso
-        } else {
-          console.log("✅ Usuário associado ao tenant com sucesso");
-        }
-      }
-
-      // Recarregar lista de usuários
-      await loadAllUsers();
-
-      // Inserir log de auditoria
-      await insertAuditLog(
-        'Usuário Criado',
-        `Novo usuário: ${userData.full_name} (${userData.role})`,
-        'info'
-      );
-
-      toast({
-        title: "✅ Usuário Criado com Sucesso",
-        description: `${userData.full_name} foi adicionado ao sistema. Email: ${userEmail}`,
-      });
-
+  const {
+    creatingUser,
+    editingUser,
+    createUser,
+    editUser,
+    toggleUserStatus,
+  } = useSuperadminUsers({
+    loadAllUsers,
+    insertAuditLog,
+    onUserCreated: () => {
       setCreateUserOpen(false);
-
-      // NOTA: O código abaixo não será executado pois retornamos acima
-      // Ele seria executado apenas se o usuário clicasse no link de convite
-      // e completasse o cadastro. Isso seria implementado em um webhook ou
-      // função que é chamada após o usuário se cadastrar via link.
-    } catch (error: any) {
-      console.error("Erro ao criar usuário:", error);
-      toast({
-        title: "❌ Erro ao Criar Usuário",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setCreatingUser(false);
-    }
-  };
-
-  // Função para ativar/desativar usuário
-  const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
-    try {
-      const newStatus = !currentStatus;
-      
-      const { error } = await supabase
-        .from("profiles")
-        .update({ 
-          is_active: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", userId);
-
-      if (error) throw error;
-
-      // Atualizar lista local
-      setAllUsers(prev => 
-        prev.map(user => 
-          user.id === userId 
-            ? { ...user, is_active: newStatus, updated_at: new Date().toISOString() }
-            : user
-        )
-      );
-
-      toast({
-        title: newStatus ? "✅ Usuário Ativado" : "⏸️ Usuário Desativado",
-        description: `Usuário ${newStatus ? 'ativado' : 'desativado'} com sucesso`,
-      });
-
-      // Inserir log de auditoria
-      await insertAuditLog(
-        newStatus ? 'Usuário Ativado' : 'Usuário Desativado',
-        `Usuário ID: ${userId} - Status: ${newStatus ? 'Ativo' : 'Inativo'}`,
-        'info'
-      );
-    } catch (error: any) {
-      console.error("Erro ao alterar status do usuário:", error);
-      toast({
-        title: "❌ Erro ao Alterar Status",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Função para abrir modal de edição de usuário
-  const openEditUser = async (user: any) => {
-    try {
-      console.log("✏️ Abrindo edição do usuário:", user);
-      
-      setSelectedUserForEdit(user);
-      
-      // Se o usuário tem tenant_id, carregar escolas para edição
-      if (user.tenant_id) {
-        await loadSchoolsForEdit(user.tenant_id);
-      }
-      
-      setEditUserOpen(true);
-    } catch (error: any) {
-      console.error("Erro ao abrir edição do usuário:", error);
-      toast({
-        title: "❌ Erro ao Abrir Edição",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Função para editar usuário
-  const editUser = async (userData: {
-    full_name: string;
-    email: string;
-    role: string;
-    tenant_id: string;
-    school_id?: string;
-  }) => {
-    setEditingUser(true);
-    try {
-      console.log("✏️ Editando usuário:", userData);
-      
-      if (!selectedUserForEdit) {
-        throw new Error("Usuário não selecionado para edição");
-      }
-
-      const userId = selectedUserForEdit.id;
-
-      // Validar se tenant_id existe
-      if (userData.tenant_id) {
-        const { data: tenant, error: tenantError } = await supabase
-          .from("tenants")
-          .select("id")
-          .eq("id", userData.tenant_id)
-          .single();
-
-        if (tenantError || !tenant) {
-          throw new Error(`Tenant ID ${userData.tenant_id} não encontrado`);
-        }
-        console.log("✅ Tenant ID validado:", userData.tenant_id);
-      }
-
-      // Validar se school_id existe (se fornecido)
-      if (userData.school_id) {
-        const { data: school, error: schoolError } = await supabase
-          .from("schools")
-          .select("id")
-          .eq("id", userData.school_id)
-          .single();
-
-        if (schoolError || !school) {
-          throw new Error(`School ID ${userData.school_id} não encontrado`);
-        }
-        console.log("✅ School ID validado:", userData.school_id);
-      }
-
-      // Mapear role para o enum correto
-      const roleMapping: { [key: string]: string } = {
-        'superadmin': 'superadmin',
-        'coordinator': 'coordinator', 
-        'school_manager': 'school_manager',
-        'aee_teacher': 'aee_teacher',
-        'teacher': 'teacher',
-        'family': 'family',
-        'specialist': 'specialist'
-      };
-
-      const mappedRole = roleMapping[userData.role] || 'teacher';
-
-      // Atualizar perfil do usuário na tabela profiles
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          full_name: userData.full_name,
-          school_id: userData.school_id || null,
-          tenant_id: userData.tenant_id || null,
-          updated_at: new Date().toISOString()
-        } as any)
-        .eq("id", userId);
-
-      if (profileError) {
-        console.error("Erro ao atualizar perfil:", profileError);
-        throw profileError;
-      }
-
-      console.log("✅ Perfil atualizado com sucesso");
-
-      // Atualizar role do usuário na tabela user_roles
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .update({
-          role: mappedRole as any // app_role enum
-        })
-        .eq("user_id", userId);
-
-      if (roleError) {
-        console.error("Erro ao atualizar role:", roleError);
-        throw roleError;
-      }
-
-      console.log("✅ Role atualizado com sucesso");
-
-      // Atualizar associação na tabela user_tenants
-      if (userData.tenant_id && userData.school_id) {
-        // Primeiro, remover associações antigas
-        await supabase
-          .from("user_tenants")
-          .delete()
-          .eq("user_id", userId);
-
-        // Criar nova associação
-        const { error: tenantError } = await supabase
-          .from("user_tenants")
-          .insert({
-            user_id: userId,
-            school_id: userData.school_id
-          });
-
-        if (tenantError) {
-          console.warn("Erro ao atualizar associação do usuário ao tenant:", tenantError);
-          // Não falhar a edição por causa disso
-        } else {
-          console.log("✅ Associação do usuário ao tenant atualizada com sucesso");
-        }
-      }
-
-      // Recarregar lista de usuários
-      await loadAllUsers();
-
-      // Inserir log de auditoria
-      await insertAuditLog(
-        'Usuário Editado',
-        `Usuário editado: ${userData.full_name} (${userData.role})`,
-        'info'
-      );
-
-      toast({
-        title: "✅ Usuário Editado com Sucesso",
-        description: `${userData.full_name} foi atualizado no sistema`,
-      });
-
+      setAvailableSchoolsForUser([]);
+    },
+    onUserEdited: () => {
       setEditUserOpen(false);
       setSelectedUserForEdit(null);
-    } catch (error: any) {
-      console.error("Erro ao editar usuário:", error);
-      toast({
-        title: "❌ Erro ao Editar Usuário",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setEditingUser(false);
+      setAvailableSchoolsForEdit([]);
+    },
+  });
+
+  const clearSchoolsForUser = () => {
+    setAvailableSchoolsForUser([]);
+  };
+
+  const clearSchoolsForEdit = () => {
+    setAvailableSchoolsForEdit([]);
+  };
+
+  const openEditUser = (user: any) => {
+    setSelectedUserForEdit(user);
+    if (user?.tenant_id) {
+      loadSchoolsForEdit(user.tenant_id);
+    } else {
+      clearSchoolsForEdit();
     }
+    setEditUserOpen(true);
+  };
+
+  // Função para abrir diálogo de senha
+  const handleOpenPasswordDialog = () => {
+    console.log('🔓 Abrindo diálogo de senha para:', selectedUserForEdit);
+    if (selectedUserForEdit) {
+      setPasswordFormData({ password: "", confirmPassword: "" });
+      setPasswordError("");
+      setIsPasswordDialogOpen(true);
+      console.log('✅ Estado atualizado, diálogo deve abrir');
+    } else {
+      console.warn('⚠️ selectedUserForEdit não está definido');
+    }
+  };
+
+  const handleCreateSchool = () => {
+    setEditingSchool(null);
+    setSchoolDialogOpen(true);
+  };
+
+  const handleEditSchool = (school: any) => {
+    setEditingSchool(school);
+    setSchoolDialogOpen(true);
+  };
+
+  const handleSubmitCreateSchool = async (data: any) => {
+    await saveSchool({
+      id: editingSchool?.id,
+      school_name: data.school_name,
+      tenant_id: data.tenant_id,
+    });
+    setSchoolDialogOpen(false);
+    setEditingSchool(null);
+  };
+
+  const handleDeleteSchool = async (schoolId: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta escola? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+    await deleteSchool(schoolId);
   };
 
   // Função para adicionar nova rede
@@ -2306,6 +1939,7 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
 
       // Recarregar dados
       await loadAllData();
+      await refreshAllSchools();
 
       // Inserir log de auditoria
       await insertAuditLog(
@@ -2438,118 +2072,6 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
   };
 
   // School management handlers
-  const loadSchools = async () => {
-    try {
-      console.log("🏫 Carregando escolas...");
-      const { data, error } = await supabase
-        .from("schools")
-        .select("*")
-        .order("school_name", { ascending: true });
-      
-      if (error) {
-        console.error("❌ Erro ao buscar escolas:", error);
-        throw error;
-      }
-      
-      console.log(`✅ ${data?.length || 0} escolas carregadas:`, data);
-      setAllSchools(data || []);
-    } catch (error: any) {
-      console.error("❌ Erro ao carregar escolas:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar as escolas.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCreateSchool = () => {
-    setEditingSchool(null);
-    setSchoolDialogOpen(true);
-  };
-
-  const handleEditSchool = (school: any) => {
-    setEditingSchool(school);
-    setSchoolDialogOpen(true);
-  };
-
-  const handleSubmitCreateSchool = async (data: any) => {
-    setLoadingAction(true);
-    try {
-      if (editingSchool) {
-        // Update school
-        const { error } = await supabase
-          .from("schools")
-          .update(data)
-          .eq("id", editingSchool.id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Sucesso",
-          description: "Escola atualizada com sucesso!",
-        });
-      } else {
-        // Create school
-        const { error } = await supabase
-          .from("schools")
-          .insert(data);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Sucesso",
-          description: "Escola criada com sucesso!",
-        });
-      }
-      
-      await loadSchools();
-      setSchoolDialogOpen(false);
-      setEditingSchool(null);
-    } catch (error: any) {
-      console.error("Erro ao salvar escola:", error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível salvar a escola.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingAction(false);
-    }
-  };
-
-  const handleDeleteSchool = async (schoolId: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta escola? Esta ação não pode ser desfeita.")) {
-      return;
-    }
-    
-    setLoadingAction(true);
-    try {
-      const { error } = await supabase
-        .from("schools")
-        .delete()
-        .eq("id", schoolId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Sucesso",
-        description: "Escola excluída com sucesso!",
-      });
-      
-      await loadSchools();
-    } catch (error: any) {
-      console.error("Erro ao excluir escola:", error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível excluir a escola.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingAction(false);
-    }
-  };
-
   const filteredNetworks = networkStats.filter(net =>
     net.network_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -2700,46 +2222,46 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
 
       {/* Tabs de Navegação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950 rounded-xl p-1">
-          <TabsList className="grid w-full grid-cols-6 bg-transparent gap-1">
+        <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950 rounded-xl p-2">
+          <TabsList className="flex w-full flex-wrap gap-2 bg-transparent">
             <TabsTrigger 
               value="overview" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300"
+              className="flex-1 min-w-[140px] flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300 sm:flex-none sm:min-w-0"
             >
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Visão Geral</span>
             </TabsTrigger>
             <TabsTrigger 
               value="networks" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300"
+              className="flex-1 min-w-[140px] flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300 sm:flex-none sm:min-w-0"
             >
               <Network className="h-4 w-4" />
               <span className="hidden sm:inline">Redes</span>
             </TabsTrigger>
             <TabsTrigger 
               value="schools" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300"
+              className="flex-1 min-w-[140px] flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300 sm:flex-none sm:min-w-0"
             >
               <School className="h-4 w-4" />
               <span className="hidden sm:inline">Escolas</span>
             </TabsTrigger>
             <TabsTrigger 
               value="analytics" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300"
+              className="flex-1 min-w-[140px] flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300 sm:flex-none sm:min-w-0"
             >
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
             <TabsTrigger 
               value="users" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300"
+              className="flex-1 min-w-[140px] flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300 sm:flex-none sm:min-w-0"
             >
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Usuários</span>
             </TabsTrigger>
             <TabsTrigger 
               value="system" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300"
+              className="flex-1 min-w-[140px] flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-800 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-slate-400 dark:data-[state=inactive]:hover:text-slate-300 sm:flex-none sm:min-w-0"
             >
               <Server className="h-4 w-4" />
               <span className="hidden sm:inline">Sistema</span>
@@ -3038,7 +2560,7 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
                 <div className="flex gap-2">
                   <ImportCSVDialog 
                     type="schools" 
-                    onImportComplete={loadSchools}
+                    onImportComplete={refreshAllSchools}
                   />
                   <Dialog open={schoolDialogOpen} onOpenChange={setSchoolDialogOpen}>
                     <DialogTrigger asChild>
@@ -4356,11 +3878,183 @@ const SuperadminDashboard = ({ profile }: SuperadminDashboardProps) => {
               availableSchoolsForEdit={availableSchoolsForEdit}
               loadingSchoolsForEdit={loadingSchoolsForEdit}
               onTenantChange={loadSchoolsForEdit}
-              onSubmit={editUser}
+              onSubmit={(formData) => editUser(selectedUserForEdit.id, formData)}
               loading={editingUser}
               onCancel={() => setEditUserOpen(false)}
+              onOpenPasswordDialog={handleOpenPasswordDialog}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Definir/Alterar Senha */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={(open) => {
+        console.log('🔓 Diálogo de senha mudou para:', open);
+        setIsPasswordDialogOpen(open);
+        if (!open) {
+          setPasswordFormData({ password: "", confirmPassword: "" });
+          setPasswordError("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Definir Senha do Usuário</DialogTitle>
+            <DialogDescription>
+              {selectedUserForEdit ? (
+                <>
+                  Defina uma nova senha para <strong>{selectedUserForEdit.full_name}</strong>.
+                  {selectedUserForEdit.email && (
+                    <> O usuário poderá fazer login com o email <strong>{selectedUserForEdit.email}</strong>.</>
+                  )}
+                </>
+              ) : (
+                <span className="text-muted-foreground">Carregando informações do usuário...</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Nova Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Digite a nova senha"
+                value={passwordFormData.password}
+                onChange={(e) => {
+                  setPasswordFormData({ ...passwordFormData, password: e.target.value });
+                  setPasswordError("");
+                }}
+                className={passwordError ? "border-red-500" : ""}
+                required
+                minLength={8}
+              />
+              <p className="text-xs text-muted-foreground">
+                Mínimo 8 caracteres, incluindo maiúscula, minúscula e número
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Digite a senha novamente"
+                value={passwordFormData.confirmPassword}
+                onChange={(e) => {
+                  setPasswordFormData({ ...passwordFormData, confirmPassword: e.target.value });
+                  setPasswordError("");
+                }}
+                className={passwordError ? "border-red-500" : ""}
+                required
+                minLength={8}
+              />
+            </div>
+
+            {passwordError && (
+              <Alert variant="destructive">
+                <AlertDescription>{passwordError}</AlertDescription>
+              </Alert>
+            )}
+
+            <Alert>
+              <AlertDescription className="text-sm">
+                <strong>Importante:</strong> Esta senha será definida imediatamente. 
+                O usuário poderá fazer login com esta senha e alterá-la posteriormente se desejar.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsPasswordDialogOpen(false);
+                setPasswordFormData({ password: "", confirmPassword: "" });
+                setPasswordError("");
+              }}
+              disabled={updatingPassword}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!selectedUserForEdit) return;
+
+                setPasswordError("");
+
+                // Validar senha
+                if (passwordFormData.password.length < 8) {
+                  setPasswordError("A senha deve ter no mínimo 8 caracteres");
+                  return;
+                }
+                if (!/[A-Z]/.test(passwordFormData.password)) {
+                  setPasswordError("A senha deve conter pelo menos uma letra maiúscula");
+                  return;
+                }
+                if (!/[a-z]/.test(passwordFormData.password)) {
+                  setPasswordError("A senha deve conter pelo menos uma letra minúscula");
+                  return;
+                }
+                if (!/[0-9]/.test(passwordFormData.password)) {
+                  setPasswordError("A senha deve conter pelo menos um número");
+                  return;
+                }
+
+                // Verificar se as senhas coincidem
+                if (passwordFormData.password !== passwordFormData.confirmPassword) {
+                  setPasswordError("As senhas não coincidem");
+                  return;
+                }
+
+                setUpdatingPassword(true);
+
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  
+                  if (!session) {
+                    throw new Error('Você precisa estar autenticado para atualizar senhas');
+                  }
+
+                  const { data, error } = await supabase.functions.invoke('update-user-password', {
+                    body: {
+                      userId: selectedUserForEdit.id,
+                      password: passwordFormData.password,
+                    },
+                  });
+
+                  if (error) {
+                    throw new Error(error.message || 'Erro ao atualizar senha');
+                  }
+
+                  if (data?.error) {
+                    throw new Error(data.error);
+                  }
+
+                  toast({
+                    title: "Senha atualizada!",
+                    description: `A senha de ${selectedUserForEdit.full_name} foi atualizada com sucesso.`,
+                  });
+
+                  setIsPasswordDialogOpen(false);
+                  setPasswordFormData({ password: "", confirmPassword: "" });
+                } catch (error: any) {
+                  console.error("Erro ao atualizar senha:", error);
+                  setPasswordError(error.message || "Erro ao atualizar senha. Tente novamente.");
+                  toast({
+                    title: "Erro ao atualizar senha",
+                    description: error.message || "Não foi possível atualizar a senha.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setUpdatingPassword(false);
+                }
+              }}
+              disabled={updatingPassword || !passwordFormData.password || !passwordFormData.confirmPassword}
+            >
+              {updatingPassword ? "Atualizando..." : "Definir Senha"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

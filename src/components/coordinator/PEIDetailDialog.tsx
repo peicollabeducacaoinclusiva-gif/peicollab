@@ -26,6 +26,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { peiService } from "@/services/peiService";
 
 interface PEIDetailDialogProps {
   peiId: string | null;
@@ -344,12 +345,8 @@ const PEIDetailDialog = ({
 
     try {
       setLoading(true);
-      const { error } = await supabase
-        .from("peis")
-        .update({ status: "approved" })
-        .eq("id", peiId);
-
-      if (error) throw error;
+      // Usar peiService para aprovar PEI (com auditoria automática)
+      await peiService.approvePEI(peiId);
 
       toast({
         title: "PEI aprovado!",
@@ -374,12 +371,8 @@ const PEIDetailDialog = ({
 
     try {
       setLoading(true);
-      const { error } = await supabase
-        .from("peis")
-        .update({ status: "returned" })
-        .eq("id", peiId);
-
-      if (error) throw error;
+      // Usar peiService para devolver PEI (com auditoria automática)
+      await peiService.returnPEI(peiId, 'Devolvido para revisão pelo coordenador');
 
       toast({
         title: "PEI devolvido!",

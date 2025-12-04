@@ -1,0 +1,28 @@
+{
+  "name": "@pei/config",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.js",
+  "files": [
+    "eslint-preset.js",
+    "tailwind.config.js",
+    "tsconfig.json"
+  ],
+  "scripts": {},
+  "dependencies": {
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.2.2"
+  }
+}
+
+
+
+
+
+

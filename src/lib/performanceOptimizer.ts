@@ -93,29 +93,15 @@ export class PerformanceOptimizer {
 
   private monitorCachePerformance(): void {
     // Monitorar hit rate do cache offline
-    const originalGet = offlineDB.students.get;
     let cacheHits = 0;
-    let cacheMisses = 0;
 
-    // Interceptar operações de cache
-    offlineDB.students.get = async function(key: any) {
-      try {
-        const result = await originalGet.call(this, key);
-        cacheHits++;
-        return result;
-      } catch (error) {
-        cacheMisses++;
-        throw error;
-      }
-    };
+    offlineDB.students.hook('reading', () => {
+      cacheHits++;
+    });
 
-    // Calcular hit rate a cada minuto
     setInterval(() => {
-      const total = cacheHits + cacheMisses;
-      if (total > 0) {
-        this.metrics.cacheHitRate = (cacheHits / total) * 100;
-        console.log(`📊 Cache hit rate: ${this.metrics.cacheHitRate.toFixed(2)}%`);
-      }
+      this.metrics.cacheHitRate = cacheHits;
+      console.log(`📊 Cache hits monitorados: ${cacheHits}`);
     }, 60000);
   }
 
@@ -123,18 +109,17 @@ export class PerformanceOptimizer {
     // Contar operações offline
     let offlineOps = 0;
     
-    // Interceptar operações offline
-    const originalAdd = offlineDB.students.add;
-    offlineDB.students.add = async function(item: any) {
+    offlineDB.students.hook('creating', () => {
       offlineOps++;
-      return await originalAdd.call(this, item);
-    };
+    });
 
-    const originalUpdate = offlineDB.students.update;
-    offlineDB.students.update = async function(key: any, changes: any) {
+    offlineDB.students.hook('updating', () => {
       offlineOps++;
-      return await originalUpdate.call(this, key, changes);
-    };
+    });
+
+    offlineDB.students.hook('deleting', () => {
+      offlineOps++;
+    });
 
     // Atualizar métricas a cada minuto
     setInterval(() => {
@@ -329,27 +314,22 @@ export class PerformanceOptimizer {
       .limit(50)
       .toArray();
     
-    // Remover 50% dos registros mais antigos
-    const toDelete = [...students, ...peis].slice(0, Math.floor((students.length + peis.length) / 2));
-    
-    for (const item of toDelete) {
-      if (item.table === 'students') {
-        await offlineDB.students.delete(item.id);
-      } else if (item.table === 'peis') {
-        await offlineDB.peis.delete(item.id);
-      }
+    const halfStudents = Math.floor(students.length / 2);
+    const halfPeis = Math.floor(peis.length / 2);
+
+    for (const student of students.slice(0, halfStudents)) {
+      await offlineDB.students.delete(student.id);
+    }
+
+    for (const pei of peis.slice(0, halfPeis)) {
+      await offlineDB.peis.delete(pei.id);
     }
     
-    console.log(`🗑️ Removidos ${toDelete.length} registros do cache`);
+    console.log(`🗑️ Removidos ${halfStudents + halfPeis} registros do cache`);
   }
 
   private async optimizeCache(): Promise<void> {
-    // Criar índices para melhor performance
-    await offlineDB.students.createIndex('last_modified');
-    await offlineDB.peis.createIndex('last_modified');
-    await offlineDB.peis.createIndex('status');
-    
-    console.log('⚡ Índices de cache otimizados');
+    console.log('⚡ Otimização de cache executada (índices já definidos na versão do Dexie)');
   }
 
   // Métodos para obter métricas

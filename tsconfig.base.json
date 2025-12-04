@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "checkJs": false,
+    
+    /* Strict Type-Checking Options */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    /* Additional Checks */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    
+    /* Module Resolution */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    
+    /* Emit */
+    "noEmit": true,
+    "sourceMap": true,
+    
+    /* Base URL and Paths - Aliases Padronizados */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@pei/ui/*": ["./packages/ui/src/*"],
+      "@pei/database/*": ["./packages/database/src/*"],
+      "@pei/auth/*": ["./packages/auth/src/*"],
+      "@pei/dashboards/*": ["./packages/dashboards/src/*"],
+      "@pei/config/*": ["./packages/config/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build", ".turbo", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
+}
+

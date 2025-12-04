@@ -17,17 +17,18 @@ import AEETeacherDashboard from "@/components/dashboards/AEETeacherDashboard"
 import SpecialistDashboard from "@/components/dashboards/SpecialistDashboard"
 import EducationSecretaryDashboard from "@/components/dashboards/EducationSecretaryDashboard"
 import SchoolDirectorDashboard from "@/components/dashboards/SchoolDirectorDashboard"
+import { SupportProfessionalDashboard } from "@/components/dashboards/SupportProfessionalDashboard"
 import TutorialCards from "@/components/tutorial/TutorialCards"
 import NotificationBell from "@/components/shared/NotificationBell"
-import InstitutionalLogo from "@/components/shared/InstitutionalLogo"
-import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { MobileNavigation } from "@/components/shared/MobileNavigation"
+import { AppHeader } from "@pei/ui"
 import { Clock, Heart, Users, Sparkles, Mail, ArrowLeft } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTenant } from "@/hooks/useTenant"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useTranslation } from "@pei/i18n"
 
-type UserRole = "superadmin" | "coordinator" | "teacher" | "family" | "school_manager" | "aee_teacher" | "specialist" | "education_secretary" | "school_director"
+type UserRole = "superadmin" | "coordinator" | "teacher" | "family" | "school_manager" | "aee_teacher" | "specialist" | "education_secretary" | "school_director" | "support_professional"
 
 interface Profile {
   id: string
@@ -195,6 +196,7 @@ const PendingApprovalScreen = ({
 }
 
 const Dashboard = () => {
+  const { t } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [tenantName, setTenantName] = useState<string | null>(null)
@@ -509,7 +511,7 @@ const Dashboard = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30">
         <div className="text-center">
           <img src="/logo.png" alt="PEI Collab" className="h-20 w-auto mx-auto mb-4 animate-pulse" />
-          <p className="text-muted-foreground">Carregando...</p>
+          <p className="text-muted-foreground">{t("dashboard.loading")}</p>
         </div>
       </div>
     )
@@ -568,6 +570,8 @@ const Dashboard = () => {
         return <AEETeacherDashboard profile={profile} />
       case "specialist":
         return <SpecialistDashboard profile={profile} />
+      case "support_professional":
+        return <SupportProfessionalDashboard />
       default:
         console.log("❌ Role não reconhecida:", getPrimaryRole(profile))
         return <div>Perfil não reconhecido: {getPrimaryRole(profile)}</div>
@@ -576,49 +580,18 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4">
-          <div className="grid grid-cols-3 items-center gap-2 sm:gap-4">
-            {/* Esquerda: Logo da Rede */}
-            <div className="flex items-center justify-start">
-              {profile && <InstitutionalLogo tenantId={profile.tenant_id} userRole={getPrimaryRole(profile)} />}
-            </div>
-
-            {/* Centro: Logo PEI Collab */}
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="flex items-center gap-1 sm:gap-2">
-                <img src="/logo.png" alt="PEI Collab" className="h-6 sm:h-8 w-auto" />
-                <h1 className="font-bold text-base sm:text-xl text-primary">PEI Collab</h1>
-              </div>
-              {profile && tenantName && getPrimaryRole(profile) !== "superadmin" && (
-                <div className="text-[10px] sm:text-xs font-medium text-muted-foreground mt-0.5 sm:mt-1 hidden md:block truncate max-w-full">
-                  {profile.network_name && profile.school_name ? (
-                    <span className="truncate">{profile.network_name} • {profile.school_name}</span>
-                  ) : (
-                    <span className="truncate">{profile.network_name || profile.school_name}</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Direita: Usuário + Ações */}
-            <div className="flex items-center justify-end gap-1 sm:gap-2">
-              {profile && (
-                <div className="text-right hidden lg:block mr-2">
-                  <p className="text-sm font-medium truncate max-w-[150px]">{profile.full_name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{getPrimaryRole(profile)}</p>
-                </div>
-              )}
-              <MobileNavigation userRole={getPrimaryRole(profile || { user_roles: [] })} />
-              {getPrimaryRole(profile || { user_roles: [] }) !== "superadmin" && <NotificationBell />}
-              <ThemeToggle />
-              <Button variant="outline" size="sm" onClick={handleLogout} className="hidden lg:flex">
-                Sair
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        appName="PEI Collab"
+        currentApp="pei-collab"
+        userProfile={profile}
+        onLogout={handleLogout}
+        customActions={
+          <>
+            <MobileNavigation userRole={getPrimaryRole(profile || { user_roles: [] })} />
+            {getPrimaryRole(profile || { user_roles: [] }) !== "superadmin" && <NotificationBell />}
+          </>
+        }
+      />
 
       <main className="container mx-auto px-4 py-8">{renderDashboard()}</main>
 

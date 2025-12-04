@@ -1,0 +1,122 @@
+{
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "confirm": "Confirmar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "submit": "Enviar",
+    "reset": "Limpar"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "email": "E-mail",
+    "password": "Senha",
+    "forgotPassword": "Esqueci minha senha",
+    "resetPassword": "Redefinir senha",
+    "signIn": "Entrar",
+    "signUp": "Cadastrar",
+    "invalidCredentials": "Credenciais inválidas",
+    "sessionExpired": "Sessão expirada",
+    "enterEmail": "Digite seu e-mail",
+    "enterPassword": "Digite sua senha",
+    "passwordResetSent": "E-mail de recuperação enviado",
+    "passwordResetError": "Erro ao enviar e-mail de recuperação",
+    "loginError": "Erro ao fazer login",
+    "passwordResetSuccess": "Senha redefinida com sucesso",
+    "passwordResetFailed": "Falha ao redefinir senha",
+    "acceptTerms": "Aceito os termos de uso",
+    "passwordRequirements": "A senha deve ter no mínimo 8 caracteres, incluindo maiúscula, minúscula e número"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Bem-vindo",
+    "overview": "Visão Geral",
+    "recentActivity": "Atividade Recente",
+    "pendingActions": "Ações Pendentes",
+    "quickActions": "Ações Rápidas",
+    "noData": "Nenhum dado disponível",
+    "loading": "Carregando dashboard..."
+  },
+  "students": {
+    "title": "Estudantes",
+    "create": "Criar Estudante",
+    "edit": "Editar Estudante",
+    "name": "Nome",
+    "cpf": "CPF",
+    "birthDate": "Data de Nascimento",
+    "enrollment": "Matrícula",
+    "class": "Turma",
+    "status": "Status",
+    "active": "Ativo",
+    "inactive": "Inativo"
+  },
+  "pei": {
+    "title": "Plano Educacional Individualizado",
+    "create": "Criar PEI",
+    "edit": "Editar PEI",
+    "goals": "Metas",
+    "strategies": "Estratégias",
+    "adaptations": "Adaptações",
+    "evaluation": "Avaliação",
+    "cycle": "Ciclo",
+    "student": "Estudante",
+    "selectStudent": "Selecione um estudante",
+    "diagnosis": "Diagnóstico",
+    "planning": "Planejamento",
+    "review": "Revisão",
+    "saveDraft": "Salvar Rascunho",
+    "saveSuccess": "PEI salvo com sucesso",
+    "saveError": "Erro ao salvar PEI",
+    "loadError": "Erro ao carregar PEI",
+    "status": {
+      "draft": "Rascunho",
+      "pending": "Pendente",
+      "approved": "Aprovado",
+      "returned": "Retornado"
+    }
+  },
+  "aee": {
+    "title": "Atendimento Educacional Especializado",
+    "create": "Criar Plano AEE",
+    "edit": "Editar Plano AEE",
+    "sessions": "Sessões",
+    "objectives": "Objetivos",
+    "methodologies": "Metodologias",
+    "assistiveTechnologies": "Tecnologias Assistivas"
+  },
+  "errors": {
+    "generic": "Ocorreu um erro. Tente novamente.",
+    "network": "Erro de conexão. Verifique sua internet.",
+    "unauthorized": "Você não tem permissão para esta ação.",
+    "notFound": "Recurso não encontrado.",
+    "validation": "Dados inválidos. Verifique os campos.",
+    "server": "Erro no servidor. Tente novamente mais tarde."
+  },
+  "accessibility": {
+    "skipToContent": "Pular para o conteúdo",
+    "skipToNavigation": "Pular para a navegação",
+    "closeMenu": "Fechar menu",
+    "openMenu": "Abrir menu",
+    "loading": "Carregando conteúdo",
+    "error": "Erro ao carregar",
+    "ariaLabel": {
+      "menu": "Menu principal",
+      "userMenu": "Menu do usuário",
+      "search": "Buscar",
+      "notifications": "Notificações"
+    }
+  }
+}
+

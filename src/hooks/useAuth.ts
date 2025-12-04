@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { reportAuthError } from '@/lib/errorReporting';
 
 interface AuthState {
   user: User | null;
@@ -106,6 +107,14 @@ export function useAuth() {
 
       if (error) {
         console.error('Erro ao fazer login:', error);
+        
+        // Reportar erro crítico de autenticação
+        const errorObj = new Error(error.message);
+        reportAuthError(errorObj, {
+          operation: 'login',
+          email: email,
+        }).catch(err => console.error('Erro ao reportar erro de login:', err));
+        
         setAuthState(prev => ({
           ...prev,
           loading: false,
@@ -133,6 +142,10 @@ export function useAuth() {
     }
   };
 
+  /**
+   * @deprecated O signup público foi removido. Use a Edge Function create-user via administrador.
+   * Esta função é mantida apenas para compatibilidade e não deve ser usada em produção.
+   */
   const signUp = async (email: string, password: string, metadata?: any) => {
     try {
       setAuthState(prev => ({ ...prev, loading: true, error: null }));

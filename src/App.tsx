@@ -12,10 +12,13 @@ import { LoadingFallback } from "@/components/shared/LoadingFallback";
 import { useSyncOnReconnect } from "@/hooks/useSyncOnReconnect";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
+import { ErrorBoundary } from "@pei/ui";
+import { I18nProvider } from "@pei/i18n";
 
 // Lazy load components
 const Splash = lazy(() => import("./pages/Splash"));
 const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Testes = lazy(() => import("./pages/Testes"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const CreatePEI = lazy(() => import("./pages/CreatePEI"));
@@ -39,6 +42,12 @@ const DatabaseTestRunner = lazy(() => import("./components/debug/DatabaseTestRun
 const UsabilityTestingManager = lazy(() => import("./components/debug/UsabilityTestingManager"));
 const NotificationManager = lazy(() => import("./components/shared/NotificationManager"));
 
+// Novos componentes V3.0 - Sistema de Reuniões e Avaliações
+const MeetingsDashboard = lazy(() => import("./pages/MeetingsDashboard"));
+const CreateMeeting = lazy(() => import("./pages/CreateMeeting"));
+const MeetingMinutes = lazy(() => import("./pages/MeetingMinutes"));
+const EvaluationSchedule = lazy(() => import("./pages/EvaluationSchedule"));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -55,27 +64,30 @@ function App() {
   useSyncOnReconnect(); // Hook para sincronizar dados ao reconectar
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <PWAUpdatePrompt />
-          <SpeedInsights />
-          <Analytics />
-          <div className="fixed top-2 right-2 z-50">
-            <OfflineIndicator />
-          </div>
-          <div className="fixed top-2 left-2 z-50">
-            <PendingChangesIndicator />
-          </div>
-          <BrowserRouter>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
+    <ErrorBoundary appName="pei-collab">
+      <I18nProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <PWAUpdatePrompt />
+            <SpeedInsights />
+            <Analytics />
+            <div className="fixed top-2 right-2 z-50">
+              <OfflineIndicator />
+            </div>
+            <div className="fixed top-2 left-2 z-50">
+              <PendingChangesIndicator />
+            </div>
+            <BrowserRouter>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
                 <Route path="/" element={<Splash />} />
                 <Route path="/teste" element={<Testes />} />
                 <Route path="/debuguser" element={<DebugUser />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/reset-password" element={<ResetPassword />} />
                 <Route path="/login" element={<Auth />} />
                 <Route path="/home" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -94,6 +106,15 @@ function App() {
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/profile" element={<Profile />} />
                 
+                {/* Rotas V3.0 - Sistema de Reuniões */}
+                <Route path="/meetings" element={<MeetingsDashboard />} />
+                <Route path="/meetings/create" element={<CreateMeeting />} />
+                <Route path="/meetings/:meetingId" element={<MeetingMinutes />} />
+                <Route path="/meetings/:meetingId/minutes" element={<MeetingMinutes />} />
+                
+                {/* Rotas V3.0 - Sistema de Avaliação */}
+                <Route path="/evaluations/schedule" element={<EvaluationSchedule />} />
+                
                 {/* Rotas de debug */}
                 <Route path="/debug/database" element={<DatabaseDebug />} />
                 <Route path="/debug/usability" element={<UsabilityDebug />} />
@@ -101,12 +122,14 @@ function App() {
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+            </TooltipProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }
 

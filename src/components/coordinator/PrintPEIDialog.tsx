@@ -33,7 +33,7 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
         .select(`
           *,
           students(name, date_of_birth),
-          tenants(name),
+          tenants(network_name),
           schools(school_name)
         `)
         .eq("id", peiId)
@@ -211,7 +211,7 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
                 top: 0 !important;
                 width: 100% !important;
                 margin: 0 !important;
-                padding: 0 !important;
+                padding: 15px !important;
                 font-size: 9pt !important;
                 line-height: 1.3 !important;
               }
@@ -237,6 +237,10 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
               .print-only-content .mb-6 {
                 margin-bottom: 10px !important;
               }
+              .print-only-content img {
+                max-width: 100px !important;
+                max-height: 100px !important;
+              }
             }
             @media screen {
               .print-only-content {
@@ -247,18 +251,16 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
 
           <div className="print-only-content">
             {/* Cabeçalho Institucional */}
-            <div className="flex items-start gap-3 mb-3 pb-2 border-b-2 border-black">
+            <div className="flex items-start gap-4 mb-4 pb-3 border-b-2 border-black">
               {logoUrl && (
                 <div className="flex-shrink-0">
-                  <img src={logoUrl} alt="Logo" className="h-16 w-16 object-contain border border-gray-300 rounded" />
+                  <img src={logoUrl} alt="Logo da Rede" className="h-20 w-20 object-contain" />
                 </div>
               )}
-              <div className="flex-1">
-                <h2 className="text-base font-bold mb-0.5 leading-tight">{pei.tenants?.name || "Nome da Rede"}</h2>
-                <p className="text-sm font-medium text-gray-700 mb-1 leading-tight">{pei.schools?.school_name || "Nome da Escola"}</p>
-                <p className="text-[8pt] text-gray-600">
-                  Emissão: {format(new Date(), "dd/MM/yyyy", { locale: ptBR })}
-                </p>
+              <div className="flex-1 text-center">
+                <h2 className="text-lg font-bold mb-1 leading-tight uppercase">{pei.tenants?.network_name || "Nome da Rede"}</h2>
+                <p className="text-sm font-semibold text-gray-800 mb-2 leading-tight">Secretaria de Educação - Setor Educação Inclusiva</p>
+                <p className="text-sm font-bold text-gray-900 leading-tight">{pei.schools?.school_name || "Nome da Escola"}</p>
               </div>
             </div>
             
@@ -308,6 +310,20 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
                   </div>
                 )}
 
+                {(pei.diagnosis_data?.abilities || pei.diagnosis_data?.strengths) && (
+                  <div>
+                    <p className="font-semibold">Habilidades (O que já consegue fazer):</p>
+                    <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.diagnosis_data.abilities || pei.diagnosis_data.strengths}</p>
+                  </div>
+                )}
+
+                {(pei.diagnosis_data?.aversions || pei.diagnosis_data?.challenges) && (
+                  <div>
+                    <p className="font-semibold">Desinteresses / Aversões:</p>
+                    <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.diagnosis_data.aversions || pei.diagnosis_data.challenges}</p>
+                  </div>
+                )}
+
                 {pei.diagnosis_data?.barriers && (
                   <div>
                     <p className="font-semibold">Barreiras:</p>
@@ -329,8 +345,84 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
                     </div>
                   </div>
                 )}
+
+                {pei.diagnosis_data?.barriersComments && (
+                  <div>
+                    <p className="font-semibold">Observações sobre as Barreiras:</p>
+                    <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.diagnosis_data.barriersComments}</p>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* 🆕 2.1 Relatório Circunstanciado */}
+            {pei.diagnosis_data?.circumstantial_report && Object.values(pei.diagnosis_data.circumstantial_report).some((v: any) => v) && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">2.1 Relatório Circunstanciado (RC)</h2>
+                <div className="space-y-1 text-[8pt]">
+                  {pei.diagnosis_data.circumstantial_report.how_student_learns && (
+                    <div>
+                      <p className="font-semibold">Como o Aluno Aprende:</p>
+                      <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.diagnosis_data.circumstantial_report.how_student_learns}</p>
+                    </div>
+                  )}
+                  {pei.diagnosis_data.circumstantial_report.social_interaction && (
+                    <div>
+                      <p className="font-semibold">Interação Social:</p>
+                      <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.diagnosis_data.circumstantial_report.social_interaction}</p>
+                    </div>
+                  )}
+                  {pei.diagnosis_data.circumstantial_report.communication && (
+                    <div>
+                      <p className="font-semibold">Comunicação:</p>
+                      <p className="whitespace-pre-wrap leading-tight text-gray-700">{pei.diagnosis_data.circumstantial_report.communication}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 🆕 2.2 Nível de Desenvolvimento */}
+            {pei.diagnosis_data?.development_level && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">2.2 Nível de Desenvolvimento</h2>
+                <div className="space-y-1.5 text-[8pt]">
+                  {Object.entries(pei.diagnosis_data.development_level).map(([area, data]: [string, any]) => {
+                    const areaLabels: Record<string, string> = {
+                      language: 'Linguagem',
+                      reading: 'Leitura',
+                      writing: 'Escrita',
+                      logical_reasoning: 'Raciocínio',
+                      motor_coordination: 'Coordenação',
+                      social_skills: 'Social',
+                    };
+                    
+                    const hasContent = data && (
+                      (data.autonomous && data.autonomous.length > 0) ||
+                      (data.with_help && data.with_help.length > 0) ||
+                      (data.not_yet && data.not_yet.length > 0)
+                    );
+
+                    if (!hasContent) return null;
+
+                    return (
+                      <div key={area} className="text-[7.5pt]">
+                        <p className="font-semibold text-[8pt]">{areaLabels[area]}</p>
+                        {data.autonomous && data.autonomous.length > 0 && (
+                          <p className="text-gray-700">✅ {data.autonomous.join('; ')}</p>
+                        )}
+                        {data.with_help && data.with_help.length > 0 && (
+                          <p className="text-gray-700">🟡 {data.with_help.join('; ')}</p>
+                        )}
+                        {data.not_yet && data.not_yet.length > 0 && (
+                          <p className="text-gray-700">❌ {data.not_yet.join('; ')}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Planejamento */}
             {pei.planning_data?.goals && pei.planning_data.goals.length > 0 && (
@@ -378,6 +470,53 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
               </div>
             )}
 
+            {/* 🆕 3.1 Adequações Curriculares */}
+            {pei.planning_data?.curriculum_adaptations && Object.values(pei.planning_data.curriculum_adaptations).some((v: any) => v && (Array.isArray(v) ? v.length > 0 : true)) && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">3.1 Adequações Curriculares</h2>
+                <div className="space-y-1 text-[8pt]">
+                  {pei.planning_data.curriculum_adaptations.priority_contents && pei.planning_data.curriculum_adaptations.priority_contents.length > 0 && (
+                    <div>
+                      <p className="font-semibold">Conteúdos Prioritários:</p>
+                      <p className="text-[7.5pt] text-gray-700">{pei.planning_data.curriculum_adaptations.priority_contents.join('; ')}</p>
+                    </div>
+                  )}
+                  {pei.planning_data.curriculum_adaptations.differentiated_methodologies && pei.planning_data.curriculum_adaptations.differentiated_methodologies.length > 0 && (
+                    <div>
+                      <p className="font-semibold">Metodologias Diferenciadas:</p>
+                      <p className="text-[7.5pt] text-gray-700">{pei.planning_data.curriculum_adaptations.differentiated_methodologies.join('; ')}</p>
+                    </div>
+                  )}
+                  {pei.planning_data.curriculum_adaptations.adapted_assessments && pei.planning_data.curriculum_adaptations.adapted_assessments.length > 0 && (
+                    <div>
+                      <p className="font-semibold">Avaliações Adaptadas:</p>
+                      <p className="text-[7.5pt] text-gray-700">{pei.planning_data.curriculum_adaptations.adapted_assessments.join('; ')}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 🆕 3.2 Cronograma de Intervenção */}
+            {pei.planning_data?.intervention_schedule && pei.planning_data.intervention_schedule.length > 0 && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">3.2 Cronograma de Intervenção</h2>
+                <div className="space-y-1.5 text-[8pt]">
+                  {pei.planning_data.intervention_schedule.map((item: any, idx: number) => (
+                    <div key={idx} className="border-l-2 border-gray-400 pl-2">
+                      <p className="font-semibold text-[9pt]">{item.period}</p>
+                      {item.actions && item.actions.length > 0 && (
+                        <p className="text-[7.5pt] text-gray-700">{item.actions.join('; ')}</p>
+                      )}
+                      {item.responsible && (
+                        <p className="text-[7.5pt] text-gray-600"><strong>Responsável:</strong> {item.responsible}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Encaminhamentos */}
             <div className="mb-3">
               <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">
@@ -404,35 +543,102 @@ const PrintPEIDialog = ({ peiId, open, onClose }: PrintPEIDialogProps) => {
               </div>
             </div>
 
+            {/* 🆕 5. Comentários da Família */}
+            {pei.evaluation_data?.family_feedback && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">5. Comentários da Família</h2>
+                <div className="bg-blue-50 p-2 rounded text-[8pt] border-l-4 border-blue-500">
+                  <p className="italic text-gray-700">"{pei.evaluation_data.family_feedback}"</p>
+                </div>
+              </div>
+            )}
+
+            {/* 🆕 6. Critérios de Avaliação */}
+            {pei.evaluation_data?.evaluation_criteria && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">6. Critérios de Avaliação</h2>
+                <div className="space-y-1 text-[8pt]">
+                  {pei.evaluation_data.evaluation_criteria.progress_indicators && pei.evaluation_data.evaluation_criteria.progress_indicators.length > 0 && (
+                    <div>
+                      <p className="font-semibold">Indicadores de Progresso:</p>
+                      <p className="text-[7.5pt] text-gray-700">{pei.evaluation_data.evaluation_criteria.progress_indicators.join('; ')}</p>
+                    </div>
+                  )}
+                  {pei.evaluation_data.evaluation_criteria.measurement_methods && pei.evaluation_data.evaluation_criteria.measurement_methods.length > 0 && (
+                    <div>
+                      <p className="font-semibold">Métodos de Mensuração:</p>
+                      <p className="text-[7.5pt] text-gray-700">{pei.evaluation_data.evaluation_criteria.measurement_methods.join('; ')}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 🆕 7. Revisão do PEI */}
+            {pei.evaluation_data?.pei_review && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold mb-1.5 pb-0.5 border-b border-black">7. Revisão do PEI</h2>
+                <div className="space-y-1 text-[8pt]">
+                  {pei.evaluation_data.pei_review.review_frequency && (
+                    <p><strong>Frequência:</strong> {pei.evaluation_data.pei_review.review_frequency}</p>
+                  )}
+                  {pei.evaluation_data.pei_review.next_review_meeting && (
+                    <p><strong>Próxima Reunião:</strong> {format(new Date(pei.evaluation_data.pei_review.next_review_meeting), "dd/MM/yyyy", { locale: ptBR })}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Assinaturas */}
-            <div className="mt-4">
-              <h2 className="text-sm font-bold mb-2 pb-0.5 border-b border-black">Assinaturas</h2>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[8pt]">
-                <div className="text-center">
-                  <div className="border-t border-gray-700 pt-1 mt-6">
-                    <p className="font-medium">Professor(a) Responsável</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="border-t border-gray-700 pt-1 mt-6">
-                    <p className="font-medium">Coordenador(a) Pedagógico(a)</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="border-t border-gray-700 pt-1 mt-6">
-                    <p className="font-medium">Diretor(a) Escolar</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="border-t border-gray-700 pt-1 mt-6">
-                    <p className="font-medium">Responsável Legal / Família</p>
-                  </div>
+            {pei.evaluation_data?.signatures && pei.evaluation_data.signatures.length > 0 ? (
+              <div className="mt-4">
+                <h2 className="text-sm font-bold mb-2 pb-0.5 border-b border-black">Assinaturas</h2>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-[8pt]">
+                  {pei.evaluation_data.signatures.map((signature: any, idx: number) => (
+                    <div key={idx} className="text-center">
+                      <div className="border-t border-gray-700 pt-1 mt-6">
+                        <p className="font-medium">{signature.name}</p>
+                        <p className="text-[7pt] text-gray-600">{signature.role}</p>
+                        {signature.signature_date && (
+                          <p className="text-[7pt] text-gray-500">
+                            {format(new Date(signature.signature_date), "dd/MM/yyyy", { locale: ptBR })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="text-center text-[8pt] mt-3">
-                <p>Data: _____/_____/__________</p>
+            ) : (
+              <div className="mt-4">
+                <h2 className="text-sm font-bold mb-2 pb-0.5 border-b border-black">Assinaturas</h2>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[8pt]">
+                  <div className="text-center">
+                    <div className="border-t border-gray-700 pt-1 mt-6">
+                      <p className="font-medium">Professor(a) Responsável</p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="border-t border-gray-700 pt-1 mt-6">
+                      <p className="font-medium">Coordenador(a) Pedagógico(a)</p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="border-t border-gray-700 pt-1 mt-6">
+                      <p className="font-medium">Diretor(a) Escolar</p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="border-t border-gray-700 pt-1 mt-6">
+                      <p className="font-medium">Responsável Legal / Família</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-center text-[8pt] mt-3">
+                  <p>Data: _____/_____/__________</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </>
       )}

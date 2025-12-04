@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://peicollab.com.br/sitemap.xml
+

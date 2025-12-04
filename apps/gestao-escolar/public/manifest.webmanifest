@@ -1,0 +1,28 @@
+{
+  "name": "Gestão Escolar - PEI Collab",
+  "short_name": "Gestão Escolar",
+  "description": "Sistema de Gestão Escolar para administração de alunos, profissionais, turmas e disciplinas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/pwa-192 x 192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "pt-BR",
+  "dir": "ltr"
+}
+

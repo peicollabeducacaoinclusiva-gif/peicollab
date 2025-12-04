@@ -4,132 +4,211 @@
     "React 18",
     "Vite",
     "Tailwind CSS",
-    "Supabase (PostgreSQL)",
     "shadcn/ui",
-    "React Router",
-    "React Query",
-    "PWA",
-    "IndexedDB (Dexie.js)"
+    "Supabase",
+    "PostgreSQL",
+    "React Router DOM",
+    "Recharts",
+    "jsPDF",
+    "date-fns",
+    "Dexie.js (IndexedDB)",
+    "PWA"
   ],
   "features": [
     {
-      "name": "authentication",
-      "description": "Sistema de autenticação com múltiplos perfis e roles",
+      "name": "Sistema de Autenticação",
+      "description": "Autenticação via Supabase Auth com controle de roles (superadmin, education_secretary, school_director, coordinator, teacher, family, specialist, aee_teacher)",
       "files": [
         "src/pages/Auth.tsx",
         "src/hooks/useAuth.ts",
-        "src/pages/Dashboard.tsx"
+        "src/integrations/supabase/client.ts"
       ]
     },
     {
-      "name": "pei_creation",
-      "description": "Criação e edição de Planos Educacionais Individualizados",
+      "name": "Dashboard Principal",
+      "description": "Dashboard principal com header responsivo mostrando logo da rede (personalizável), logo PEI Collab, nome do usuário, rede/escola, notificações e toggle dark mode. Redireciona para dashboard específico baseado no role do usuário.",
       "files": [
+        "src/pages/Dashboard.tsx",
+        "src/components/shared/InstitutionalLogo.tsx",
+        "src/components/shared/NotificationBell.tsx",
+        "src/components/shared/ThemeToggle.tsx",
+        "src/components/shared/MobileNavigation.tsx"
+      ]
+    },
+    {
+      "name": "Dashboard do Professor",
+      "description": "Dashboard com 5 tabs (Visão Geral, Meus PEIs, Meus Alunos, Estatísticas, Atividades). Professores podem criar/editar PEIs apenas para alunos atribuídos. Sistema de conquistas, visualização rápida de PEIs, impressão em PDF.",
+      "files": [
+        "src/components/dashboards/TeacherDashboard.tsx",
         "src/pages/CreatePEI.tsx",
         "src/components/pei/StudentIdentificationSection.tsx",
         "src/components/pei/DiagnosisSection.tsx",
         "src/components/pei/PlanningSection.tsx",
-        "src/components/pei/ReferralsSection.tsx",
+        "src/components/pei/EvaluationSection.tsx",
         "src/components/pei/ReportView.tsx"
       ]
     },
     {
-      "name": "teacher_dashboard",
-      "description": "Dashboard do professor com estatísticas, PEIs e alunos",
-      "files": [
-        "src/components/dashboards/TeacherDashboard.tsx"
-      ]
-    },
-    {
-      "name": "coordinator_dashboard",
-      "description": "Dashboard do coordenador com gestão de PEIs e aprovações",
+      "name": "Dashboard do Coordenador",
+      "description": "Dashboard para coordenadores com fila de validação de PEIs, solicitação de PEIs, gestão de professores por turma, geração de tokens para famílias, estatísticas e análises. Calendário responsivo (1 mês mobile, 2 desktop).",
       "files": [
         "src/components/dashboards/CoordinatorDashboard.tsx",
+        "src/components/coordinator/RequestPEIDialog.tsx",
         "src/components/coordinator/PEIQueueTable.tsx",
-        "src/components/coordinator/RequestPEIDialog.tsx"
+        "src/components/coordinator/PEIDetailDialog.tsx",
+        "src/components/coordinator/GenerateFamilyTokenDialog.tsx",
+        "src/components/coordinator/ClassTeachersSelector.tsx",
+        "src/components/coordinator/ManageClassTeachersDialog.tsx"
       ]
     },
     {
-      "name": "family_access",
-      "description": "Acesso da família via tokens seguros para visualizar PEIs",
+      "name": "Dashboard do Diretor Escolar",
+      "description": "Visão estratégica da escola com gestão de professores e turmas, análises consolidadas, gerenciamento de recursos.",
       "files": [
-        "src/pages/FamilyAccess.tsx",
-        "src/pages/FamilyPEIView.tsx",
-        "src/pages/SecureFamilyAccess.tsx",
-        "src/components/coordinator/GenerateFamilyTokenDialog.tsx"
+        "src/components/dashboards/SchoolDirectorDashboard.tsx",
+        "src/components/coordinator/ClassTeachersSelector.tsx"
       ]
     },
     {
-      "name": "student_management",
-      "description": "Gerenciamento de alunos com CRUD completo",
+      "name": "Dashboard do Secretário de Educação",
+      "description": "Visão executiva da rede com estatísticas de todas as escolas, upload de logo personalizada da rede, gerenciamento de professores em múltiplas escolas, exportação de relatórios, análise comparativa.",
       "files": [
-        "src/pages/Students.tsx",
-        "src/components/superadmin/CreateStudentDialog.tsx",
-        "src/components/superadmin/EditStudentDialog.tsx",
-        "src/components/superadmin/StudentsTable.tsx"
-      ]
-    },
-    {
-      "name": "offline_sync",
-      "description": "Sistema offline-first com sincronização automática",
-      "files": [
-        "src/hooks/useOfflineSync.ts",
-        "src/hooks/useOfflineQuery.ts",
-        "src/lib/offlineDatabase.ts",
-        "src/lib/offlineStorage.ts",
-        "src/services/SyncService.ts",
-        "src/components/shared/OfflineIndicator.tsx",
-        "src/components/shared/PendingChangesIndicator.tsx"
-      ]
-    },
-    {
-      "name": "notifications",
-      "description": "Sistema de notificações push e contextuais",
-      "files": [
-        "src/pages/Notifications.tsx",
-        "src/components/shared/NotificationBell.tsx",
-        "src/components/shared/NotificationManager.tsx",
-        "src/lib/notifications.ts"
-      ]
-    },
-    {
-      "name": "reports",
-      "description": "Relatórios e visualizações de dados",
-      "files": [
-        "src/pages/Reports.tsx",
-        "src/components/pei/ReportView.tsx"
-      ]
-    },
-    {
-      "name": "pei_versioning",
-      "description": "Versionamento e histórico de versões de PEIs",
-      "files": [
-        "src/components/pei/PEIHistoryDialog.tsx",
-        "src/components/pei/PEIVersionHistory.tsx",
-        "src/components/pei/PEIVersionCompare.tsx",
-        "src/hooks/usePEIVersioning.ts"
-      ]
-    },
-    {
-      "name": "multi_tenant",
-      "description": "Sistema multi-tenant com hierarquia de rede-escola-usuário",
-      "files": [
-        "src/hooks/useTenant.ts",
+        "src/components/dashboards/EducationSecretaryDashboard.tsx",
+        "src/components/coordinator/NetworkClassTeachersSelector.tsx",
         "src/components/shared/InstitutionalLogo.tsx"
       ]
     },
     {
-      "name": "pwa_support",
-      "description": "Suporte PWA com service worker e instalação",
+      "name": "Sistema de Versionamento de PEIs",
+      "description": "Controle automático de versões de PEIs com garantia de apenas 1 PEI ativo por aluno. Histórico completo de versões visualizável, snapshots automáticos de alterações.",
       "files": [
-        "src/components/shared/PWAUpdatePrompt.tsx"
+        "src/pages/CreatePEI.tsx",
+        "src/components/pei/PEIVersionHistoryDialog.tsx",
+        "src/hooks/usePEIVersioning.ts"
       ]
     },
     {
-      "name": "ui_components",
-      "description": "Componentes de UI reutilizáveis baseados em shadcn/ui",
+      "name": "Múltiplos Professores por PEI",
+      "description": "Sistema que permite atribuir múltiplos professores a um PEI (1 primário + complementares). Professores de turmas são automaticamente atribuídos ao criar PEI baseado na matrícula do aluno.",
       "files": [
-        "src/components/ui/"
+        "src/components/coordinator/ManagePEITeachersDialog.tsx",
+        "src/components/coordinator/ClassTeachersSelector.tsx",
+        "src/components/coordinator/ManageClassTeachersDialog.tsx"
+      ]
+    },
+    {
+      "name": "Sistema de Avatars Personalizáveis",
+      "description": "Avatars com emojis e cores customizáveis por usuário. Emojis padrão por role. Componente reutilizável UserAvatar.",
+      "files": [
+        "src/components/shared/UserAvatar.tsx",
+        "src/components/shared/EmojiAvatarPicker.tsx",
+        "src/pages/Profile.tsx"
+      ]
+    },
+    {
+      "name": "Logos Personalizadas por Rede",
+      "description": "Secretários de educação podem fazer upload de logo personalizada da rede. Armazenamento no Supabase Storage. Fallback com ícone padrão.",
+      "files": [
+        "src/components/shared/InstitutionalLogo.tsx"
+      ]
+    },
+    {
+      "name": "Gestão de Alunos e Matrículas",
+      "description": "Cadastro de alunos com informações de matrícula (ano letivo, série, turma, turno). Histórico de matrículas. Controle de acesso professor-aluno (student_access).",
+      "files": [
+        "src/pages/Students.tsx"
+      ]
+    },
+    {
+      "name": "Sistema de Notificações",
+      "description": "Notificações em tempo real para criação, submissão, aprovação e retorno de PEIs. Bell icon com contador de não lidas. Página de notificações com filtros e ações (marcar como lida, excluir).",
+      "files": [
+        "src/pages/Notifications.tsx",
+        "src/components/shared/NotificationBell.tsx",
+        "src/lib/notifications.ts"
+      ]
+    },
+    {
+      "name": "Perfil do Usuário",
+      "description": "Página de perfil com edição de nome, telefone, seleção de avatar (emoji + cor), visualização de roles, afiliação escola/rede, atividades recentes.",
+      "files": [
+        "src/pages/Profile.tsx",
+        "src/components/shared/UserAvatar.tsx",
+        "src/components/shared/EmojiAvatarPicker.tsx"
+      ]
+    },
+    {
+      "name": "Relatórios Globais (Superadmin)",
+      "description": "Relatórios consolidados de TODAS as redes do sistema. Estatísticas globais, comparativos por rede, geração e exportação de relatórios. Acesso exclusivo superadmin.",
+      "files": [
+        "src/pages/Reports.tsx"
+      ]
+    },
+    {
+      "name": "Impressão de PEIs",
+      "description": "Geração de PDF formatado de PEIs com jsPDF. Visualização rápida sem edição via modal.",
+      "files": [
+        "src/components/pei/ReportView.tsx"
+      ]
+    },
+    {
+      "name": "Modo Offline (PWA)",
+      "description": "Aplicação Progressive Web App com suporte offline via IndexedDB (Dexie.js). Sincronização automática ao reconectar. Service Worker para cache.",
+      "files": [
+        "src/lib/offlineDatabase.ts",
+        "src/lib/offlineStorage.ts",
+        "src/hooks/useOfflineSync.ts",
+        "src/hooks/useOnlineStatus.ts",
+        "src/hooks/useSyncOnReconnect.ts",
+        "src/services/cacheService.ts",
+        "src/services/SyncService.ts"
+      ]
+    },
+    {
+      "name": "Sistema Multi-Tenant",
+      "description": "Arquitetura multi-tenant hierárquica (Tenant → Schools → Students → PEIs). Hook useTenant para contexto de rede/escola.",
+      "files": [
+        "src/hooks/useTenant.ts"
+      ]
+    },
+    {
+      "name": "Controle de Permissões (RLS)",
+      "description": "Sistema de permissões baseado em roles com Row Level Security no Supabase. Hook usePermissions para verificações no frontend.",
+      "files": [
+        "src/hooks/usePermissions.ts"
+      ]
+    },
+    {
+      "name": "Navegação Mobile",
+      "description": "Menu lateral mobile com navegação filtrada por role. Indicador de mudanças pendentes offline. Totalmente responsivo.",
+      "files": [
+        "src/components/shared/MobileNavigation.tsx"
+      ]
+    },
+    {
+      "name": "Dark Mode",
+      "description": "Toggle de tema claro/escuro com persistência. Componente ThemeToggle reutilizável.",
+      "files": [
+        "src/components/shared/ThemeToggle.tsx"
+      ]
+    },
+    {
+      "name": "Componentes UI (shadcn/ui)",
+      "description": "Biblioteca de componentes UI reutilizáveis: Button, Card, Input, Select, Dialog, Table, Badge, Progress, Tabs, Calendar, Avatar, etc.",
+      "files": [
+        "src/components/ui/button.tsx",
+        "src/components/ui/card.tsx",
+        "src/components/ui/input.tsx",
+        "src/components/ui/select.tsx",
+        "src/components/ui/dialog.tsx",
+        "src/components/ui/table.tsx",
+        "src/components/ui/badge.tsx",
+        "src/components/ui/progress.tsx",
+        "src/components/ui/tabs.tsx",
+        "src/components/ui/calendar.tsx",
+        "src/components/ui/avatar.tsx",
+        "src/components/ui/alert.tsx",
+        "src/components/ui/toast.tsx"
       ]
     }
   ]
