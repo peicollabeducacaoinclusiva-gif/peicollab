@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CompleteStudentProfile, RiskIndicators, StudentSuggestions } from '../../services/superfichaService';
+import { CompleteStudentProfile, StudentSuggestions } from '../../services/superfichaService';
+import type { RiskIndicators } from '../../services/superfichaTypes';
 import { RiskIndicators as RiskIndicatorsComponent } from './RiskIndicators';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import { cn } from '@/lib/utils';

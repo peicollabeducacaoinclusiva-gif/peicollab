@@ -12,6 +12,15 @@ import { SearchProvider } from './components/search/SearchProvider';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 
+// Módulos
+import { ModuleGuard } from './core/components/ModuleGuard';
+import { ModuleNotAvailable } from './core/components/ModuleNotAvailable';
+import { AtividadesRoutes } from './modules/atividades';
+import { BlogAdminRoutes } from './modules/blog';
+import { MerendaRoutes } from './modules/merenda';
+import { PlanejamentoRoutes } from './modules/planejamento';
+import { TransporteRoutes } from './modules/transporte';
+
 // Lazy loading para melhor performance
 const Students = lazy(() => import('./pages/Students'));
 const StudentProfile = lazy(() => import('./pages/StudentProfile'));
@@ -625,6 +634,77 @@ function App() {
                     <Suspense fallback={<PageLoader />}>
                       <StudentApproval />
                     </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* MÓDULOS COM GUARD */}
+              <Route
+                path="/modulo-nao-disponivel"
+                element={<ModuleNotAvailable />}
+              />
+              
+              <Route
+                path="/atividades/*"
+                element={
+                  <ProtectedRoute>
+                    <ModuleGuard module="atividades">
+                      <Suspense fallback={<PageLoader />}>
+                        <AtividadesRoutes />
+                      </Suspense>
+                    </ModuleGuard>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/admin/blog/*"
+                element={
+                  <ProtectedRoute>
+                    <ModuleGuard module="blog">
+                      <Suspense fallback={<PageLoader />}>
+                        <BlogAdminRoutes />
+                      </Suspense>
+                    </ModuleGuard>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/merenda/*"
+                element={
+                  <ProtectedRoute>
+                    <ModuleGuard module="merenda">
+                      <Suspense fallback={<PageLoader />}>
+                        <MerendaRoutes />
+                      </Suspense>
+                    </ModuleGuard>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/planejamento/*"
+                element={
+                  <ProtectedRoute>
+                    <ModuleGuard module="planejamento">
+                      <Suspense fallback={<PageLoader />}>
+                        <PlanejamentoRoutes />
+                      </Suspense>
+                    </ModuleGuard>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/transporte/*"
+                element={
+                  <ProtectedRoute>
+                    <ModuleGuard module="transporte">
+                      <Suspense fallback={<PageLoader />}>
+                        <TransporteRoutes />
+                      </Suspense>
+                    </ModuleGuard>
                   </ProtectedRoute>
                 }
               />

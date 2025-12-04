@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS tenant_modules (
   module_name TEXT NOT NULL,
   is_enabled BOOLEAN DEFAULT false,
   enabled_at TIMESTAMPTZ,
-  enabled_by UUID REFERENCES user_profiles(id),
+  enabled_by UUID REFERENCES profiles(id),
   settings JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -41,33 +41,14 @@ CREATE INDEX idx_tenant_modules_enabled ON tenant_modules(tenant_id, is_enabled)
 CREATE INDEX idx_tenant_modules_name ON tenant_modules(module_name);
 
 -- =====================================================
--- BLOG POSTS (Para módulo Blog)
+-- BLOG POSTS (Tabela já existe - apenas ajustes)
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS blog_posts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  slug TEXT NOT NULL,
-  excerpt TEXT,
-  content TEXT NOT NULL,
-  featured_image TEXT,
-  author_id UUID REFERENCES user_profiles(id),
-  status TEXT DEFAULT 'draft', -- draft, published, archived
-  published_at TIMESTAMPTZ,
-  tags TEXT[] DEFAULT '{}',
-  views_count INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(tenant_id, slug)
-);
+-- A tabela blog_posts já existe no banco com estrutura completa
+-- Vamos apenas garantir que alguns índices existam
 
-COMMENT ON TABLE blog_posts IS 'Posts do blog para publicação na landing page';
-
-CREATE INDEX idx_blog_posts_tenant ON blog_posts(tenant_id);
-CREATE INDEX idx_blog_posts_status ON blog_posts(status);
-CREATE INDEX idx_blog_posts_published ON blog_posts(published_at DESC) WHERE status = 'published';
-CREATE INDEX idx_blog_posts_slug ON blog_posts(tenant_id, slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_tenant_published ON blog_posts(tenant_id, status, published_at DESC) 
+WHERE status = 'published';
 
 -- =====================================================
 -- SEED: MÓDULOS DISPONÍVEIS
@@ -153,7 +134,7 @@ BEGIN
     bp.tags,
     bp.views_count
   FROM blog_posts bp
-  LEFT JOIN user_profiles up ON up.id = bp.author_id
+  LEFT JOIN profiles up ON up.id = bp.author_id
   WHERE bp.tenant_id = p_tenant_id 
     AND bp.status = 'published'
     AND bp.published_at <= NOW()
@@ -207,7 +188,7 @@ BEGIN
     bp.tags,
     bp.views_count + 1 as views_count
   FROM blog_posts bp
-  LEFT JOIN user_profiles up ON up.id = bp.author_id
+  LEFT JOIN profiles up ON up.id = bp.author_id
   WHERE bp.tenant_id = p_tenant_id 
     AND bp.slug = p_slug
     AND bp.status = 'published';
@@ -282,22 +263,21 @@ ALTER TABLE tenant_modules ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tenant_modules_select_own" ON tenant_modules
   FOR SELECT USING (
     tenant_id IN (
-      SELECT tenant_id FROM user_profiles WHERE id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()
     )
   );
 
--- blog_posts: leitura pública de posts publicados
-ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "blog_posts_select_published" ON blog_posts
-  FOR SELECT USING (
-    status = 'published' AND published_at <= NOW()
-  );
-
-CREATE POLICY "blog_posts_all_own_tenant" ON blog_posts
-  FOR ALL USING (
-    tenant_id IN (
-      SELECT tenant_id FROM user_profiles WHERE id = auth.uid()
-    )
-  );
+-- blog_posts: RLS já habilitado, vamos adicionar política se não existir
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'blog_posts' AND policyname = 'blog_posts_select_published_modules'
+  ) THEN
+    CREATE POLICY "blog_posts_select_published_modules" ON blog_posts
+      FOR SELECT USING (
+        status = 'published' AND published_at <= NOW()
+      );
+  END IF;
+END $$;
 

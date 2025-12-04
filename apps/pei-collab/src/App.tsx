@@ -13,6 +13,12 @@ import { useSyncOnReconnect } from "@/hooks/useSyncOnReconnect";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
 
+// Módulos
+import { ModuleGuard } from "./core/components/ModuleGuard";
+import { ModuleNotAvailable } from "./core/components/ModuleNotAvailable";
+import { PlanoAEERoutes } from "./modules/plano-aee";
+import { PortalResponsavelRoutes } from "./portal-responsavel";
+
 // Lazy load components
 const Splash = lazy(() => import("./pages/Splash"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -127,6 +133,25 @@ function App() {
                 <Route path="/debug/database" element={<DatabaseDebug />} />
                 <Route path="/debug/usability" element={<UsabilityDebug />} />
                 <Route path="/debug/notifications" element={<NotificationsDebug />} />
+                
+                {/* MÓDULOS COM GUARD */}
+                <Route path="/modulo-nao-disponivel" element={<ModuleNotAvailable />} />
+                
+                <Route
+                  path="/plano-aee/*"
+                  element={
+                    <ModuleGuard module="plano-aee">
+                      <PlanoAEERoutes />
+                    </ModuleGuard>
+                  }
+                />
+                
+                <Route
+                  path="/portal/*"
+                  element={
+                    <PortalResponsavelRoutes />
+                  }
+                />
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

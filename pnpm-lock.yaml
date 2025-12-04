@@ -374,6 +374,9 @@ importers:
       react-i18next:
         specifier: ^13.5.0
         version: 13.5.0(i18next@23.16.8)(react-dom@18.2.0)(react@18.2.0)
+      react-quill:
+        specifier: ^2.0.0
+        version: 2.0.0(react-dom@18.2.0)(react@18.2.0)
       react-resizable-panels:
         specifier: ^2.0.0
         version: 2.1.9(react-dom@18.2.0)(react@18.2.0)
