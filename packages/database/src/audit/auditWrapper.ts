@@ -15,7 +15,7 @@ export class AuditWrapper {
     client: SupabaseClient<Database>,
     entityType: EntityType,
     tableName: string,
-    query: ReturnType<typeof client.from<any>['select']>
+    query: any
   ): Promise<{ data: T[] | null; error: any }> {
     const result = await query;
 
@@ -41,7 +41,7 @@ export class AuditWrapper {
     client: SupabaseClient<Database>,
     entityType: EntityType,
     tableName: string,
-    query: ReturnType<typeof client.from<any>['insert']>
+    query: any
   ): Promise<{ data: T[] | null; error: any }> {
     const result = await query;
 
@@ -67,7 +67,7 @@ export class AuditWrapper {
     entityType: EntityType,
     tableName: string,
     entityId: string,
-    query: ReturnType<typeof client.from<any>['update']>,
+    query: any,
     oldData?: any
   ): Promise<{ data: T[] | null; error: any }> {
     const result = await query;
@@ -91,7 +91,7 @@ export class AuditWrapper {
     entityType: EntityType,
     tableName: string,
     entityId: string,
-    query: ReturnType<typeof client.from<any>['delete']>
+    query: any
   ): Promise<{ data: T[] | null; error: any }> {
     const result = await query;
 

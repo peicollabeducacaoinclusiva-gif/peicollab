@@ -1,6 +1,6 @@
 // Exportações do módulo de auditoria
-export * from './auditLogger';
-export * from './auditWrapper';
-export * from './auditMiddleware';
+export { AuditLogger, type AuditAction } from './auditLogger';
+export { AuditWrapper, withAudit as withAuditWrapper } from './auditWrapper';
+export { withAudit, createAuditMiddleware } from './auditMiddleware';
 export * from './auditHelper';
 
