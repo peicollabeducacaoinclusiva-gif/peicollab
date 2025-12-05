@@ -4,9 +4,6 @@ import {
   GraduationCap, 
   School, 
   Accessibility, 
-  Calendar, 
-  PenTool, 
-  FileText,
   LogOut
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,9 +74,9 @@ export default function AppHub() {
     {
       id: 'gestao',
       name: 'Gestão Escolar',
-      description: 'Cadastros e Gerenciamento',
+      description: 'Cadastros, Gerenciamento e Módulos Integrados',
       icon: School,
-      path: import.meta.env.VITE_GESTAO_ESCOLAR_URL || 'http://localhost:5174',
+      path: (import.meta.env.VITE_GESTAO_ESCOLAR_URL || 'http://localhost:5174') + '/dashboard',
       color: 'bg-green-500',
       roles: ['coordinator', 'school_manager', 'education_secretary']
     },
@@ -88,36 +85,9 @@ export default function AppHub() {
       name: 'Plano de AEE',
       description: 'Atendimento Educacional Especializado',
       icon: Accessibility,
-      path: import.meta.env.VITE_PLANO_AEE_URL || 'http://localhost:5175',
+      path: '/plano-aee',
       color: 'bg-purple-500',
       roles: ['aee_teacher', 'coordinator']
-    },
-    {
-      id: 'planejamento',
-      name: 'Planejamento',
-      description: 'Planejar e organizar aulas',
-      icon: Calendar,
-      path: import.meta.env.VITE_PLANEJAMENTO_URL || 'http://localhost:5176',
-      color: 'bg-indigo-500',
-      roles: ['teacher', 'aee_teacher', 'coordinator']
-    },
-    {
-      id: 'atividades',
-      name: 'Atividades',
-      description: 'Criar e compartilhar atividades',
-      icon: PenTool,
-      path: import.meta.env.VITE_ATIVIDADES_URL || 'http://localhost:5177',
-      color: 'bg-pink-500',
-      roles: ['teacher', 'aee_teacher', 'coordinator']
-    },
-    {
-      id: 'blog',
-      name: 'Blog Educacional',
-      description: 'Conteúdo sobre inclusão e o sistema',
-      icon: FileText,
-      path: import.meta.env.VITE_BLOG_URL || 'http://localhost:5179',
-      color: 'bg-orange-500',
-      roles: ['all']
     }
   ];
 
