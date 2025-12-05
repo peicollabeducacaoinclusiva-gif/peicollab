@@ -230,11 +230,77 @@ Ou: Teste123!
 
 ---
 
+## 📦 Sistema de Módulos (NOVO!)
+
+### 🎯 Tenant de Teste Configurado
+
+**Tenant**: Rede Municipal de Educação - Teste  
+**ID**: `00000000-0000-0000-0000-000000000001`
+
+### ✅ Módulos Habilitados (Todos)
+
+**Gestão Escolar** (gestao.peicollab.com.br):
+1. ✅ **Atividades** - `/atividades` - Geração de atividades pedagógicas
+2. ✅ **Blog** - `/admin/blog` - Gestão de posts (público em `/blog`)
+3. ✅ **Merenda** - `/merenda` - Gestão de cardápios
+4. ✅ **Planejamento** - `/planejamento` - Planos de aula
+5. ✅ **Transporte** - `/transporte` - Rotas e veículos
+
+**PEI Collab** (pei.peicollab.com.br):
+6. ✅ **Plano AEE** - `/plano-aee` - Atendimento Especializado
+
+### 🔧 Administração de Módulos
+
+**Acesso**: Como **Superadmin**
+```
+URL: /superadmin/modules
+Email: peicollabeducacaoinclusiva@gmail.com
+```
+
+**Funcionalidades:**
+- Ver todos os módulos disponíveis
+- Habilitar/desabilitar por tenant
+- Configurações por módulo
+- Resumo visual
+
+### 🧪 Como Testar
+
+**1. Verificar Menu Dinâmico:**
+```
+Login → Menu deve mostrar apenas módulos habilitados
+```
+
+**2. Testar Módulo:**
+```
+Clicar em "Atividades" → Deve carregar /atividades/dashboard
+```
+
+**3. Testar Guard:**
+```
+Superadmin desabilita módulo → Usuário não vê no menu
+Tentar acessar URL diretamente → Redireciona para "Módulo Não Disponível"
+```
+
+**4. Blog Público:**
+```
+Sem login: Acessar /blog → Ver posts publicados
+Com login: Acessar /admin/blog → Criar/editar posts
+```
+
+### 📚 Documentação
+
+- [SISTEMA_MODULOS.md](./SISTEMA_MODULOS.md) - Documentação técnica completa
+- [GUIA_TESTES_MODULOS.md](./GUIA_TESTES_MODULOS.md) - Guia detalhado de testes
+- [scripts/enable-test-modules.sql](./scripts/enable-test-modules.sql) - Scripts SQL
+
+---
+
 **⭐ Use este documento como referência para testes!**
 
 ---
 
 **Criado em:** Janeiro 2025  
+**Atualizado em:** Dezembro 2025 (Sistema de Módulos)  
 **Para:** Testes e desenvolvimento
 
 
