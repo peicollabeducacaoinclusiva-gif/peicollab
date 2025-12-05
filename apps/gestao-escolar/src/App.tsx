@@ -24,6 +24,11 @@ import { TransporteRoutes } from './modules/transporte';
 // Lazy loading para melhor performance
 const ModuleManagement = lazy(() => import('./pages/superadmin/ModuleManagement'));
 const Students = lazy(() => import('./pages/Students'));
+
+// Landing pages (públicas)
+const LandingHome = lazy(() => import('./landing/pages/Home'));
+const BlogList = lazy(() => import('./landing/pages/BlogList'));
+const BlogPost = lazy(() => import('./landing/pages/BlogPost'));
 const StudentProfile = lazy(() => import('./pages/StudentProfile'));
 const StudentProfileRefactored = lazy(() => import('./pages/StudentProfileRefactored'));
 const StudentLearningHistory = lazy(() => import('./pages/StudentLearningHistory'));
@@ -107,7 +112,36 @@ function App() {
               <BrowserRouter>
                 <SearchProvider>
             <Routes>
+              {/* ROTAS PÚBLICAS */}
+              <Route 
+                path="/" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <LandingHome />
+                  </Suspense>
+                } 
+              />
+              
+              <Route 
+                path="/blog" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <BlogList />
+                  </Suspense>
+                } 
+              />
+              
+              <Route 
+                path="/blog/:slug" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <BlogPost />
+                  </Suspense>
+                } 
+              />
+              
               <Route path="/login" element={<Login />} />
+              
               <Route
                 path="/diary/public/:enrollmentId"
                 element={
@@ -116,7 +150,9 @@ function App() {
                   </Suspense>
                 }
               />
-              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              
+              {/* DASHBOARD PROTEGIDO */}
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route
                 path="/students"
                 element={
