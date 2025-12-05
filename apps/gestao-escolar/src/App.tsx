@@ -22,6 +22,7 @@ import { PlanejamentoRoutes } from './modules/planejamento';
 import { TransporteRoutes } from './modules/transporte';
 
 // Lazy loading para melhor performance
+const ModuleManagement = lazy(() => import('./pages/superadmin/ModuleManagement'));
 const Students = lazy(() => import('./pages/Students'));
 const StudentProfile = lazy(() => import('./pages/StudentProfile'));
 const StudentProfileRefactored = lazy(() => import('./pages/StudentProfileRefactored'));
@@ -633,6 +634,17 @@ function App() {
                   <ProtectedRoute>
                     <Suspense fallback={<PageLoader />}>
                       <StudentApproval />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/superadmin/modules"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <ModuleManagement />
                     </Suspense>
                   </ProtectedRoute>
                 }
