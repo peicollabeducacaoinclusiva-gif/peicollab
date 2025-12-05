@@ -6,7 +6,7 @@ export default function Login() {
       appName="Gestão Escolar"
       appSubtitle="Sistema de Cadastro da Rede de Ensino"
       appLogo="/logo.png"
-      redirectTo="/"
+      redirectTo="/dashboard"
       validateProfile={true}
       requireSchoolId={false}
       showForgotPassword={true}
