@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useBlogPost } from '../hooks/useBlogPosts';
+import { usePublicBlogPost } from '../hooks/usePublicBlogPosts';
 import { Loader2, Calendar, User, Eye, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -9,7 +9,7 @@ import { ptBR } from 'date-fns/locale';
  */
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
-  const { post, loading } = useBlogPost(slug);
+  const { post, loading } = usePublicBlogPost(slug);
   
   if (loading) {
     return (

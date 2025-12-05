@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useBlogPosts } from '../hooks/useBlogPosts';
+import { usePublicBlogPosts } from '../hooks/usePublicBlogPosts';
 import { BlogPostCard } from './BlogPostCard';
 import { Loader2, Newspaper } from 'lucide-react';
 
@@ -7,7 +7,7 @@ import { Loader2, Newspaper } from 'lucide-react';
  * Seção de blog/notícias na landing page (acesso público)
  */
 export function BlogSection() {
-  const { posts, loading } = useBlogPosts({ limit: 3 });
+  const { posts, loading } = usePublicBlogPosts({ limit: 3 });
   
   if (loading) {
     return (

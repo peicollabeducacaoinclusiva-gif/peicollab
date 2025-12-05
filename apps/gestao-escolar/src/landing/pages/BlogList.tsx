@@ -1,4 +1,4 @@
-import { useBlogPosts } from '../hooks/useBlogPosts';
+import { usePublicBlogPosts } from '../hooks/usePublicBlogPosts';
 import { BlogPostCard } from '../components/BlogPostCard';
 import { Loader2, Newspaper } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
  * Página pública de lista de posts do blog
  */
 export default function BlogList() {
-  const { posts, loading } = useBlogPosts({ limit: 20 });
+  const { posts, loading } = usePublicBlogPosts({ limit: 20 });
   
   return (
     <div className="min-h-screen bg-background">
