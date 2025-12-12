@@ -1,7 +1,6 @@
 {
   "buildCommand": "pnpm turbo run build --filter=@pei-collab/gestao-escolar",
   "outputDirectory": "dist",
-  "installCommand": "pnpm install --frozen-lockfile",
   "framework": null
 }
 
