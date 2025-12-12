@@ -11,6 +11,11 @@
     },
     {
       "source": "/(.*)",
+      "destination": "/apps/pei-collab/dist/$1",
+      "has": [{ "type": "host", "value": "www.peicollab.com.br" }]
+    },
+    {
+      "source": "/(.*)",
       "destination": "/apps/gestao-escolar/dist/$1",
       "has": [{ "type": "host", "value": "gestao.peicollab.com.br" }]
     }
