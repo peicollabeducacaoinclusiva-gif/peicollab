@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm turbo run build --filter=@pei/pei-collab --filter=@pei-collab/gestao-escolar",
+  "buildCommand": "cd apps/pei-collab && pnpm run build",
   "outputDirectory": "apps/pei-collab/dist",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
