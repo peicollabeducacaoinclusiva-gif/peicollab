@@ -1,19 +1,24 @@
 {
-  "buildCommand": "pnpm turbo run build --filter=@pei-collab/gestao-escolar --filter=@pei/pei-collab",
-  "outputDirectory": "apps/gestao-escolar/dist",
+  "buildCommand": "pnpm turbo run build --filter=@pei/pei-collab --filter=@pei-collab/gestao-escolar",
+  "outputDirectory": "apps/pei-collab/dist",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
   "ignoreCommand": "git diff --quiet HEAD^ HEAD",
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/apps/gestao-escolar/dist/$1",
+      "destination": "/apps/pei-collab/dist/$1",
       "has": [{ "type": "host", "value": "peicollab.com.br" }]
     },
     {
       "source": "/(.*)",
       "destination": "/apps/gestao-escolar/dist/$1",
       "has": [{ "type": "host", "value": "gestao.peicollab.com.br" }]
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/apps/gestao-escolar/dist/$1",
+      "has": [{ "type": "host", "value": "gei.peicollab.com.br" }]
     },
     {
       "source": "/(.*)",
