@@ -145,11 +145,10 @@ export const auditService = {
 
   /**
    * Busca logs de acesso de um usuário
-   * Nota: Este método ainda usa RPC get_user_access_logs que pode precisar ser migrado
-   * Por enquanto, mantém compatibilidade com access_logs ou pode ser mapeado de audit_events
+   * Usa get_audit_trail quando tenantId está disponível, fallback para get_user_access_logs
    */
   async getUserAccessLogs(userId: string, limit: number = 100, tenantId?: string): Promise<AccessLog[]> {
-    // Se tivermos tenantId, podemos usar get_audit_trail filtrando por actor_id
+    // Se tivermos tenantId, usar get_audit_trail filtrando por actor_id
     if (tenantId) {
       const { data, error } = await supabase.rpc('get_audit_trail', {
         p_tenant_id: tenantId,
@@ -180,13 +179,32 @@ export const auditService = {
     }
 
     // Fallback para RPC antigo se não tiver tenantId
-    const { data, error } = await supabase.rpc('get_user_access_logs', {
-      p_user_id: userId,
-      p_limit: limit,
-    });
+    try {
+      const { data, error } = await supabase.rpc('get_user_access_logs', {
+        p_user_id: userId,
+        p_limit: limit,
+      });
 
-    if (error) throw error;
-    return (data || []) as AccessLog[];
+      if (error) throw error;
+      
+      // Mapear resultado do RPC antigo para AccessLog[]
+      return (data || []).map((item: any) => ({
+        id: item.id || '',
+        user_id: item.user_id || userId,
+        action: item.action || '',
+        resource: item.resource || undefined,
+        resource_id: item.resource_id || undefined,
+        ip_address: item.ip_address || undefined,
+        user_agent: item.user_agent || undefined,
+        success: item.success !== undefined ? item.success : true,
+        error_message: item.error_message || undefined,
+        created_at: item.created_at || new Date().toISOString(),
+      })) as AccessLog[];
+    } catch (err) {
+      // Se o RPC não existir, retornar array vazio
+      console.warn('RPC get_user_access_logs não disponível, retornando logs vazios');
+      return [];
+    }
   },
 
   /**

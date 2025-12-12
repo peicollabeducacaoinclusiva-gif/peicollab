@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@pei/database';
-import { CheckCircle, XCircle, AlertTriangle, Search } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { AppHeader } from '@pei/ui';
 import {
   Button,

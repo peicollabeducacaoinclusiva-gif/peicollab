@@ -84,14 +84,6 @@ export default function Students() {
     });
   };
 
-  const _toggleSort = (_key: 'name' | 'class' | 'school') => {
-    if (sortKey === _key) {
-      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortKey(_key);
-      setSortDir('asc');
-    }
-  };
 
   const getInitials = (schoolName?: string) => {
     if (!schoolName) return '-';

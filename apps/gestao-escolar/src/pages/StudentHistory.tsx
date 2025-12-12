@@ -51,7 +51,7 @@ export default function StudentHistory() {
   const [students, setStudents] = useState<Array<{ id: string; name: string; registration_number?: string }>>([]);
   const [history, setHistory] = useState<StudentAcademicHistory | null>(null);
   const [loading, setLoading] = useState(false);
-  const [academicYear, _setAcademicYear] = useState<number>(new Date().getFullYear());
+  const [academicYear] = useState<number>(new Date().getFullYear());
   const [selectedYearForReport, setSelectedYearForReport] = useState<number | null>(null);
 
   useEffect(() => {

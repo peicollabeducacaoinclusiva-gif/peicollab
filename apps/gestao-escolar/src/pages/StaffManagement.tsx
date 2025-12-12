@@ -71,7 +71,7 @@ const ABSENCE_TYPES = {
 
 export default function StaffManagement() {
   const { data: userProfile } = useUserProfile();
-  const { data: _schoolsData = [] } = useSchools(userProfile?.tenant_id || '');
+  useSchools(userProfile?.tenant_id || ''); // Dados de escolas não usados diretamente
   const { data: classesData } = useClasses({
     tenantId: userProfile?.tenant_id || '',
     page: 1,

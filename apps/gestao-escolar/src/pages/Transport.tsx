@@ -32,9 +32,6 @@ export default function Transport() {
   const [schoolId, setSchoolId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [createVehicleOpen, setCreateVehicleOpen] = useState(false);
-  const [_createRouteOpen, _setCreateRouteOpen] = useState(false);
-  const [_editingVehicle, _setEditingVehicle] = useState<Vehicle | null>(null);
-  const [_editingRoute, _setEditingRoute] = useState<TransportRoute | null>(null);
   
   const { toast } = useToast();
 
@@ -118,31 +115,6 @@ export default function Transport() {
     }
   }
 
-  async function _handleCreateRoute(_formData: any) {
-    if (!schoolId) return;
-
-    try {
-      const { error } = await supabase.rpc('create_transport_route', {
-        p_school_id: schoolId,
-        p_route_name: formData.route_name,
-        p_route_code: formData.route_code || null,
-        p_stops: formData.stops ? JSON.parse(formData.stops) : [],
-        p_morning_departure_time: formData.morning_departure_time || null,
-        p_morning_arrival_time: formData.morning_arrival_time || null,
-        p_afternoon_departure_time: formData.afternoon_departure_time || null,
-        p_afternoon_arrival_time: formData.afternoon_arrival_time || null,
-        p_vehicle_id: formData.vehicle_id || null,
-      });
-
-      if (error) throw error;
-
-      toast({ title: 'Sucesso', description: 'Rota criada com sucesso' });
-      setCreateRouteOpen(false);
-      await loadData(schoolId);
-    } catch (error: any) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    }
-  }
 
   async function exportCSV() {
     try {

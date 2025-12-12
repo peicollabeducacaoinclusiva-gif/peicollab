@@ -44,7 +44,10 @@ Estes Termos regulam o uso dos aplicativos do ecossistema Inclusão/PEI Collab. 
 - Podemos atualizar, modificar ou descontinuar funcionalidades, buscando preservar continuidade e comunicar mudanças relevantes.
 
 ## 9. Suporte e Comunicação
-- Canais de suporte: [preencher e-mail/canal].
+- **Canais de suporte:** 
+  - E-mail: suporte@[dominio-instituicao].gov.br
+  - Portal de atendimento: [URL do portal de atendimento]
+  - Telefone: [Telefone de suporte, se disponível]
 - Notificações podem ser enviadas via app ou e-mail, conforme preferências e bases legais aplicáveis.
 
 ## 10. Suspensão e Encerramento
@@ -59,8 +62,10 @@ Estes Termos regulam o uso dos aplicativos do ecossistema Inclusão/PEI Collab. 
 - Estes Termos podem ser atualizados; comunicaremos mudanças relevantes e a data de vigência.
 
 ## 13. Lei e Foro
-- Lei aplicável: legislação brasileira.
-- Foro: [preencher comarca], salvo disposições específicas aplicáveis ao setor público.
+- **Lei aplicável:** Legislação brasileira, especialmente a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
+- **Foro:** Comarca da Capital do Estado / [A ser preenchido com a comarca específica], salvo disposições específicas aplicáveis ao setor público que estabeleçam competência administrativa ou judicial diversa.
 
 ## 14. Contato
-- Dúvidas sobre estes Termos: [preencher e-mail/canal].
+- **Dúvidas sobre estes Termos:** 
+  - E-mail: juridico@[dominio-instituicao].gov.br ou termos@[dominio-instituicao].gov.br
+  - Portal de atendimento: [URL do portal de atendimento]

@@ -33,10 +33,17 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log do erro
-    logger.error('ErrorBoundary caught an error', error, {
-      componentStack: errorInfo.componentStack,
-    });
+    // Log do erro com tratamento de erro no logger
+    try {
+      logger.error('ErrorBoundary caught an error', error, {
+        componentStack: errorInfo.componentStack,
+      });
+    } catch (logError) {
+      // Se o logger falhar, pelo menos logar no console
+      console.error('ErrorBoundary: Erro ao fazer log:', logError);
+      console.error('ErrorBoundary: Erro original:', error);
+      console.error('ErrorBoundary: Component stack:', errorInfo.componentStack);
+    }
 
     this.setState({
       error,

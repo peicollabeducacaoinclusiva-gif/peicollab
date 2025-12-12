@@ -97,13 +97,37 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     checkAuth();
 
     // Ouvir mudanças na autenticação
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
+    let subscription: { unsubscribe: () => void } | null = null;
+    try {
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log('🔐 Auth state changed:', event, 'Session:', !!session);
+        setIsAuthenticated(!!session);
+        // Se a sessão foi criada, atualizar estado imediatamente
+        if (event === 'SIGNED_IN' && session) {
+          setLoading(false);
+        }
+        // Se foi deslogado, garantir que o estado seja atualizado
+        if (event === 'SIGNED_OUT') {
+          setIsAuthenticated(false);
+          setLoading(false);
+        }
+      });
+      subscription = authSubscription;
+    } catch (error) {
+      console.error('Erro ao configurar listener de autenticação:', error);
+    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) {
+        try {
+          subscription.unsubscribe();
+        } catch (error) {
+          console.error('Erro ao desinscrever listener de autenticação:', error);
+        }
+      }
+    };
   }, [searchParams, setSearchParams]);
 
   if (loading) {

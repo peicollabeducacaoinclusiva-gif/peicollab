@@ -250,7 +250,7 @@ export function validateCPF(cpf: string): boolean {
 /**
  * Aplicar transformações em dados
  */
-export function applyTransform(value: any, transform?: string, params?: any): any {
+export function applyTransform(value: any, transform?: string): any {
   if (!value) return value;
   
   switch (transform) {

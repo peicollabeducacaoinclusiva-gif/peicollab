@@ -1,5 +1,6 @@
 import { supabase } from '@pei/database';
 import { consentService, type ConsentType, type Consent, type UserConsent } from '@pei/database/consent';
+import { auditMiddleware } from '@pei/database/audit';
 
 export type ConsentMethod = 'digital' | 'paper' | 'verbal';
 

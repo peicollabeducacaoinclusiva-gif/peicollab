@@ -135,12 +135,7 @@ export const evaluationService = {
   }) {
     let query = supabase
       .from('grades')
-      .select(`
-        *,
-        students:student_id(name),
-        subjects:subject_id(subject_name),
-        enrollments:enrollment_id(grade, shift)
-      `)
+      .select('*')
       .eq('academic_year', filters.academicYear);
 
     if (filters.studentId) {
@@ -162,7 +157,33 @@ export const evaluationService = {
     const { data, error } = await query.order('period', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    
+    // Buscar dados relacionados separadamente se necessário
+    const grades = (data || []) as any[];
+    if (grades.length > 0) {
+      const studentIds = [...new Set(grades.map(g => g.student_id).filter(Boolean))];
+      const subjectIds = [...new Set(grades.map(g => g.subject_id).filter(Boolean))];
+      
+      const [studentsResult, subjectsResult] = await Promise.all([
+        studentIds.length > 0 
+          ? supabase.from('students').select('id, name').in('id', studentIds)
+          : Promise.resolve({ data: [], error: null }),
+        subjectIds.length > 0
+          ? supabase.from('subjects').select('id, subject_name').in('id', subjectIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      
+      const studentsMap = new Map((studentsResult.data || []).map((s: any) => [s.id, s.name]));
+      const subjectsMap = new Map((subjectsResult.data || []).map((s: any) => [s.id, s.subject_name]));
+      
+      return grades.map(grade => ({
+        ...grade,
+        student_name: studentsMap.get(grade.student_id),
+        subject_name: subjectsMap.get(grade.subject_id),
+      }));
+    }
+    
+    return grades;
   },
 
   async createGrade(grade: Partial<Grade>) {
@@ -259,11 +280,7 @@ export const evaluationService = {
   }) {
     let query = supabase
       .from('attendance')
-      .select(`
-        *,
-        students:student_id(name),
-        subjects:subject_id(subject_name)
-      `)
+      .select('*')
       .eq('academic_year', filters.academicYear);
 
     if (filters.studentId) {
@@ -285,7 +302,33 @@ export const evaluationService = {
     const { data, error } = await query.order('period', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    
+    // Buscar dados relacionados separadamente se necessário
+    const attendance = (data || []) as any[];
+    if (attendance.length > 0) {
+      const studentIds = [...new Set(attendance.map(a => a.student_id).filter(Boolean))];
+      const subjectIds = [...new Set(attendance.map(a => a.subject_id).filter(Boolean))];
+      
+      const [studentsResult, subjectsResult] = await Promise.all([
+        studentIds.length > 0 
+          ? supabase.from('students').select('id, name').in('id', studentIds)
+          : Promise.resolve({ data: [], error: null }),
+        subjectIds.length > 0
+          ? supabase.from('subjects').select('id, subject_name').in('id', subjectIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      
+      const studentsMap = new Map((studentsResult.data || []).map((s: any) => [s.id, s.name]));
+      const subjectsMap = new Map((subjectsResult.data || []).map((s: any) => [s.id, s.subject_name]));
+      
+      return attendance.map(att => ({
+        ...att,
+        student_name: studentsMap.get(att.student_id),
+        subject_name: subjectsMap.get(att.subject_id),
+      }));
+    }
+    
+    return attendance;
   },
 
   async createAttendance(attendance: Partial<Attendance>) {
@@ -367,11 +410,7 @@ export const evaluationService = {
   }) {
     let query = supabase
       .from('descriptive_reports')
-      .select(`
-        *,
-        students:student_id(name),
-        created_by_profile:created_by(full_name)
-      `)
+      .select('*')
       .eq('academic_year', filters.academicYear);
 
     if (filters.studentId) {
@@ -389,7 +428,33 @@ export const evaluationService = {
     const { data, error } = await query.order('period', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    
+    // Buscar dados relacionados separadamente se necessário
+    const reports = (data || []) as any[];
+    if (reports.length > 0) {
+      const studentIds = [...new Set(reports.map(r => r.student_id).filter(Boolean))];
+      const createdByIds = [...new Set(reports.map(r => r.created_by).filter(Boolean))];
+      
+      const [studentsResult, profilesResult] = await Promise.all([
+        studentIds.length > 0 
+          ? supabase.from('students').select('id, name').in('id', studentIds)
+          : Promise.resolve({ data: [], error: null }),
+        createdByIds.length > 0
+          ? supabase.from('profiles').select('id, full_name').in('id', createdByIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      
+      const studentsMap = new Map((studentsResult.data || []).map((s: any) => [s.id, s.name]));
+      const profilesMap = new Map((profilesResult.data || []).map((p: any) => [p.id, p.full_name]));
+      
+      return reports.map(report => ({
+        ...report,
+        student_name: studentsMap.get(report.student_id),
+        created_by_name: profilesMap.get(report.created_by),
+      }));
+    }
+    
+    return reports;
   },
 
   async createDescriptiveReport(report: Partial<DescriptiveReport>) {

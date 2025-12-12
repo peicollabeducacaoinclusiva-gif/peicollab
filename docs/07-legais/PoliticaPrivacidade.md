@@ -5,11 +5,11 @@
 Esta Política de Privacidade descreve como tratamos dados pessoais no ecossistema Inclusão/PEI Collab e aplicativos relacionados. Nosso compromisso é cumprir a Lei Geral de Proteção de Dados Pessoais (LGPD — Lei nº 13.709/2018) e demais normas aplicáveis.
 
 ## 1. Controlador e Contato
-- Controlador: [preencher com nome da instituição/órgão]
-- CNPJ: [preencher]
-- Endereço: [preencher]
-- Encarregado (DPO): [preencher nome]
-- E-mail de contato (privacidade): [preencher e-mail]
+- **Controlador:** Secretaria de Estado da Educação / Órgão Responsável pela Gestão Educacional
+- **CNPJ:** [A ser preenchido pela instituição responsável]
+- **Endereço:** [A ser preenchido com endereço completo da instituição]
+- **Encarregado (DPO - Data Protection Officer):** [A ser preenchido com nome do Encarregado de Proteção de Dados]
+- **E-mail de contato (privacidade):** privacidade@[dominio-instituicao].gov.br ou lgpd@[dominio-instituicao].gov.br
 
 ## 2. Dados que Coletamos
 Podemos coletar e tratar as seguintes categorias:
@@ -86,7 +86,7 @@ Você tem, entre outros, os seguintes direitos (art. 18, LGPD):
 ## 11. Exercício de Direitos
 Para exercer seus direitos:
 - Utilize as funcionalidades de gestão de consentimentos e privacidade disponíveis no sistema (ex.: painel de consentimentos).
-- Ou entre em contato: [preencher e-mail privacidade].
+- Ou entre em contato: privacidade@[dominio-instituicao].gov.br ou lgpd@[dominio-instituicao].gov.br
 Respostas serão fornecidas dentro dos prazos legais.
 
 ## 12. Transferências Internacionais

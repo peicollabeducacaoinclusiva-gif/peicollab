@@ -5,10 +5,18 @@ import { toast } from 'sonner';
 export function useProfessionals(filters: ProfessionalFilters) {
   return useQuery({
     queryKey: ['professionals', filters],
-    queryFn: () => professionalsService.getProfessionals(filters),
+    queryFn: async () => {
+      try {
+        return await professionalsService.getProfessionals(filters);
+      } catch (error) {
+        console.error('Erro ao buscar profissionais:', error);
+        throw error;
+      }
+    },
     enabled: !!filters.tenantId,
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 30, // 30 minutos
+    retry: 1,
   });
 }
 
@@ -58,13 +66,21 @@ export function useDeleteProfessional() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: professionalsService.deleteProfessional,
+    mutationFn: async (professionalId: string) => {
+      try {
+        return await professionalsService.deleteProfessional(professionalId);
+      } catch (error: any) {
+        console.error('Erro ao desativar profissional:', error);
+        throw error;
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['professionals'] });
       toast.success('Profissional desativado com sucesso');
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erro ao desativar profissional');
+      const message = error?.message || error?.error?.message || 'Erro ao desativar profissional';
+      toast.error(message);
     },
   });
 }

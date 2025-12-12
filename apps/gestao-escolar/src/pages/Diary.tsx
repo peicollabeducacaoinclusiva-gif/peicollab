@@ -932,10 +932,10 @@ export default function Diary() {
                 </CardContent>
               </Card>
             ) : (() => {
-              const gradeSubjectId: string = subjectFilter === 'all' ? '' : (subjectFilter as string);
+              const gradeSubjectId: string = subjectFilter === 'all' || !subjectFilter ? '' : String(subjectFilter);
               return (
                 <DiaryGradeEntry
-                  classId={classFilter === 'all' ? '' : classFilter}
+                  classId={classFilter === 'all' ? '' : (classFilter || '')}
                   subjectId={gradeSubjectId}
                   date={new Date().toISOString().split('T')[0]}
                   academicYear={academicYear}
@@ -955,10 +955,10 @@ export default function Diary() {
                 </CardContent>
               </Card>
             ) : (() => {
-              const reportSubjectId: string = subjectFilter !== 'all' ? (subjectFilter as string) : '';
+              const reportSubjectId: string = subjectFilter !== 'all' && subjectFilter ? String(subjectFilter) : '';
               return (
                 <DiaryDescriptiveReport
-                  classId={classFilter === 'all' ? '' : classFilter}
+                  classId={classFilter === 'all' ? '' : (classFilter || '')}
                   subjectId={reportSubjectId}
                   date={new Date().toISOString().split('T')[0]}
                   academicYear={academicYear}
@@ -1580,12 +1580,7 @@ export default function Diary() {
           studentName={selectedStudentForOccurrence.name}
           enrollmentId={(selectedStudentForOccurrence.enrollment_id || '') as string}
           classId={classFilter}
-          subjectId={(() => {
-            if (subjectFilter !== 'all' && subjectFilter) {
-              return subjectFilter as string;
-            }
-            return undefined;
-          })()}
+          subjectId={subjectFilter !== 'all' && subjectFilter ? String(subjectFilter) : undefined}
           date={new Date().toISOString().split('T')[0]}
           tenantId={userProfile.tenant_id || ''}
           userId={''}

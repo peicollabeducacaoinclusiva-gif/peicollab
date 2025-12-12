@@ -63,15 +63,26 @@ export function LoginForm({
     allowedRoles,
     onSuccess: () => {
       toast.success('Login realizado com sucesso!');
-      // Usar setTimeout para garantir que o toast apareça antes do redirecionamento
+      // Aguardar um pouco para garantir que a sessão foi salva
       setTimeout(() => {
-        if (onSuccess) {
-          console.log('Chamando onSuccess callback');
-          onSuccess();
-        } else {
-          console.log('Navegando para:', redirectTo);
-          navigate(redirectTo, { replace: true });
-        }
+        // Verificar se a sessão foi criada antes de redirecionar
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            console.log('✅ Sessão confirmada, redirecionando para:', redirectTo);
+            if (onSuccess) {
+              console.log('Chamando onSuccess callback');
+              onSuccess();
+            } else {
+              navigate(redirectTo, { replace: true });
+            }
+          } else {
+            console.warn('⚠️ Sessão não encontrada após login, tentando novamente...');
+            // Tentar novamente após um pequeno delay
+            setTimeout(() => {
+              navigate(redirectTo, { replace: true });
+            }, 500);
+          }
+        });
       }, 300);
     },
     onError: (_err) => {
@@ -166,8 +177,8 @@ export function LoginForm({
         </CardHeader>
 
         <CardContent className="p-6 pt-0">
-          {error && (
-            <Alert className="mb-4 border-red-200 bg-red-50">
+              {error && (
+            <Alert key="login-error" className="mb-4 border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-sm text-red-800">{error}</AlertDescription>
             </Alert>

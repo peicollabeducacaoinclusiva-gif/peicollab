@@ -63,6 +63,8 @@ const CreateMeeting = lazy(() => import("./pages/CreateMeeting"));
 const MeetingMinutes = lazy(() => import("./pages/MeetingMinutes"));
 const EvaluationSchedule = lazy(() => import("./pages/EvaluationSchedule"));
 const EvaluationsReport = lazy(() => import("./pages/EvaluationsReport"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -133,6 +135,10 @@ function App() {
                 <Route path="/debug/database" element={<DatabaseDebug />} />
                 <Route path="/debug/usability" element={<UsabilityDebug />} />
                 <Route path="/debug/notifications" element={<NotificationsDebug />} />
+                
+                {/* Rotas legais */}
+                <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+                <Route path="/legal/terms" element={<TermsOfUse />} />
                 
                 {/* MÓDULOS COM GUARD */}
                 <Route path="/modulo-nao-disponivel" element={<ModuleNotAvailable />} />

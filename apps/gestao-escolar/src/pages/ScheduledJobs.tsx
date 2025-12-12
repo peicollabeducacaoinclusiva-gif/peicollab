@@ -69,7 +69,7 @@ export default function ScheduledJobs() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleRunJob = async (_jobName: string) => {
+  const handleRunJob = async () => {
     try {
       const { error } = await supabase.functions.invoke('scheduled-alert-check', {
         body: { job_type: 'alert_check' },

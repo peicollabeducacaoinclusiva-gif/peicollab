@@ -63,7 +63,6 @@ export default function Schedules() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<ClassSchedule | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>('monday');
-  const [_selectedSlot, _setSelectedSlot] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
   
   // Form states para novo slot

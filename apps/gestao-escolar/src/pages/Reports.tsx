@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useSchools } from '../hooks/useStudents';
 import { useClasses } from '../hooks/useClasses';
@@ -161,7 +160,7 @@ export default function Reports() {
   const appUserProfile = userProfile ? {
     id: userProfile.tenant_id || '',
     full_name: userProfile.full_name,
-    email: userProfile.email,
+    email: userProfile.email || undefined,
     role: userProfile.role || 'teacher',
     tenant_id: userProfile.tenant_id,
     network_name: (userProfile.tenant as any)?.network_name || null,
@@ -284,9 +283,9 @@ export default function Reports() {
                         label: header,
                         'aria-label': header,
                       }))}
-                      data={reportResult.rows.map((row, _idx) => {
+                      data={reportResult.rows.map((row) => {
                         const rowData: Record<string, any> = {};
-                        reportResult.headers.forEach((header, colIdx) => {
+                        reportResult.headers.forEach((header) => {
                           rowData[header.toLowerCase().replace(/\s+/g, '_')] = row[colIdx] || '-';
                         });
                         return rowData;

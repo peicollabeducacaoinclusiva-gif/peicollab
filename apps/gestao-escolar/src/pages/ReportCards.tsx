@@ -30,7 +30,7 @@ export default function ReportCards() {
   const [userId, setUserId] = useState<string | null>(null);
   
   // Filtros
-  const [studentFilter, _setStudentFilter] = useState<string>('all');
+  const [studentFilter] = useState<string>('all');
   const [academicYear, setAcademicYear] = useState<number>(new Date().getFullYear());
   const [bimesterFilter, setBimesterFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -128,7 +128,7 @@ export default function ReportCards() {
         .from('report_cards')
         .select(`
           *,
-          students:student_id(name),
+          students!report_cards_student_id_fkey(name),
           generated_by_profile:generated_by(full_name)
         `)
         .eq('academic_year', academicYear);
@@ -143,7 +143,42 @@ export default function ReportCards() {
 
       const { data, error } = await query.order('generated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback: buscar sem join se a relação não existir
+        console.warn('Erro ao buscar com join, tentando sem relação:', error);
+        let fallbackQuery = supabase
+          .from('report_cards')
+          .select('*')
+          .eq('academic_year', academicYear);
+        
+        if (studentFilter !== 'all') {
+          fallbackQuery = fallbackQuery.eq('student_id', studentFilter);
+        }
+        if (bimesterFilter !== 'all') {
+          fallbackQuery = fallbackQuery.eq('bimester', parseInt(bimesterFilter));
+        }
+        
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery.order('generated_at', { ascending: false });
+        if (fallbackError) throw fallbackError;
+        
+        // Buscar nomes separadamente
+        const studentIds = [...new Set((fallbackData || []).map((rc: any) => rc.student_id))];
+        const { data: studentsData } = await supabase
+          .from('students')
+          .select('id, name')
+          .in('id', studentIds);
+        
+        const studentsMap = new Map((studentsData || []).map((s: any) => [s.id, s.name]));
+        
+        setReportCards(
+          ((fallbackData || []) as any[]).map(rc => ({
+            ...rc,
+            student_name: studentsMap.get(rc.student_id) || 'N/A',
+            generated_by_name: null, // Buscar separadamente se necessário
+          }))
+        );
+        return;
+      }
 
       setReportCards(
         ((data || []) as any[]).map(rc => ({

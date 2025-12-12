@@ -76,7 +76,7 @@ export async function exportToExcel(data: Record<string, any>[], fields: string[
     });
     
     // Ajustar largura das colunas
-    worksheet.columns.forEach((column, index) => {
+    worksheet.columns.forEach((column) => {
       column.width = 15;
     });
     
@@ -295,8 +295,8 @@ export async function exportToEducacenso(
   
   // Registro 60 - Matrículas/Alunos (0..n)
   const classLocalIds = new Map<string, string>();
-  filteredClasses.forEach((cls, index) => {
-    classLocalIds.set(cls.id, `${schoolLocalId}_T${index + 1}`);
+  filteredClasses.forEach((cls, idx) => {
+    classLocalIds.set(cls.id, `${schoolLocalId}_T${idx + 1}`);
   });
   
   activeEnrollments.forEach(enrollment => {

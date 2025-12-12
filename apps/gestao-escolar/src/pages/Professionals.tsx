@@ -40,7 +40,7 @@ export default function Professionals() {
   const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [professionalToDelete, setProfessionalToDelete] = useState<Professional | null>(null);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  // CreateProfessionalDialog gerencia seu próprio estado via trigger
 
   const { data: userProfile } = useUserProfile();
   const { data: schoolsData = [] } = useSchools(userProfile?.tenant_id || '');
@@ -109,19 +109,11 @@ export default function Professionals() {
     }
   };
 
-  const _toggleSort = (_key: typeof sortKey) => {
-    if (sortKey === _key) {
-      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortKey(_key);
-      setSortDir('asc');
-    }
-  };
 
   const appUserProfile = userProfile ? {
     id: userProfile.tenant_id || '',
     full_name: userProfile.full_name,
-    email: userProfile.email,
+    email: userProfile.email || undefined,
     role: userProfile.role || 'teacher',
     tenant_id: userProfile.tenant_id,
     network_name: (userProfile.tenant as any)?.network_name || null,
@@ -211,13 +203,18 @@ export default function Professionals() {
               Gerencie os profissionais da escola
             </p>
           </div>
-          <Button
-            onClick={() => setCreateDialogOpen(true)}
-            aria-label="Criar novo profissional"
-          >
-            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
-            Novo Profissional
-          </Button>
+          <CreateProfessionalDialog
+            tenantId={userProfile?.tenant_id || ''}
+            trigger={
+              <Button aria-label="Criar novo profissional">
+                <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
+                Novo Profissional
+              </Button>
+            }
+            onCreated={() => {
+              refetch();
+            }}
+          />
         </div>
 
         {/* Filtros */}
@@ -314,10 +311,18 @@ export default function Professionals() {
                   : 'Nenhum profissional cadastrado ainda'}
               </p>
               {!search && selectedSchoolFilter === 'all' && (
-                <Button onClick={() => setCreateDialogOpen(true)} aria-label="Cadastrar primeiro profissional">
-                  <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Cadastrar Primeiro Profissional
-                </Button>
+                <CreateProfessionalDialog
+                  tenantId={userProfile?.tenant_id || ''}
+                  trigger={
+                    <Button aria-label="Cadastrar primeiro profissional">
+                      <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Cadastrar Primeiro Profissional
+                    </Button>
+                  }
+                  onCreated={() => {
+                    refetch();
+                  }}
+                />
               )}
             </CardContent>
           </Card>
@@ -352,7 +357,6 @@ export default function Professionals() {
                     onPageChange={setCurrentPage}
                     pageSize={pageSize}
                     totalItems={Number(totalCount) || 0}
-                    onPageSizeChange={setPageSize}
                     aria-label="Navegação de páginas de profissionais"
                   />
                 </div>
@@ -363,14 +367,6 @@ export default function Professionals() {
       </div>
 
       {/* Dialog de Criação */}
-      <CreateProfessionalDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        tenantId={userProfile?.tenant_id || ''}
-        onCreated={() => {
-          setCreateDialogOpen(false);
-        }}
-      />
 
       {/* Dialog de Edição */}
       <EditProfessionalDialog

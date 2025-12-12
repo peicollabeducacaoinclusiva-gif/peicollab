@@ -12,75 +12,79 @@ import { SearchProvider } from './components/search/SearchProvider';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 
-// Módulos
-import { ModuleGuard } from './core/components/ModuleGuard';
-import { ModuleNotAvailable } from './core/components/ModuleNotAvailable';
-import { AtividadesRoutes } from './modules/atividades';
-import { BlogAdminRoutes } from './modules/blog';
-import { MerendaRoutes } from './modules/merenda';
-import { PlanejamentoRoutes } from './modules/planejamento';
-import { TransporteRoutes } from './modules/transporte';
+// Módulos - Temporariamente desabilitados para estabilização
+// import { ModuleGuard } from './core/components/ModuleGuard';
+// import { ModuleNotAvailable } from './core/components/ModuleNotAvailable';
+// import { AtividadesRoutes } from './modules/atividades';
+// import { BlogAdminRoutes } from './modules/blog';
+// import { MerendaRoutes } from './modules/merenda';
+// import { PlanejamentoRoutes } from './modules/planejamento';
+// import { TransporteRoutes } from './modules/transporte';
 
-// Lazy loading para melhor performance
-const ModuleManagement = lazy(() => import('./pages/superadmin/ModuleManagement'));
+// Lazy loading - Apenas componentes essenciais
 const Students = lazy(() => import('./pages/Students'));
+const Professionals = lazy(() => import('./pages/Professionals'));
+const Classes = lazy(() => import('./pages/Classes'));
 
 // Landing pages (públicas)
 const LandingHome = lazy(() => import('./landing/pages/Home'));
 const BlogList = lazy(() => import('./landing/pages/BlogList'));
 const BlogPost = lazy(() => import('./landing/pages/BlogPost'));
-const StudentProfile = lazy(() => import('./pages/StudentProfile'));
-const StudentProfileRefactored = lazy(() => import('./pages/StudentProfileRefactored'));
-const StudentLearningHistory = lazy(() => import('./pages/StudentLearningHistory'));
-const Professionals = lazy(() => import('./pages/Professionals'));
-const Classes = lazy(() => import('./pages/Classes'));
-const Enrollments = lazy(() => import('./pages/Enrollments'));
-const Diary = lazy(() => import('./pages/Diary'));
-const Communication = lazy(() => import('./pages/Communication'));
-const Alerts = lazy(() => import('./pages/Alerts'));
-const Finance = lazy(() => import('./pages/Finance'));
-const ReportCards = lazy(() => import('./pages/ReportCards'));
-const Calendars = lazy(() => import('./pages/Calendars'));
-const Schedules = lazy(() => import('./pages/Schedules'));
-const Censo = lazy(() => import('./pages/Censo'));
-const Monitoring = lazy(() => import('./pages/Monitoring'));
-const Transport = lazy(() => import('./pages/Transport'));
-const Meals = lazy(() => import('./pages/Meals'));
-const AutomaticAlerts = lazy(() => import('./pages/AutomaticAlerts'));
-const AlertRules = lazy(() => import('./pages/AlertRules'));
-const ScheduledJobs = lazy(() => import('./pages/ScheduledJobs'));
-const Subjects = lazy(() => import('./pages/Subjects'));
-const Users = lazy(() => import('./pages/Users'));
-const Import = lazy(() => import('./pages/Import'));
-const Export = lazy(() => import('./pages/Export'));
-const Evaluations = lazy(() => import('./pages/Evaluations'));
-const StudentHistory = lazy(() => import('./pages/StudentHistory'));
-const PerformanceTracking = lazy(() => import('./pages/PerformanceTracking'));
-const Certificates = lazy(() => import('./pages/Certificates'));
-const Reports = lazy(() => import('./pages/Reports'));
-const StaffManagement = lazy(() => import('./pages/StaffManagement'));
-const BackupManagement = lazy(() => import('./pages/BackupManagement'));
-const AuditReports = lazy(() => import('./pages/AuditReports'));
-const Documents = lazy(() => import('./pages/Documents'));
-const LGPDManagement = lazy(() => import('./pages/LGPDManagement'));
-const GovernmentReports = lazy(() => import('./pages/GovernmentReports'));
-const RetentionDashboard = lazy(() => import('./pages/RetentionDashboard'));
-const StudentApproval = lazy(() => import('./pages/StudentApproval'));
 const DiaryPublicView = lazy(() => import('./components/DiaryPublicView').then(m => ({ default: m.DiaryPublicView })));
-const SecretariatDashboard = lazy(() => import('./pages/SecretariatDashboard'));
-const TransfersList = lazy(() => import('./pages/secretariat/TransfersList'));
-const TransferForm = lazy(() => import('./pages/secretariat/TransferForm'));
-const TransferDetail = lazy(() => import('./pages/secretariat/TransferDetail'));
-const OccurrencesList = lazy(() => import('./pages/secretariat/OccurrencesList'));
-const OccurrenceForm = lazy(() => import('./pages/secretariat/OccurrenceForm'));
-const OccurrenceDetail = lazy(() => import('./pages/secretariat/OccurrenceDetail'));
-const TicketsList = lazy(() => import('./pages/secretariat/TicketsList'));
-const TicketForm = lazy(() => import('./pages/secretariat/TicketForm'));
-const TicketDetail = lazy(() => import('./pages/secretariat/TicketDetail'));
-const DocumentsList = lazy(() => import('./pages/secretariat/DocumentsList'));
-const DocumentRequestForm = lazy(() => import('./pages/secretariat/DocumentRequestForm'));
-const SchoolDashboard = lazy(() => import('./pages/dashboards/SchoolDashboard'));
-const NetworkDashboard = lazy(() => import('./pages/dashboards/NetworkDashboard'));
+
+// Páginas adicionais essenciais
+const StudentProfileRefactored = lazy(() => import('./pages/StudentProfileRefactored'));
+
+// Páginas opcionais - Temporariamente desabilitadas
+// const ModuleManagement = lazy(() => import('./pages/superadmin/ModuleManagement'));
+// const StudentProfile = lazy(() => import('./pages/StudentProfile'));
+// const StudentLearningHistory = lazy(() => import('./pages/StudentLearningHistory'));
+// const Enrollments = lazy(() => import('./pages/Enrollments'));
+// const Diary = lazy(() => import('./pages/Diary'));
+// const Communication = lazy(() => import('./pages/Communication'));
+// const Alerts = lazy(() => import('./pages/Alerts'));
+// const Finance = lazy(() => import('./pages/Finance'));
+// const ReportCards = lazy(() => import('./pages/ReportCards'));
+// const Calendars = lazy(() => import('./pages/Calendars'));
+// const Schedules = lazy(() => import('./pages/Schedules'));
+// const Censo = lazy(() => import('./pages/Censo'));
+// const Monitoring = lazy(() => import('./pages/Monitoring'));
+// const Transport = lazy(() => import('./pages/Transport'));
+// const Meals = lazy(() => import('./pages/Meals'));
+// const AutomaticAlerts = lazy(() => import('./pages/AutomaticAlerts'));
+// const AlertRules = lazy(() => import('./pages/AlertRules'));
+// const ScheduledJobs = lazy(() => import('./pages/ScheduledJobs'));
+// const Subjects = lazy(() => import('./pages/Subjects'));
+// const Users = lazy(() => import('./pages/Users'));
+// const Import = lazy(() => import('./pages/Import'));
+// const Export = lazy(() => import('./pages/Export'));
+// const Evaluations = lazy(() => import('./pages/Evaluations'));
+// const StudentHistory = lazy(() => import('./pages/StudentHistory'));
+// const PerformanceTracking = lazy(() => import('./pages/PerformanceTracking'));
+// const Certificates = lazy(() => import('./pages/Certificates'));
+// const Reports = lazy(() => import('./pages/Reports'));
+// const StaffManagement = lazy(() => import('./pages/StaffManagement'));
+// const BackupManagement = lazy(() => import('./pages/BackupManagement'));
+// const AuditReports = lazy(() => import('./pages/AuditReports'));
+// const Documents = lazy(() => import('./pages/Documents'));
+// const LGPDManagement = lazy(() => import('./pages/LGPDManagement'));
+// const GovernmentReports = lazy(() => import('./pages/GovernmentReports'));
+// const RetentionDashboard = lazy(() => import('./pages/RetentionDashboard'));
+// const StudentApproval = lazy(() => import('./pages/StudentApproval'));
+// const SecretariatDashboard = lazy(() => import('./pages/SecretariatDashboard'));
+// const TransfersList = lazy(() => import('./pages/secretariat/TransfersList'));
+// const TransferForm = lazy(() => import('./pages/secretariat/TransferForm'));
+// const TransferDetail = lazy(() => import('./pages/secretariat/TransferDetail'));
+// const OccurrencesList = lazy(() => import('./pages/secretariat/OccurrencesList'));
+// const OccurrenceForm = lazy(() => import('./pages/secretariat/OccurrenceForm'));
+// const OccurrenceDetail = lazy(() => import('./pages/secretariat/OccurrenceDetail'));
+// const TicketsList = lazy(() => import('./pages/secretariat/TicketsList'));
+// const TicketForm = lazy(() => import('./pages/secretariat/TicketForm'));
+// const TicketDetail = lazy(() => import('./pages/secretariat/TicketDetail'));
+// const DocumentsList = lazy(() => import('./pages/secretariat/DocumentsList'));
+// const DocumentRequestForm = lazy(() => import('./pages/secretariat/DocumentRequestForm'));
+// const SchoolDashboard = lazy(() => import('./pages/dashboards/SchoolDashboard'));
+// const NetworkDashboard = lazy(() => import('./pages/dashboards/NetworkDashboard'));
 
 // Componente de loading
 const PageLoader = () => (
@@ -173,27 +177,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              {/* Rota alternativa para a versão antiga caso precise */}
-              <Route
-                path="/students/:studentId/profile/old"
-                element={
-                  <ProtectedRoute>
-                    <Suspense fallback={<PageLoader />}>
-                      <StudentProfile />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/students/:studentId/history"
-                element={
-                  <ProtectedRoute>
-                    <Suspense fallback={<PageLoader />}>
-                      <StudentLearningHistory />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
               <Route
                 path="/professionals"
                 element={
@@ -210,6 +193,29 @@ function App() {
                   <ProtectedRoute>
                     <Suspense fallback={<PageLoader />}>
                       <Classes />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* ROTAS OPCIONAIS - Temporariamente desabilitadas para estabilização */}
+              {/* 
+              <Route
+                path="/students/:studentId/profile/old"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <StudentProfile />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/students/:studentId/history"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <StudentLearningHistory />
                     </Suspense>
                   </ProtectedRoute>
                 }
@@ -674,7 +680,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
               <Route
                 path="/superadmin/modules"
                 element={
@@ -685,13 +690,10 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-
-              {/* MÓDULOS COM GUARD */}
               <Route
                 path="/modulo-nao-disponivel"
                 element={<ModuleNotAvailable />}
               />
-              
               <Route
                 path="/atividades/*"
                 element={
@@ -704,7 +706,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
               <Route
                 path="/admin/blog/*"
                 element={
@@ -717,7 +718,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
               <Route
                 path="/merenda/*"
                 element={
@@ -730,7 +730,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
               <Route
                 path="/planejamento/*"
                 element={
@@ -743,7 +742,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
               <Route
                 path="/transporte/*"
                 element={
@@ -756,6 +754,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              */}
             </Routes>
                 </SearchProvider>
               </BrowserRouter>

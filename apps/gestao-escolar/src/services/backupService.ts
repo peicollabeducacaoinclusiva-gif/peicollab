@@ -87,16 +87,20 @@ export const backupService = {
   },
 
   async createBackupJob(job: Partial<BackupJob>): Promise<BackupJob> {
+    if (!job.job_name || !job.schedule_type || !job.backup_type) {
+      throw new Error('job_name, schedule_type e backup_type são obrigatórios');
+    }
+
     const { data, error } = await supabase
       .from('backup_jobs')
       .insert({
         tenant_id: job.tenant_id,
         job_name: job.job_name,
-        schedule_type: job.schedule_type || 'daily',
+        schedule_type: job.schedule_type,
         schedule_time: job.schedule_time,
         schedule_day: job.schedule_day,
         schedule_day_of_week: job.schedule_day_of_week,
-        backup_type: job.backup_type || 'full',
+        backup_type: job.backup_type,
         retention_days: job.retention_days || 30,
         enabled: job.enabled !== undefined ? job.enabled : true,
         created_by: job.created_by,
@@ -109,7 +113,23 @@ export const backupService = {
     // Agendar próximo backup
     await supabase.rpc('schedule_next_backup', { p_job_id: data.id });
 
-    return data as BackupJob;
+    return {
+      id: data.id,
+      tenant_id: data.tenant_id,
+      job_name: data.job_name,
+      schedule_type: data.schedule_type as BackupScheduleType,
+      schedule_time: data.schedule_time,
+      schedule_day: data.schedule_day,
+      schedule_day_of_week: data.schedule_day_of_week,
+      backup_type: data.backup_type as BackupType,
+      retention_days: data.retention_days,
+      enabled: data.enabled,
+      last_run_at: data.last_run_at,
+      next_run_at: data.next_run_at,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      created_by: data.created_by,
+    } as BackupJob;
   },
 
   async updateBackupJob(jobId: string, updates: Partial<BackupJob>): Promise<BackupJob> {
@@ -130,7 +150,23 @@ export const backupService = {
       await supabase.rpc('schedule_next_backup', { p_job_id: jobId });
     }
 
-    return data as BackupJob;
+    return {
+      id: data.id,
+      tenant_id: data.tenant_id,
+      job_name: data.job_name,
+      schedule_type: data.schedule_type as BackupScheduleType,
+      schedule_time: data.schedule_time,
+      schedule_day: data.schedule_day,
+      schedule_day_of_week: data.schedule_day_of_week,
+      backup_type: data.backup_type as BackupType,
+      retention_days: data.retention_days,
+      enabled: data.enabled,
+      last_run_at: data.last_run_at,
+      next_run_at: data.next_run_at,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      created_by: data.created_by,
+    } as BackupJob;
   },
 
   async deleteBackupJob(jobId: string): Promise<void> {
@@ -151,8 +187,8 @@ export const backupService = {
 
     if (error) throw error;
 
-    if (!data.success) {
-      throw new Error(data.error || 'Erro ao executar backup');
+    if (!data || !data.success) {
+      throw new Error((data as any)?.error || 'Erro ao executar backup');
     }
 
     // Buscar execução criada
@@ -165,7 +201,45 @@ export const backupService = {
       .single();
 
     if (execError) throw execError;
-    return execution as BackupExecution;
+    if (!execution) {
+      throw new Error('Execução de backup não encontrada após criação');
+    }
+
+    const backupExecution: BackupExecution = {
+      id: execution.id,
+      backup_job_id: execution.backup_job_id,
+      status: execution.status as BackupStatus,
+      backup_type: execution.backup_type as BackupType,
+      file_path: execution.file_path,
+      file_size_bytes: execution.file_size_bytes,
+      file_size_mb: execution.file_size_mb,
+      started_at: execution.started_at,
+      completed_at: execution.completed_at,
+      duration_seconds: execution.duration_seconds,
+      error_message: execution.error_message,
+      records_backed_up: execution.records_backed_up,
+      tables_backed_up: execution.tables_backed_up,
+      created_by: execution.created_by,
+    };
+
+    // Validação automática após backup (se status for completed)
+    if (backupExecution.status === 'completed') {
+      try {
+        const isValid = await this.verifyBackup(backupExecution.id);
+        if (!isValid) {
+          console.error('⚠️ ALERTA: Backup executado mas verificação de integridade falhou!', backupExecution.id);
+          // Em produção, pode ser necessário marcar como failed ou alertar
+          // Por enquanto, apenas logamos o erro
+        } else {
+          console.log('✅ Backup verificado com sucesso:', backupExecution.id);
+        }
+      } catch (verifyError) {
+        console.error('Erro ao verificar backup automaticamente:', verifyError);
+        // Não falhamos a execução por causa da verificação, mas logamos
+      }
+    }
+
+    return backupExecution;
   },
 
   async getBackupExecutions(jobId?: string, tenantId?: string, limit: number = 50): Promise<BackupExecution[]> {
@@ -180,7 +254,7 @@ export const backupService = {
     }
 
     // Corrigir: obter IDs de jobs do tenant antes de aplicar .in(...)
-    if (tenantId) {
+    if (tenantId && !jobId) {
       const { data: jobs, error: jobsError } = await supabase
         .from('backup_jobs')
         .select('id')
@@ -200,7 +274,23 @@ export const backupService = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return (data || []) as BackupExecution[];
+    
+    return (data || []).map((exec: any) => ({
+      id: exec.id,
+      backup_job_id: exec.backup_job_id,
+      status: exec.status as BackupStatus,
+      backup_type: exec.backup_type as BackupType,
+      file_path: exec.file_path,
+      file_size_bytes: exec.file_size_bytes,
+      file_size_mb: exec.file_size_mb,
+      started_at: exec.started_at,
+      completed_at: exec.completed_at,
+      duration_seconds: exec.duration_seconds,
+      error_message: exec.error_message,
+      records_backed_up: exec.records_backed_up,
+      tables_backed_up: exec.tables_backed_up,
+      created_by: exec.created_by,
+    })) as BackupExecution[];
   },
 
   async getAvailableBackups(tenantId?: string, limit: number = 50): Promise<any[]> {
@@ -262,15 +352,51 @@ export const backupService = {
     if (!execution.file_path) return false;
     if (execution.file_size_bytes === 0 || !execution.file_size_bytes) return false;
 
-    // Em produção, verificar checksum se disponível
-    const { data: storage } = await supabase
-      .from('backup_storage')
-      .select('checksum_md5, checksum_sha256')
-      .eq('backup_execution_id', executionId)
-      .maybeSingle();
+    // Verificação obrigatória de checksum
+    try {
+      const { data: storageData, error: storageError } = await supabase
+        .from('backup_storage')
+        .select('checksum_md5, checksum_sha256')
+        .eq('backup_execution_id', executionId)
+        .maybeSingle();
 
-    const hasChecksum = Boolean(storage?.checksum_md5 || storage?.checksum_sha256);
-    return hasChecksum || true; // mantém comportamento atual; validação completa pode usar checksum
+      if (storageError) {
+        console.warn('Erro ao verificar checksum do backup:', storageError);
+        // Em produção, checksum é obrigatório - retornar false se não disponível
+        // Em desenvolvimento, pode ser mais permissivo
+        const isProduction = process.env.NODE_ENV === 'production';
+        if (isProduction) {
+          console.error('⚠️ ALERTA: Backup sem checksum em produção!', executionId);
+          return false;
+        }
+        // Em desenvolvimento, permitir se passou nas verificações básicas
+        return true;
+      }
+
+      // Verificação obrigatória de checksum
+      if (storageData && (storageData.checksum_md5 || storageData.checksum_sha256)) {
+        return true; // Checksum presente indica integridade verificada
+      }
+
+      // Se não tem checksum mas passou nas verificações básicas
+      const isProduction = process.env.NODE_ENV === 'production';
+      if (isProduction) {
+        console.error('⚠️ ALERTA: Backup sem checksum em produção!', executionId);
+        return false;
+      }
+      // Em desenvolvimento, permitir
+      return true;
+    } catch (err) {
+      // Se a tabela backup_storage não existir ou houver erro
+      console.warn('Erro ao verificar checksum do backup:', err);
+      const isProduction = process.env.NODE_ENV === 'production';
+      if (isProduction) {
+        console.error('⚠️ ALERTA: Tabela backup_storage não disponível em produção!', err);
+        return false;
+      }
+      // Em desenvolvimento, permitir se passou nas verificações básicas
+      return true;
+    }
   },
 };
 

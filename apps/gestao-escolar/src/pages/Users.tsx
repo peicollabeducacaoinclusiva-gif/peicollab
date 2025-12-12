@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '@pei/database';
-import { Plus, Search, Edit, Trash2, UserCheck, UserX, Shield, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Edit, UserCheck, UserX, Shield, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -32,7 +31,7 @@ export default function Users() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [tenantId, setTenantId] = useState<string | null>(null);
-  const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [schoolId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {

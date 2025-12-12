@@ -326,7 +326,7 @@ export const reportService = {
     }
   },
 
-  async generateStudentsByClass(parameters: Record<string, any>, tenantId: string): Promise<ReportResult> {
+  async generateStudentsByClass(_parameters: Record<string, any>, _tenantId: string): Promise<ReportResult> {
     let query = supabase
       .from('student_enrollments')
       .select(`
@@ -403,7 +403,7 @@ export const reportService = {
     };
   },
 
-  async generatePerformanceReport(parameters: Record<string, any>, tenantId: string): Promise<ReportResult> {
+  async generatePerformanceReport(_parameters: Record<string, any>, _tenantId: string): Promise<ReportResult> {
     // Implementação simplificada
     return {
       headers: ['Aluno', 'Disciplina', 'Média', 'Status'],
@@ -439,7 +439,7 @@ export const reportService = {
     };
   },
 
-  async generateEnrollmentReport(parameters: Record<string, any>, tenantId: string): Promise<ReportResult> {
+  async generateEnrollmentReport(_parameters: Record<string, any>, _tenantId: string): Promise<ReportResult> {
     let query = supabase
       .from('student_enrollments')
       .select('id, status, enrollment_date, students:student_id(name), schools:school_id(school_name)')
@@ -506,15 +506,15 @@ export const reportService = {
   },
 
   // Implementações simplificadas para os outros relatórios
-  async generateClassScheduleReport(parameters: Record<string, any>, tenantId: string): Promise<ReportResult> {
+  async generateClassScheduleReport(_parameters: Record<string, any>, _tenantId: string): Promise<ReportResult> {
     return { headers: ['Turma', 'Dia', 'Horário', 'Disciplina', 'Professor'], rows: [] };
   },
 
-  async generateStudentsByGrade(parameters: Record<string, any>, tenantId: string): Promise<ReportResult> {
+  async generateStudentsByGrade(_parameters: Record<string, any>, _tenantId: string): Promise<ReportResult> {
     return { headers: ['Série', 'Quantidade'], rows: [] };
   },
 
-  async generateLowAttendance(parameters: Record<string, any>, tenantId: string): Promise<ReportResult> {
+  async generateLowAttendance(_parameters: Record<string, any>, _tenantId: string): Promise<ReportResult> {
     return { headers: ['Aluno', 'Turma', 'Frequência'], rows: [] };
   },
 
