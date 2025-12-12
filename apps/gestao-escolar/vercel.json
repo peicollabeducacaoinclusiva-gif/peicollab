@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm run build",
+  "buildCommand": "pnpm --filter @pei-collab/gestao-escolar run build",
   "outputDirectory": "dist",
   "framework": null
 }

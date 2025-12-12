@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd apps/pei-collab && pnpm run build",
+  "buildCommand": "pnpm --filter @pei/pei-collab run build",
   "outputDirectory": "apps/pei-collab/dist",
   "framework": null,
   "ignoreCommand": "git diff --quiet HEAD^ HEAD"
