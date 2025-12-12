@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm turbo run build --filter=@pei/pei-collab",
+  "buildCommand": "cd apps/pei-collab && pnpm run build",
   "outputDirectory": "apps/pei-collab/dist",
   "framework": null,
   "ignoreCommand": "git diff --quiet HEAD^ HEAD"
