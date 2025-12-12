@@ -256,9 +256,14 @@ export default function Home() {
               <h3 className="font-semibold mb-4">Aplicações</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link to="/login" className="text-muted-foreground hover:text-foreground">
+                  <a 
+                    href={import.meta.env.VITE_GESTAO_URL || 'https://gei.peicollab.com.br'} 
+                    className="text-muted-foreground hover:text-foreground"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Gestão Escolar
-                  </Link>
+                  </a>
                 </li>
                 <li>
                   <a 
