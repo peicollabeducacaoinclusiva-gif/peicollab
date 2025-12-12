@@ -11,19 +11,29 @@ import type { Profile } from '@pei/dashboards';
 import { useUserProfile } from '../hooks/useUserProfile';
 
 // URL do app PEI Collab (pode ser configurada via variável de ambiente)
-const PEI_COLLAB_URL = import.meta.env.VITE_PEI_COLLAB_URL || 'http://localhost:8080';
+const PEI_COLLAB_URL = import.meta.env.VITE_PEI_COLLAB_URL || 'https://peicollab.com.br';
 
 
 export default function Dashboard() {
+  console.log('[Dashboard] Componente montado');
+  
   const [stats, setStats] = useState({
     students: 0,
     professionals: 0,
     classes: 0,
     peis: 0,
   });
+  
   // Usar hook React Query para perfil
-  const { data: profileData, isLoading: profileLoading } = useUserProfile();
+  console.log('[Dashboard] Chamando useUserProfile...');
+  const { data: profileData, isLoading: profileLoading, error: profileError } = useUserProfile();
   const [loading, setLoading] = useState(true);
+  
+  console.log('[Dashboard] useUserProfile retornou:', {
+    profileData,
+    profileLoading,
+    profileError
+  });
 
   // Converter profileData para UserProfile format
   const userProfile: AppUserProfile | null = profileData ? {
@@ -138,16 +148,16 @@ export default function Dashboard() {
     });
 
     // Preparar perfil para os dashboards compartilhados
-    const profileForDashboard = {
+    const profileForDashboard: Profile = {
       id: userProfile.id || userProfile.email || '',
       full_name: userProfile.full_name,
-      email: userProfile.email || '',
+      email: userProfile.email || undefined,
       role: userProfile.role || 'teacher',
       school: profileData?.school as any,
       tenant: profileData?.tenant as any,
       tenant_id: userProfile.tenant_id || null,
       school_id: userProfile.school_id || null,
-    } as Profile;
+    };
 
     console.log('[Dashboard] profileForDashboard criado:', {
       role: profileForDashboard.role,
@@ -158,16 +168,27 @@ export default function Dashboard() {
     // Renderizar dashboard apropriado por role
     switch (userProfile.role) {
       case 'superadmin':
-        return <SuperadminDashboard profile={profileForDashboard as any} />;
+        return <SuperadminDashboard profile={{
+          id: profileForDashboard.id,
+          full_name: profileForDashboard.full_name,
+          role: profileForDashboard.role || 'superadmin',
+          school_id: profileForDashboard.school_id || null,
+        }} />;
 
       case 'education_secretary':
         return <EducationSecretaryDashboard profile={profileForDashboard as any} />;
 
       case 'school_director':
-        return <DirectorDashboard profile={profileForDashboard as any} />;
+        return <DirectorDashboard profile={{
+          ...profileForDashboard,
+          role: profileForDashboard.role || 'school_director',
+        } as Profile} />;
 
       case 'coordinator':
-        return <CoordinatorDashboard profile={profileForDashboard as any} />;
+        return <CoordinatorDashboard profile={{
+          ...profileForDashboard,
+          role: profileForDashboard.role || 'coordinator',
+        } as Profile} />;
 
       default:
         // Dashboard simples para roles padrão

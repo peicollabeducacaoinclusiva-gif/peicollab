@@ -3,7 +3,7 @@ import { Users, GraduationCap, FileText, School, Upload, Download, UserCog } fro
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 
 // URL do app PEI Collab (pode ser configurada via variável de ambiente)
-const PEI_COLLAB_URL = import.meta.env.VITE_PEI_COLLAB_URL || 'http://localhost:8080';
+const PEI_COLLAB_URL = import.meta.env.VITE_PEI_COLLAB_URL || 'https://peicollab.com.br';
 
 interface SimpleDashboardProps {
   stats: {

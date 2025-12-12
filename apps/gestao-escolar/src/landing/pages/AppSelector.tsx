@@ -63,7 +63,7 @@ export default function AppSelector() {
       description: 'Planos Educacionais Individualizados',
       icon: GraduationCap,
       color: 'from-blue-500 to-blue-600',
-      url: import.meta.env.VITE_PEI_COLLAB_URL || 'http://localhost:8080',
+      url: import.meta.env.VITE_PEI_COLLAB_URL || 'https://peicollab.com.br',
       port: 8080,
     },
     {

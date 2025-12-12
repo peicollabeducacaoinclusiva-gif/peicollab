@@ -146,7 +146,7 @@ export default function Home() {
                 ))}
               </div>
               
-              <a href={import.meta.env.VITE_PEI_COLLAB_URL || 'https://pei.peicollab.com.br'} target="_blank" rel="noopener noreferrer">
+              <a href={import.meta.env.VITE_PEI_COLLAB_URL || 'https://peicollab.com.br'} target="_blank" rel="noopener noreferrer">
                 <Button className="w-full gap-2" variant="outline">
                   Acessar PEI Collab
                   <ArrowRight className="w-4 h-4" />
@@ -257,7 +257,7 @@ export default function Home() {
               <ul className="space-y-2 text-sm">
                 <li>
                   <a 
-                    href={import.meta.env.VITE_GESTAO_URL || 'https://gei.peicollab.com.br'} 
+                    href={import.meta.env.VITE_GESTAO_URL || 'https://gestao.peicollab.com.br'} 
                     className="text-muted-foreground hover:text-foreground"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -267,7 +267,7 @@ export default function Home() {
                 </li>
                 <li>
                   <a 
-                    href={import.meta.env.VITE_PEI_COLLAB_URL || 'https://pei.peicollab.com.br'} 
+                    href={import.meta.env.VITE_PEI_COLLAB_URL || 'https://peicollab.com.br'} 
                     className="text-muted-foreground hover:text-foreground"
                     target="_blank"
                     rel="noopener noreferrer"

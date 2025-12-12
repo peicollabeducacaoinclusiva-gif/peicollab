@@ -45,7 +45,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href={import.meta.env.VITE_PEI_COLLAB_URL || 'http://localhost:8080'}
+                  href={import.meta.env.VITE_PEI_COLLAB_URL || 'https://peicollab.com.br'}
                   className="text-gray-600 hover:text-primary transition-colors text-sm"
                   target="_blank"
                   rel="noopener noreferrer"
