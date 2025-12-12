@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, Heart, Users, TrendingUp, Shield, Zap, Eye, Ear, MessageCircle, Brain, FileText, Clock, CheckCircle, Award, Globe } from "lucide-react";
 
 // URL da Landing Page (ajustar para produção)
-const LANDING_URL = import.meta.env.VITE_LANDING_URL || 'http://localhost:3000';
+const LANDING_URL = import.meta.env.VITE_LANDING_URL || 'https://gei.peicollab.com.br';
 
 const features = [
   {
@@ -251,8 +251,8 @@ export default function LandingPage() {
           <div className="flex gap-3">
             <Button
               onClick={() => window.open(LANDING_URL, '_blank')}
-              variant="outline"
-              className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-semibold hidden md:flex items-center gap-2"
+              variant="ghost"
+              className="bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 font-semibold hidden md:flex items-center gap-2"
             >
               <Globe className="w-4 h-4" />
               Sobre o Projeto
@@ -707,8 +707,16 @@ export default function LandingPage() {
             <div>
               <h4 className="font-bold text-white mb-4">Legal</h4>
               <ul className="space-y-3">
-                <li className="hover:text-white transition-colors cursor-pointer">Privacidade</li>
-                <li className="hover:text-white transition-colors cursor-pointer">Termos de Uso</li>
+                <li>
+                  <a href="/legal/privacy" className="hover:text-white transition-colors cursor-pointer">
+                    Privacidade
+                  </a>
+                </li>
+                <li>
+                  <a href="/legal/terms" className="hover:text-white transition-colors cursor-pointer">
+                    Termos de Uso
+                  </a>
+                </li>
                 <li className="hover:text-white transition-colors cursor-pointer">LGPD</li>
                 <li className="hover:text-white transition-colors cursor-pointer">Cookies</li>
               </ul>
