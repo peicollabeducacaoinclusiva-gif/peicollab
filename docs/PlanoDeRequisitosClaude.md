@@ -7,21 +7,21 @@
 
 ## 📌 RESUMO DAS MUDANÇAS v2
 
-| Ponto | O que foi corrigido/adicionado |
-|---|---|
-| `family_students` | Tabela nova — vínculo família↔aluno (gap crítico resolvido) |
-| `documents` | +5 campos: `versao_pai_id`, `is_versao_atual`, `aprovado_em`, `aprovado_por`, `template_versao` |
-| Trigger versionamento | `enforce_single_current_version` — garante 1 versão atual por tipo |
-| Função SQL | `create_document_version()` — lógica transacional completa |
-| RLS completo | Políticas granulares por role para todas as tabelas |
-| Funções helper RLS | `get_my_network_id()`, `get_my_school_id()`, `get_my_role()` |
-| Máquina de estados | Seção 2.8 com todas as transições válidas documentadas |
-| Views analytics | Seção 2.9 com 3 views materializadas + função refresh |
-| RBAC | Prompt 3 atualizado com matriz detalhada de permissões |
-| Histórico de versões | Prompt 8 novo — DocumentVersionHistory |
-| Quem versiona | Alinhado: autor original + gestores (inconsistência resolvida) |
-| Notificações | Prompt 12 novo — eventos e Supabase Realtime |
-| `document_validations` | Campo `motivo_rejeicao` adicionado |
+| Ponto                  | O que foi corrigido/adicionado                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| `family_students`      | Tabela nova — vínculo família↔aluno (gap crítico resolvido)                                     |
+| `documents`            | +5 campos: `versao_pai_id`, `is_versao_atual`, `aprovado_em`, `aprovado_por`, `template_versao` |
+| Trigger versionamento  | `enforce_single_current_version` — garante 1 versão atual por tipo                              |
+| Função SQL             | `create_document_version()` — lógica transacional completa                                      |
+| RLS completo           | Políticas granulares por role para todas as tabelas                                             |
+| Funções helper RLS     | `get_my_network_id()`, `get_my_school_id()`, `get_my_role()`                                    |
+| Máquina de estados     | Seção 2.8 com todas as transições válidas documentadas                                          |
+| Views analytics        | Seção 2.9 com 3 views materializadas + função refresh                                           |
+| RBAC                   | Prompt 3 atualizado com matriz detalhada de permissões                                          |
+| Histórico de versões   | Prompt 8 novo — DocumentVersionHistory                                                          |
+| Quem versiona          | Alinhado: autor original + gestores (inconsistência resolvida)                                  |
+| Notificações           | Prompt 12 novo — eventos e Supabase Realtime                                                    |
+| `document_validations` | Campo `motivo_rejeicao` adicionado                                                              |
 
 ---
 
@@ -63,6 +63,7 @@ npx shadcn-ui@latest init
 ```
 
 Componentes úteis para instalar:
+
 ```bash
 npx shadcn-ui@latest add button card input label select textarea
 npx shadcn-ui@latest add badge dialog form table tabs
@@ -1221,6 +1222,7 @@ CREATE POLICY "own_notifications" ON notifications FOR ALL USING (user_id = auth
 ## 📋 PARTE 5 — CHECKLIST DAS SPRINTS
 
 ### Sprint 1 — Fundação
+
 - [ ] Projeto Next.js criado com todas as dependências
 - [ ] Schema SQL executado no Supabase (seções 2.1 a 2.9 em ordem)
 - [ ] RLS habilitado e todas as policies criadas
@@ -1231,6 +1233,7 @@ CREATE POLICY "own_notifications" ON notifications FOR ALL USING (user_id = auth
 - [ ] ✅ Testar: criar 2 usuários de redes diferentes e validar isolamento
 
 ### Sprint 2 — Templates e Estudantes
+
 - [ ] CRUD de estudantes com RLS respeitado por role
 - [ ] Tabela family_students + painel de vínculo família→aluno
 - [ ] Template engine (criar + editar + versionar templates)
@@ -1238,12 +1241,14 @@ CREATE POLICY "own_notifications" ON notifications FOR ALL USING (user_id = auth
 - [ ] Tipos TypeScript gerados e organizados
 
 ### Sprint 3 — PAEE e Metas
+
 - [ ] PAEE funcional com DocumentEditor
 - [ ] Módulo de metas completo (CRUD + progresso)
 - [ ] Vínculo metas ↔ documentos via goal_links
 - [ ] ✅ Testar: professor A não vê metas de professor B
 
 ### Sprint 4 — PEI e Família
+
 - [ ] PEI integrado com goal_links do PAEE
 - [ ] DocumentVersionHistory + função create_document_version testada
 - [ ] FamilyComments e FamilyAcknowledgement
@@ -1251,6 +1256,7 @@ CREATE POLICY "own_notifications" ON notifications FOR ALL USING (user_id = auth
 - [ ] ✅ Testar: família só comenta, não edita
 
 ### Sprint 5 — Validação, Logs e Dashboard
+
 - [ ] Fluxo de validação com motivo de rejeição
 - [ ] Audit logs em todas as ações críticas
 - [ ] Views materializadas criadas e funcionando
@@ -1258,6 +1264,7 @@ CREATE POLICY "own_notifications" ON notifications FOR ALL USING (user_id = auth
 - [ ] Notificações in-app com Supabase Realtime
 
 ### Sprint 6 — IA e Analytics Avançado
+
 - [ ] Sugestões de metas por categoria/série/idade
 - [ ] Alertas: PEI sem metas, PAEE sem responsável, sem ciência familiar
 - [ ] Refresh automático das views (pg_cron)
